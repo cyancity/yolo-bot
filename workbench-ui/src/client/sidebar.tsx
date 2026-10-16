@@ -16,6 +16,7 @@ import { cx, WorkbenchSurface } from './ui/index.tsx'
 import { SIDEBAR_TAKEOVER_FIELD, type PrefsSource } from './prefs.ts'
 import { PANEL_ID, type WorkbenchNavActions, type WorkbenchNavState, type WorkbenchView } from './nav.ts'
 import { S } from './strings.ts'
+import { WF } from './workforce-strings.ts'
 import css from './workbench.module.css'
 import sub from './sidebar.module.css'
 import workforceCss from './workforce.module.css'
@@ -240,21 +241,21 @@ function useSidebarCore(props: SidebarCoreProps, collapsed: boolean) {
         items: [
           {
             id: 'mark-read',
-            label: '标记为已读',
+            label: WF.sidebarActions.markAsRead,
             onClick: () => {
               if (hostThread) void props.workforce.patchThread(hostThread.id, { markRead: true })
             },
           },
           {
             id: 'toggle-pin',
-            label: isPinned ? '取消置顶' : '置顶私信',
+            label: isPinned ? WF.sidebarActions.unpinDm : WF.sidebarActions.pinDm,
             onClick: () => {
               if (hostThread) void props.workforce.patchThread(hostThread.id, { pinned: !isPinned })
             },
           },
           {
             id: 'rename-bot',
-            label: '重命名',
+            label: WF.sidebarActions.rename,
             onClick: () => {
               setRenameBotTarget({ id: targetId, name })
             },
@@ -266,7 +267,7 @@ function useSidebarCore(props: SidebarCoreProps, collapsed: boolean) {
         items: [
           {
             id: 'copy-id',
-            label: '复制 ID',
+            label: WF.sidebarActions.copyId,
             onClick: () => {
               if (typeof navigator !== 'undefined' && navigator.clipboard) {
                 void navigator.clipboard.writeText(targetId)
@@ -374,7 +375,7 @@ function SidebarChannelColumn({ core, brandName, context }: {
             setCreateChatOpen(false)
             const fallback = input.memberIds.length > 0
               ? snapshot.employees.filter(e => input.memberIds.includes(e.id)).map(e => e.name).join('、')
-              : '群聊'
+              : WF.common.groupChat
             const name = input.title.trim() || fallback
             const created = await core.workforce.createChannel(name, null, {
               groupChatName: input.title.trim() || undefined,
@@ -473,7 +474,7 @@ function SidebarChannelColumn({ core, brandName, context }: {
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </span>
-            私信
+            {WF.nav.dms}
           </button>
           {!core.dmCollapsed && core.activeEmployees.map(employee => (
             <button
@@ -495,9 +496,9 @@ function SidebarChannelColumn({ core, brandName, context }: {
                 />
               </span>
               <span className={workforceCss.listLabel}>{employee.name}</span>
-              {employee.isLeader && <span className={workforceCss.employeeLabel}>负责人</span>}
+              {employee.isLeader && <span className={workforceCss.employeeLabel}>{WF.common.lead}</span>}
               {core.pinOf(employee.id) && (
-                <span className={sub.dmPinBadge} title="已置顶">
+                <span className={sub.dmPinBadge} title={WF.common.pinned}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="17" x2="12" y2="22"/>
                     <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
@@ -520,7 +521,7 @@ function SidebarChannelColumn({ core, brandName, context }: {
             >
               <span className={sub.dmAvatarWrap}>
                 <WorkforceAvatar
-                  name={thread.title || '员工'}
+                  name={thread.title || WF.common.employee}
                   tone="#8a8a80"
                   style={prefs.avatarStyle}
                   size={20}
@@ -529,7 +530,7 @@ function SidebarChannelColumn({ core, brandName, context }: {
                 />
               </span>
               <span className={workforceCss.listLabel}>{thread.title}</span>
-              <span className={workforceCss.employeeLabel}>已离线</span>
+              <span className={workforceCss.employeeLabel}>{WF.common.offline}</span>
             </button>
           ))}
         </>}
@@ -606,7 +607,7 @@ function RenameBotModal({
         className={dialogCss.dialogCard}
         role="dialog"
         aria-modal="true"
-        aria-label="重命名员工"
+        aria-label={WF.sidebarActions.renameEmployee}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => {
           if (e.key === 'Escape' && !busy) {
@@ -616,24 +617,24 @@ function RenameBotModal({
           }
         }}
       >
-        <h3 className={dialogCss.dialogTitle}>重命名员工</h3>
+        <h3 className={dialogCss.dialogTitle}>{WF.sidebarActions.renameEmployee}</h3>
         <form className={dialogCss.dialogForm} onSubmit={e => void handleSubmit(e)}>
           <div className={dialogCss.formItem}>
-            <label className={dialogCss.formLabel} htmlFor="rename-bot-name-input">员工名称</label>
+            <label className={dialogCss.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
             <input
               id="rename-bot-name-input"
               ref={inputRef}
               type="text"
               className={dialogCss.inputField}
               value={val}
-              placeholder="请输入新名称"
+              placeholder={WF.common.enterNewName}
               maxLength={30}
               onChange={e => setVal(e.target.value)}
             />
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose} disabled={busy}>取消</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy || !val.trim()}>{busy ? '保存中…' : '确认'}</button>
+            <button type="button" className={dialogCss.cancelBtn} onClick={onClose} disabled={busy}>{WF.common.cancel}</button>
+            <button type="submit" className={dialogCss.submitBtn} disabled={busy || !val.trim()}>{busy ? WF.models.saving : WF.common.confirm}</button>
           </div>
         </form>
       </div>
@@ -734,28 +735,28 @@ function SidebarHistorySearch({
       const thread = threadMap.get(threadId)
 
       let navView: WorkbenchView | undefined
-      let targetTitle = '会话'
+      let targetTitle: string = WF.common.session
       let avatarEmployee: Employee | undefined
 
       if (thread?.kind === 'dm' && thread.employeeId) {
         navView = { kind: 'dm', id: thread.employeeId }
         const emp = employeeMap.get(thread.employeeId)
         avatarEmployee = emp
-        targetTitle = emp ? emp.name : (thread.title || '私信')
+        targetTitle = emp ? emp.name : (thread.title || WF.nav.dms)
       } else if (thread?.kind === 'channel' && thread.channelId) {
         navView = { kind: 'channel', id: thread.channelId }
         const ch = channelMap.get(thread.channelId)
-        targetTitle = ch?.groupChatName?.trim() || ch?.name || thread.title || '频道'
+        targetTitle = ch?.groupChatName?.trim() || ch?.name || thread.title || WF.nav.channels
       } else if (thread?.taskId) {
         if (thread.channelId) {
           navView = { kind: 'channel', id: thread.channelId }
           const ch = channelMap.get(thread.channelId)
-          targetTitle = ch?.groupChatName?.trim() || ch?.name || '频道任务'
+          targetTitle = ch?.groupChatName?.trim() || ch?.name || WF.common.channelTask
         } else if (thread.employeeId) {
           navView = { kind: 'dm', id: thread.employeeId }
           const emp = employeeMap.get(thread.employeeId)
           avatarEmployee = emp
-          targetTitle = emp ? emp.name : '员工任务'
+          targetTitle = emp ? emp.name : WF.common.employeeTask
         }
       } else {
         // Fallback for threadId if matching a channel directly
@@ -777,7 +778,7 @@ function SidebarHistorySearch({
             text: msg.text,
             ts: msg.ts,
             role: msg.role,
-            senderName: msg.senderName || senderEmp?.name || (msg.role === 'user' ? '我' : '机器人'),
+            senderName: msg.senderName || senderEmp?.name || (msg.role === 'user' ? WF.common.me : WF.common.bot),
             navView,
             targetTitle,
             avatarEmployee: senderEmp ?? avatarEmployee,
@@ -839,7 +840,7 @@ function SidebarHistorySearch({
           <input
             type="text"
             className={searchCss.searchInput}
-            placeholder="搜索"
+            placeholder={WF.common.search}
             value={query}
             onChange={e => {
               setQuery(e.target.value)
@@ -853,8 +854,8 @@ function SidebarHistorySearch({
             <button
               type="button"
               className={searchCss.clearBtn}
-              title="清除搜索"
-              aria-label="清除搜索"
+              title={WF.common.clearSearch}
+              aria-label={WF.common.clearSearch}
               onClick={() => {
                 setQuery('')
                 setOpen(false)
@@ -868,8 +869,8 @@ function SidebarHistorySearch({
           <button
             type="button"
             className={searchCss.addChatBtn}
-            title="发起群聊"
-            aria-label="发起群聊"
+            title={WF.common.createGroupChat}
+            aria-label={WF.common.createGroupChat}
             onClick={onAddChat}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -884,7 +885,7 @@ function SidebarHistorySearch({
       {open && isSearching && (
         <div className={searchCss.dropdownPopover} role="listbox">
           {results.length === 0 ? (
-            <div className={searchCss.noResults}>未找到匹配的消息</div>
+            <div className={searchCss.noResults}>{WF.common.noMatchingMessages}</div>
           ) : (
             results.map(item => (
               <button
@@ -964,17 +965,17 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
 
   return (
     <WorkbenchSurface className={workforceCss.sidebar} data-workforce-sidebar data-wb-style={core.prefs.style}>
-      <nav className={workforceCss.rail} aria-label="工作台导航">
+      <nav className={workforceCss.rail} aria-label={WF.common.workbenchNav}>
         <div className={workforceCss.railUser}>
           <button
             type="button"
             className={workforceCss.railUserBtn}
-            title={`用户资料 · ${core.userProfile.name || '用户'}`}
-            aria-label="用户资料与设置"
+            title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
+            aria-label={WF.common.userProfileAria}
             onClick={() => core.setProfileModalOpen(true)}
           >
             <WorkforceAvatar
-              name={core.userProfile.name || '用户'}
+              name={core.userProfile.name || WF.common.user}
               isUser={true}
               size={36}
             />
@@ -1022,17 +1023,17 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
   }
   return (
     <WorkbenchSurface className={workforceCss.region} data-workforce-sidebar data-wb-style={core.prefs.style}>
-      <nav className={workforceCss.regionRail} aria-label="工作台导航">
+      <nav className={workforceCss.regionRail} aria-label={WF.common.workbenchNav}>
         <div className={workforceCss.railUser}>
           <button
             type="button"
             className={workforceCss.railUserBtn}
-            title={`用户资料 · ${core.userProfile.name || '用户'}`}
-            aria-label="用户资料与设置"
+            title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
+            aria-label={WF.common.userProfileAria}
             onClick={() => core.setProfileModalOpen(true)}
           >
             <WorkforceAvatar
-              name={core.userProfile.name || '用户'}
+              name={core.userProfile.name || WF.common.user}
               isUser={true}
               size={36}
             />
@@ -1052,7 +1053,7 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
           >
             <img
               src={DSH_AVATAR_DATA_URL}
-              alt="回到对话"
+              alt={S.nav.chat}
               width={26}
               height={26}
               style={{ borderRadius: '6px', objectFit: 'contain' }}

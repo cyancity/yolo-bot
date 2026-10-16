@@ -7,6 +7,7 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import css from './workforce-profile.module.css'
+import { WF } from './workforce-strings.ts'
 import { DEFAULT_USER_AVATAR_DATA_URL } from './workforce-user-avatar.ts'
 export { DEFAULT_USER_AVATAR_DATA_URL } from './workforce-user-avatar.ts'
 
@@ -20,7 +21,7 @@ export interface UserProfile {
 export const PRESET_AVATARS = [
   {
     id: 'cyber-default',
-    name: '冷峻赛博（默认）',
+    get name() { return WF.userProfile.presetCyberDefault },
     svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#181a20"/><stop offset="100%" stop-color="#0f1115"/></linearGradient>
@@ -51,7 +52,7 @@ export const PRESET_AVATARS = [
   },
   {
     id: 'shadow-tactical',
-    name: '战术特工',
+    get name() { return WF.userProfile.presetShadowTactical },
     svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#111827"/><stop offset="100%" stop-color="#030712"/></linearGradient>
@@ -74,7 +75,7 @@ export const PRESET_AVATARS = [
   },
   {
     id: 'cyber-violet',
-    name: '深空紫电',
+    get name() { return WF.userProfile.presetCyberViolet },
     svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="bg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f0e26"/></linearGradient>
@@ -91,7 +92,7 @@ export const PRESET_AVATARS = [
   },
   {
     id: 'mono-spec',
-    name: '极简黑白',
+    get name() { return WF.userProfile.presetMonoSpec },
     svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <rect width="100" height="100" fill="#000000"/>
       <circle cx="50" cy="50" r="46" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
@@ -102,12 +103,12 @@ export const PRESET_AVATARS = [
       <line x1="53" y1="42" x2="60" y2="42" stroke="#000000" stroke-width="2"/>
     </svg>`,
   },
-] as const
+]
 
 export const DEFAULT_AVATAR_DATA_URL = DEFAULT_USER_AVATAR_DATA_URL
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  name: '用户',
+  get name() { return WF.userProfile.defaultName },
   avatarUrl: DEFAULT_USER_AVATAR_DATA_URL,
   isCustomAvatar: false,
 }
@@ -124,8 +125,9 @@ function loadProfileFromStorage(): UserProfile {
     if (!raw) return DEFAULT_USER_PROFILE
     const parsed = JSON.parse(raw) as Partial<UserProfile>
     const isOldSvgDefault = typeof parsed.avatarUrl === 'string' && parsed.avatarUrl.startsWith('data:image/svg+xml')
+    const hasCustomName = typeof parsed.name === 'string' && parsed.name.trim() !== '' && parsed.name.trim() !== '用户'
     return {
-      name: typeof parsed.name === 'string' && parsed.name.trim() !== '' ? parsed.name.trim() : DEFAULT_USER_PROFILE.name,
+      get name() { return hasCustomName ? (parsed.name as string).trim() : WF.userProfile.defaultName },
       avatarUrl: typeof parsed.avatarUrl === 'string' && parsed.avatarUrl !== '' && !isOldSvgDefault ? parsed.avatarUrl : DEFAULT_USER_AVATAR_DATA_URL,
       isCustomAvatar: Boolean(parsed.isCustomAvatar) && !isOldSvgDefault,
     }
@@ -173,7 +175,7 @@ export function useUserProfile(): UserProfile {
 /** 获取用户显示名字（保证响应式） */
 export function useUserDisplayName(): string {
   const profile = useUserProfile()
-  return profile.name || '用户'
+  return profile.name || WF.userProfile.defaultName
 }
 
 /** 用户头像渲染组件 */
@@ -188,7 +190,7 @@ export function UserProfileAvatar({
 }) {
   const current = profile ?? useUserProfile()
   const avatarUrl = current.avatarUrl || DEFAULT_AVATAR_DATA_URL
-  const name = current.name || '用户'
+  const name = current.name || WF.userProfile.defaultName
 
   return (
     <div
@@ -230,7 +232,7 @@ export function UserProfileBar({
         className={css.userBar}
         role="button"
         tabIndex={0}
-        aria-label="用户资料设置"
+        aria-label={WF.common.userProfileAria}
         onClick={handleOpen}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -246,10 +248,10 @@ export function UserProfileBar({
           <span className={css.userBarName}>{profile.name}</span>
           <span className={css.userBarStatus}>
             <span className={css.statusDot} aria-hidden="true" />
-            在线
+            {WF.userProfile.online}
           </span>
         </div>
-        <div className={css.userBarActions} title="编辑资料">
+        <div className={css.userBarActions} title={WF.userProfile.editProfile}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
             <circle cx="12" cy="12" r="3"/>
@@ -300,7 +302,7 @@ export function UserProfileModal({
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 8 * 1024 * 1024) {
-      alert('头像图片大小请控制在 8MB 以内')
+      alert(WF.userProfile.avatarSizeLimit)
       return
     }
 
@@ -344,13 +346,13 @@ export function UserProfileModal({
   }
 
   const handleReset = () => {
-    setName('用户')
+    setName(WF.userProfile.defaultName)
     setAvatarUrl(DEFAULT_AVATAR_DATA_URL)
     setIsCustom(false)
   }
 
   const handleSave = async () => {
-    const trimmed = name.trim() || '用户'
+    const trimmed = name.trim() || WF.userProfile.defaultName
     try {
       const isMaterial = avatarUrl.startsWith('/wb/api/workforce/materials/')
       await fetch('/wb/api/workforce/profile', {
@@ -382,8 +384,8 @@ export function UserProfileModal({
         onClick={e => e.stopPropagation()}
       >
         <div className={css.modalHeader}>
-          <h2 id={inputId} className={css.modalTitle}>编辑用户资料</h2>
-          <button type="button" className={css.closeBtn} onClick={onClose} aria-label="关闭">
+          <h2 id={inputId} className={css.modalTitle}>{WF.userProfile.title}</h2>
+          <button type="button" className={css.closeBtn} onClick={onClose} aria-label={WF.common.close}>
             ✕
           </button>
         </div>
@@ -391,7 +393,7 @@ export function UserProfileModal({
         {/* 头像预览与操作 */}
         <div className={css.avatarSection}>
           <div className={css.avatarPreview}>
-            <img src={avatarUrl} alt="头像预览" className={css.avatarImg} />
+            <img src={avatarUrl} alt={WF.userProfile.avatarPreview} className={css.avatarImg} />
           </div>
           <div className={css.avatarControls}>
             <div className={css.avatarBtnRow}>
@@ -400,14 +402,14 @@ export function UserProfileModal({
                 className={css.uploadBtn}
                 onClick={() => fileInputRef.current?.click()}
               >
-                上传自定义头像
+                {WF.userProfile.uploadCustom}
               </button>
               <button
                 type="button"
                 className={css.resetBtn}
                 onClick={handleReset}
               >
-                恢复默认
+                {WF.userProfile.reset}
               </button>
               <input
                 ref={fileInputRef}
@@ -417,13 +419,13 @@ export function UserProfileModal({
                 onChange={handleFileUpload}
               />
             </div>
-            <div className={css.avatarHint}>支持 PNG, JPG, WebP 或 SVG 格式</div>
+            <div className={css.avatarHint}>{WF.userProfile.avatarFormatHint}</div>
           </div>
         </div>
 
         {/* 预设动漫插画头像选择 */}
         <div className={css.presetSection}>
-          <div className={css.presetTitle}>精选插画头像</div>
+          <div className={css.presetTitle}>{WF.userProfile.featuredAvatars}</div>
           <div className={css.presetGrid}>
             {PRESET_AVATARS.map(item => {
               const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
@@ -445,14 +447,14 @@ export function UserProfileModal({
 
         {/* 名字输入 */}
         <div className={css.formSection}>
-          <label htmlFor="user-profile-name-input" className={css.fieldLabel}>显示名称</label>
+          <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
           <input
             id="user-profile-name-input"
             type="text"
             className={css.input}
             value={name}
             maxLength={32}
-            placeholder="例如：用户"
+            placeholder={WF.userProfile.namePlaceholder}
             onChange={e => setName(e.target.value)}
           />
         </div>
@@ -460,10 +462,10 @@ export function UserProfileModal({
         {/* 底部按钮 */}
         <div className={css.modalFooter}>
           <button type="button" className={css.cancelBtn} onClick={onClose}>
-            取消
+            {WF.common.cancel}
           </button>
           <button type="button" className={css.saveBtn} onClick={handleSave}>
-            保存修改
+            {WF.common.save}
           </button>
         </div>
       </div>

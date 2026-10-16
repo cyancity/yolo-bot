@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Dialog, useTokenScopeAttrs } from './ui/index.tsx'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-context-menu.module.css'
 
 export interface ContextMenuItem {
@@ -166,8 +167,8 @@ export interface ConfirmDialogProps {
 export function ConfirmDialog({
   title,
   message,
-  confirmLabel = '确认',
-  cancelLabel = '取消',
+  confirmLabel = WF.common.confirm,
+  cancelLabel = WF.common.cancel,
   danger = false,
   error,
   onConfirm,

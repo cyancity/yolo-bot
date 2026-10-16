@@ -5,6 +5,7 @@
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import type { SearchSource } from './workforce-types.ts'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-websearch.module.css'
 
 /** 线程已加载消息里是否出现过 web_search。为 false 时不要挂载本组件。 */
@@ -89,9 +90,9 @@ function Favicon({ host, className }: { readonly host: string | undefined; reado
 }
 
 function pillLabel(status: WorkforceWebSearchProps['status'], query: string | undefined, sources: readonly SearchSource[] | undefined): string {
-  if (status === 'error') return '搜索没有完成'
-  if (status === 'running') return query ? `正在搜索 ${query}` : '正在搜索'
-  return sources ? `已搜索 ${sources.length} 个站点` : '已搜索'
+  if (status === 'error') return WF.websearch.searchNotFinished
+  if (status === 'running') return query ? WF.websearch.searchingQuery(query) : WF.websearch.searching
+  return sources ? WF.websearch.searchedCount(sources.length) : WF.websearch.searched
 }
 
 function httpUrl(url: string): string | undefined {
@@ -181,7 +182,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
         type="button"
         className={css.stackBtn}
         aria-expanded={expanded}
-        aria-label={`${sources.length} 个来源，点击${expanded ? '收起' : '展开'}`}
+        aria-label={WF.websearch.sourcesAria(sources.length, expanded)}
         onClick={() => setExpanded(v => !v)}
       >
         <span className={css.stack} aria-hidden="true">
@@ -202,7 +203,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
             )
           })}
         </span>
-        <span className={css.stackCount}>{sources.length} 个来源</span>
+        <span className={css.stackCount}>{WF.websearch.sourcesCount(sources.length)}</span>
       </button>
       {expanded ? (
         <ul className={css.trackList}>
@@ -257,9 +258,9 @@ export function WorkforceWebSearch({ status, query, sources }: WorkforceWebSearc
       </button>
       {open ? (
         <div id={panelId} className={reduced ? css.panel : css.panelMotion}>
-          {query ? <p className={css.query}>搜索：{query}</p> : null}
+          {query ? <p className={css.query}>{WF.websearch.searchPrefix(query)}</p> : null}
           {status === 'running' && listed.length === 0 ? <SearchSkeleton /> : null}
-          {status === 'error' && listed.length === 0 ? <p className={css.errorNote}>没有返回来源</p> : null}
+          {status === 'error' && listed.length === 0 ? <p className={css.errorNote}>{WF.websearch.noSourcesReturned}</p> : null}
           {listed.length > 0 ? <SourceBoard sources={listed} running={status === 'running'} /> : null}
         </div>
       ) : null}
@@ -315,9 +316,9 @@ function batchCountText(entries: readonly SearchEntry[]): string {
   const running = entries.filter(e => e.status === 'running').length
   const sources = entries.reduce((sum, e) => sum + (e.sources?.length ?? 0), 0)
   const parts: string[] = []
-  if (running > 0) parts.push('正在搜索')
-  if (sources > 0) parts.push(`${sources} 个来源`)
-  if (parts.length === 0) parts.push('搜索完成')
+  if (running > 0) parts.push(WF.websearch.searching)
+  if (sources > 0) parts.push(WF.websearch.sourcesCount(sources))
+  if (parts.length === 0) parts.push(WF.websearch.searched)
   return parts.join(' · ')
 }
 
@@ -328,12 +329,12 @@ function FailChip({ entry, detailId }: { readonly entry: SearchEntry; readonly d
     <li className={css.trackItem}>
       <button type="button" className={css.failChip} aria-expanded={open} aria-controls={detailId} onClick={() => setOpen(v => !v)}>
         <span className={css.failMark} aria-hidden="true">!</span>
-        <span className={css.failLabel}>{entry.query ?? '搜索失败'}</span>
+        <span className={css.failLabel}>{entry.query ?? WF.websearch.searchNotFinished}</span>
       </button>
       {open ? (
         <div id={detailId} className={css.failDetail}>
-          {entry.query ? <p className={css.query}>搜索：{entry.query}</p> : null}
-          <p className={css.errorNote}>{entry.error ?? '搜索没有完成'}</p>
+          {entry.query ? <p className={css.query}>{WF.websearch.searchPrefix(entry.query)}</p> : null}
+          <p className={css.errorNote}>{entry.error ?? WF.websearch.searchNotFinished}</p>
         </div>
       ) : null}
     </li>
@@ -356,7 +357,7 @@ export function WebSearchBatch({ entries }: { readonly entries: readonly SearchE
           type="button"
           className={css.stackBtn}
           aria-expanded={expanded}
-          aria-label={`搜索详情，点击${expanded ? '收起' : '展开'}`}
+          aria-label={WF.websearch.searchDetailsAria(expanded)}
           onClick={() => setExpanded(v => !v)}
         >
           <span className={css.batchOrbs} aria-hidden="true">
@@ -366,7 +367,7 @@ export function WebSearchBatch({ entries }: { readonly entries: readonly SearchE
         </button>
         {expanded ? (
           <div className={css.batchPanel}>
-            {queries.map((query, index) => <p key={`${query}${index}`} className={css.query}>搜索：{query}</p>)}
+            {queries.map((query, index) => <p key={`${query}${index}`} className={css.query}>{WF.websearch.searchPrefix(query)}</p>)}
             <ul className={css.trackList}>
               {allSources.map((source, index) => (
                 <li key={`${source.url}${index}`} className={css.trackItem}>

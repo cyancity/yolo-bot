@@ -14,22 +14,20 @@ import type { WorkforceSource } from './workforce-source.ts'
 import type { Employee, Task, TaskDeliverable, TaskDeliverableVersion } from './workforce-types.ts'
 import css from './workforce-deliverables.module.css'
 
-const UNKNOWN_AUTHOR = '未知'
 const LABELS = {
-  published: '最终版',
-  draft: '草稿',
-  publish: '设为最终版',
-  publishing: '设置中…',
-  open: '打开',
-  download: '下载',
-  publishNote: '最终版只是选定当前版本，不会发布到外部平台',
+  get published() { return WF.deliverables.final },
+  get draft() { return WF.deliverables.draft },
+  get publish() { return WF.deliverables.setFinal },
+  get publishing() { return WF.deliverables.settingFinal },
+  get open() { return WF.deliverables.open },
+  get download() { return WF.deliverables.download },
+  get publishNote() { return WF.deliverables.publishNote },
 }
 
 /** 作者 id → 显示名：`user` 是当前用户，`unknown`（旧数据）与查不到的 id 都是「未知」。 */
 function authorName(authorId: string, employees: readonly Employee[]): string {
   if (authorId === 'user') return WF.employee.you
-  if (authorId === 'unknown' || authorId === '') return UNKNOWN_AUTHOR
-  return employees.find(item => item.id === authorId)?.name ?? UNKNOWN_AUTHOR
+  return employees.find(item => item.id === authorId)?.name ?? WF.common.unknown
 }
 
 function fmtStamp(ts: string): string {
@@ -130,8 +128,8 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
       className={css.versionTag}
       data-published={view.published}
       aria-expanded={open}
-      aria-label={`${view.published ? '已发布 ' : ''}版本 v${view.shownVersion}，点击${open ? '收起' : '展开'}版本列表`}
-      title={open ? '收起版本列表' : '展开版本列表'}
+      aria-label={WF.deliverables.versionAria(view.published, view.shownVersion, open)}
+      title={WF.deliverables.toggleVersions(open)}
       onClick={() => setOpen(value => !value)}
     >
       <span>{view.published ? '✓ ' : ''}v{view.shownVersion}</span>
@@ -149,10 +147,10 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
 
   const head = <>
     <span className={css.fileIcon} data-extension={extension}><FileTypeIcon path={item.name} size={22} /></span>
-    <button type="button" className={css.fileName} title={`打开 ${item.name}`} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</button>
+    <button type="button" className={css.fileName} title={WF.deliverables.openFileTitle(item.name)} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</button>
     {versionPill}
     <span className={css.authorTag}>{authorName(view.authorId, employees)}</span>
-    {view.newDraftVersion !== undefined && <span className={css.draftMark}>{`有新草稿 v${view.newDraftVersion}`}</span>}
+    {view.newDraftVersion !== undefined && <span className={css.draftMark}>{WF.deliverables.newDraftVersion(view.newDraftVersion)}</span>}
   </>
 
   return (
@@ -175,7 +173,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
               <span className={css.versionNo}>v{version.version}</span>
               <span className={css.versionAuthor}>{authorName(version.authorId, employees)}</span>
               <span className={css.versionTime}>{fmtStamp(version.createdAt)}</span>
-              <span className={css.versionChars}>{version.charCount} 字</span>
+              <span className={css.versionChars}>{WF.deliverables.charCount(version.charCount)}</span>
               <span className={css.versionSpacer} />
               <button type="button" className={css.versionAction} disabled={busy} onClick={() => void openDeliverable(version.version)}>{LABELS.open}</button>
               {version.version !== item.publishedVersion && (
@@ -195,8 +193,8 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
             type="button"
             className={css.collapseRow}
             onClick={() => setOpen(false)}
-            aria-label="收起版本列表"
-            title="收起版本列表"
+            aria-label={WF.deliverables.collapseVersionList}
+            title={WF.deliverables.collapseVersionList}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
               <line x1="3" y1="6" x2="21" y2="6" />

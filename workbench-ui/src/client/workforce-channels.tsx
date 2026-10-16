@@ -8,6 +8,8 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import type { HostChannel, HostChannelGroup } from './workforce-api.ts'
 import type { Channel } from './workforce-types.ts'
 import { ConfirmDialog, WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
+import { WF } from './workforce-strings.ts'
+import { getLocale } from './i18n.ts'
 import css from './workforce-channels.module.css'
 
 export interface ChannelGroup {
@@ -131,7 +133,9 @@ export function WorkforceChannels({
       setOpError(null)
       await action()
     } catch (err: unknown) {
-      const msg = `${actionDesc}失败: ${err instanceof Error ? err.message : String(err)}`
+      const msg = getLocale() === 'en'
+        ? `${actionDesc} failed: ${err instanceof Error ? err.message : String(err)}`
+        : `${actionDesc}失败: ${err instanceof Error ? err.message : String(err)}`
       setOpError({
         message: msg,
         retry: () => executeWithCatch(actionDesc, action),
@@ -152,7 +156,9 @@ export function WorkforceChannels({
       setLegacyGroupsToSync(null)
     } catch (err: unknown) {
       setOpError({
-        message: `同步本地分组失败: ${err instanceof Error ? err.message : String(err)}`,
+        message: getLocale() === 'en'
+          ? `Failed to sync local groups: ${err instanceof Error ? err.message : String(err)}`
+          : `同步本地分组失败: ${err instanceof Error ? err.message : String(err)}`,
         retry: handleSyncLegacyGroups,
       })
     } finally {
@@ -185,7 +191,7 @@ export function WorkforceChannels({
     }))
 
   // 分组名可空：UI 统一回退显示
-  const groupDisplayName = (group: { name: string }): string => group.name.trim() || '未命名分组'
+  const groupDisplayName = (group: { name: string }): string => group.name.trim() || WF.channelUI.unnamedGroup
 
   // 频道数据：宿主 HostChannel 字段优先；groupName 是分组视图的可空显示名覆盖
   const normalizedChannels = channels
@@ -216,19 +222,19 @@ export function WorkforceChannels({
     const moveGroupItems = [
       {
         id: 'group-none',
-        label: '未分组',
+        label: WF.channelUI.ungrouped,
         disabled: isGeneral,
-        onClick: () => { if (!isGeneral) runChannelOp('移出分组', onPatchChannelReq ? () => onPatchChannelReq(channel.id, { groupId: null }) : undefined) },
+        onClick: () => { if (!isGeneral) runChannelOp(WF.channelUI.removeFromGroup, onPatchChannelReq ? () => onPatchChannelReq(channel.id, { groupId: null }) : undefined) },
       },
       ...effectiveGroups.map(g => ({
         id: `move-${g.id}`,
         label: groupDisplayName(g),
         disabled: isGeneral,
-        onClick: () => { if (!isGeneral) runChannelOp('移动到分组', onPatchChannelReq ? () => onPatchChannelReq(channel.id, { groupId: g.id }) : undefined) },
+        onClick: () => { if (!isGeneral) runChannelOp(WF.channelUI.moveToGroup, onPatchChannelReq ? () => onPatchChannelReq(channel.id, { groupId: g.id }) : undefined) },
       })),
       {
         id: 'new-group-opt',
-        label: '+ 新建分组…',
+        label: WF.channelUI.newGroupEllipsis,
         onClick: () => setCreateGroupModal(true),
       },
     ]
@@ -239,13 +245,13 @@ export function WorkforceChannels({
         items: [
           {
             id: 'mark-read',
-            label: '标记为已读',
-            onClick: () => runChannelOp('标记已读', onMarkChannelReadReq ? () => onMarkChannelReadReq(channel.id) : undefined),
+            label: WF.channelUI.markAsRead,
+            onClick: () => runChannelOp(WF.channelUI.markReadOp, onMarkChannelReadReq ? () => onMarkChannelReadReq(channel.id) : undefined),
           },
           ...(!isGeneral ? [{
             id: 'toggle-pin',
-            label: channel.pinned ? '取消置顶' : '置顶频道',
-            onClick: () => runChannelOp(channel.pinned ? '取消置顶' : '置顶频道', onPatchChannelReq ? () => onPatchChannelReq(channel.id, { pinned: !channel.pinned }) : undefined),
+            label: channel.pinned ? WF.channelUI.unpinChannel : WF.channelUI.pinChannel,
+            onClick: () => runChannelOp(channel.pinned ? WF.channelUI.unpinChannel : WF.channelUI.pinChannel, onPatchChannelReq ? () => onPatchChannelReq(channel.id, { pinned: !channel.pinned }) : undefined),
           }] : []),
         ],
       },
@@ -254,7 +260,7 @@ export function WorkforceChannels({
         items: [
           {
             id: 'copy-link',
-            label: '复制链接',
+            label: WF.channelUI.copyLink,
             onClick: () => {
               if (typeof navigator !== 'undefined' && navigator.clipboard) {
                 void navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#channel/${channel.id}`)
@@ -263,7 +269,7 @@ export function WorkforceChannels({
           },
           {
             id: 'move-group',
-            label: '移动到分组',
+            label: WF.channelUI.moveToGroup,
             children: moveGroupItems,
           },
         ],
@@ -273,20 +279,20 @@ export function WorkforceChannels({
         items: [
           {
             id: 'edit-channel',
-            label: '编辑频道（重命名）',
+            label: WF.channelUI.editChannel,
             onClick: () => setRenameChannelModal({ open: true, channelId: channel.id, currentName: channel.name }),
           },
           ...(!isGeneral ? [{
             id: 'dup-channel',
-            label: '复制频道',
+            label: WF.channelUI.duplicateChannel,
             onClick: () => {
-              if (onDuplicateChannelReq) runChannelOp('复制频道', () => onDuplicateChannelReq(channel.id))
-              else if (onCreateChannelReq) runChannelOp('复制频道', () => onCreateChannelReq(`${channel.name} 副本`, channel.groupId))
+              if (onDuplicateChannelReq) runChannelOp(WF.channelUI.duplicateChannel, () => onDuplicateChannelReq(channel.id))
+              else if (onCreateChannelReq) runChannelOp(WF.channelUI.duplicateChannel, () => onCreateChannelReq(`${channel.name}${WF.channelUI.duplicateCopySuffix}`, channel.groupId))
             },
           }] : []),
           {
             id: 'create-channel-here',
-            label: '创建频道',
+            label: WF.channelUI.createChannel,
             onClick: () => setCreateChannelModal({ open: true, defaultGroupId: channel.groupId ?? undefined }),
           },
         ],
@@ -296,7 +302,7 @@ export function WorkforceChannels({
         items: [
           {
             id: 'delete-channel',
-            label: isGeneral ? '删除频道（默认频道不可删除）' : '删除频道',
+            label: isGeneral ? WF.channelUI.deleteChannelGeneralDisabled : WF.channelUI.deleteChannel,
             danger: true,
             disabled: isGeneral,
             onClick: () => {
@@ -312,7 +318,7 @@ export function WorkforceChannels({
         items: [
           {
             id: 'copy-id',
-            label: '复制频道 ID',
+            label: WF.channelUI.copyChannelId,
             onClick: () => {
               if (typeof navigator !== 'undefined' && navigator.clipboard) {
                 void navigator.clipboard.writeText(channel.id)
@@ -337,12 +343,12 @@ export function WorkforceChannels({
         items: [
           {
             id: 'create-ch-in-grp',
-            label: '创建频道',
+            label: WF.channelUI.createChannel,
             onClick: () => setCreateChannelModal({ open: true, defaultGroupId: group.id }),
           },
           {
             id: 'create-new-grp',
-            label: '新建分组',
+            label: WF.channelUI.newGroup,
             onClick: () => setCreateGroupModal(true),
           },
         ],
@@ -352,16 +358,16 @@ export function WorkforceChannels({
         items: [
           {
             id: 'rename-group',
-            label: '重命名分组',
+            label: WF.channelUI.renameGroup,
             onClick: () => setRenameGroupModal({ open: true, groupId: group.id, currentName: group.name }),
           },
           {
             id: 'delete-group',
-            label: '删除分组',
+            label: WF.channelUI.deleteGroup,
             danger: true,
             disabled: effectiveGroups.length <= 1,
             onClick: () => {
-              if (onDeleteGroupReq) runChannelOp('删除分组', () => onDeleteGroupReq(group.id))
+              if (onDeleteGroupReq) runChannelOp(WF.channelUI.deleteGroup, () => onDeleteGroupReq(group.id))
             },
           },
         ],
@@ -385,14 +391,14 @@ export function WorkforceChannels({
         <span className={css.hashIcon}>#</span>
         <span className={css.channelName}>{channel.name}</span>
         {channel.pinned && (
-          <span className={css.pinBadge} title="已置顶">
+          <span className={css.pinBadge} title={WF.channelUI.pinned}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="17" x2="12" y2="22"/>
               <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
             </svg>
           </span>
         )}
-        {channel.unread && <span className={css.unreadDot} title="有未读消息" />}
+        {channel.unread && <span className={css.unreadDot} title={WF.channelUI.hasUnread} />}
       </button>
     )
   }
@@ -412,7 +418,7 @@ export function WorkforceChannels({
         || (typeof err === 'object' && err !== null && ('code' in err && (err as { code: string }).code === 'conflict'))
         || (err instanceof Error && (err.message.includes('409') || err.message.includes('conflict') || err.message.includes('正在执行') || err.message.includes('任务')))
 
-      const hint = isConflict ? '频道里还有执行中的任务' : (err instanceof Error ? err.message : '删除频道失败')
+      const hint = isConflict ? WF.channelUI.channelHasRunningTasks : (err instanceof Error ? err.message : WF.channelUI.deleteChannelFailed)
       setDeleteChannelConfirm(prev => ({ ...prev, error: hint }))
     }
   }
@@ -428,15 +434,15 @@ export function WorkforceChannels({
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </span>
-          <span className={css.topTitle}>频道</span>
+          <span className={css.topTitle}>{WF.nav.channels}</span>
         </button>
         {!sectionCollapsed && (
           <div className={css.topActions}>
             <button
               type="button"
               className={css.iconBtn}
-              title="新建频道"
-              aria-label="新建频道"
+              title={WF.channelUI.newChannelBtn}
+              aria-label={WF.channelUI.newChannelBtn}
               onClick={() => setCreateChannelModal({ open: true })}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -447,8 +453,8 @@ export function WorkforceChannels({
             <button
               type="button"
               className={css.iconBtn}
-              title="新建分组"
-              aria-label="新建分组"
+              title={WF.channelUI.newGroupBtn}
+              aria-label={WF.channelUI.newGroupBtn}
               onClick={() => setCreateGroupModal(true)}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -464,12 +470,12 @@ export function WorkforceChannels({
       {/* 旧版本本地暂存分组迁移提示 */}
       {legacyGroupsToSync && !sectionCollapsed && (
         <div className={css.migrationBanner} role="status">
-          <span className={css.migrationText}>检测到 {legacyGroupsToSync.length} 个本地暂存的分组，是否同步到工作台？</span>
+          <span className={css.migrationText}>{WF.channelUI.legacyGroupsMigration(legacyGroupsToSync.length)}</span>
           <div className={css.migrationActions}>
             <button type="button" className={css.syncBtn} disabled={syncingLegacy} onClick={() => void handleSyncLegacyGroups()}>
-              {syncingLegacy ? '同步中…' : '同步'}
+              {syncingLegacy ? WF.channelUI.syncing : WF.channelUI.sync}
             </button>
-            <button type="button" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>忽略</button>
+            <button type="button" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>{WF.channelUI.ignore}</button>
           </div>
         </div>
       )}
@@ -479,8 +485,8 @@ export function WorkforceChannels({
         <div className={css.errorBanner} role="alert">
           <span className={css.errorMessage}>{opError.message}</span>
           <span className={css.errorActions}>
-            {opError.retry && <button type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>重试</button>}
-            <button type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label="关闭">×</button>
+            {opError.retry && <button type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</button>}
+            <button type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</button>
           </span>
         </div>
       )}
@@ -502,7 +508,7 @@ export function WorkforceChannels({
         <div className={css.groupBlock}>
           <div className={css.groupHeader} style={{ cursor: 'default' }}>
             <div className={css.groupHeaderLeft}>
-              <span className={css.groupTitle}>📌 置顶频道</span>
+              <span className={css.groupTitle}>📌 {WF.channelUI.pinnedChannels}</span>
             </div>
           </div>
           <div className={css.channelList}>
@@ -525,13 +531,13 @@ export function WorkforceChannels({
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </span>
-                <span className={css.groupTitle}>未分组</span>
+                <span className={css.groupTitle}>{WF.channelUI.ungrouped}</span>
               </div>
               <button
                 type="button"
                 className={css.groupAddBtn}
-                title="在未分组中新建频道"
-                aria-label="在未分组中新建频道"
+                title={WF.channelUI.createChannelInUngrouped}
+                aria-label={WF.channelUI.createChannelInUngrouped}
                 onClick={e => { e.stopPropagation(); setCreateChannelModal({ open: true }) }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -570,8 +576,8 @@ export function WorkforceChannels({
               <button
                 type="button"
                 className={css.groupAddBtn}
-                title={`在 ${groupDisplayName(group)} 中新建频道`}
-                aria-label={`在 ${groupDisplayName(group)} 中新建频道`}
+                title={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
+                aria-label={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
                 onClick={e => {
                   e.stopPropagation()
                   setCreateChannelModal({ open: true, defaultGroupId: group.id })
@@ -614,7 +620,7 @@ export function WorkforceChannels({
           onClose={() => setCreateChannelModal({ open: false })}
           onSubmit={async (name, groupId) => {
             setCreateChannelModal({ open: false })
-            await executeWithCatch('新建频道', async () => {
+            await executeWithCatch(WF.channelUI.createChannel, async () => {
               const createdId = onCreateChannelReq ? await onCreateChannelReq(name, groupId) : undefined
               // 创建成功立即选中，不用等下一轮轮询。
               if (createdId) onSelectChannel(createdId)
@@ -626,7 +632,7 @@ export function WorkforceChannels({
       {/* 重命名频道弹窗 */}
       {renameChannelModal.open && (
         <RenameModal
-          title="重命名频道"
+          title={WF.channelUI.renameChannelTitle}
           initialValue={renameChannelModal.currentName}
           onClose={() => setRenameChannelModal({ open: false, channelId: '', currentName: '' })}
           onSubmit={async nextName => {
@@ -643,20 +649,20 @@ export function WorkforceChannels({
       {/* 新建分组弹窗 */}
       {createGroupModal && (
         <RenameModal
-          title="新建频道分组"
+          title={WF.channelUI.newGroupModalTitle}
           initialValue=""
-          placeholder="例如：周报整理"
+          placeholder={WF.channelUI.groupPlaceholderExample}
           allowEmpty
           onClose={() => setCreateGroupModal(false)}
           onSubmit={async name => {
             const trimmed = name.trim()
             if (onCreateGroupReq) {
-              await executeWithCatch('新建分组', async () => {
+              await executeWithCatch(WF.channelUI.newGroup, async () => {
                 await onCreateGroupReq(trimmed)
                 setCreateGroupModal(false)
               })
             } else {
-              setOpError({ message: '分组功能需要宿主支持，当前环境不可用' })
+              setOpError({ message: WF.channelUI.groupFeatureUnavailable })
               setCreateGroupModal(false)
             }
           }}
@@ -666,19 +672,19 @@ export function WorkforceChannels({
       {/* 重命名分组弹窗 */}
       {renameGroupModal.open && (
         <RenameModal
-          title="重命名分组"
+          title={WF.channelUI.renameGroupTitle}
           initialValue={renameGroupModal.currentName}
-          placeholder="留空显示「未命名分组」"
+          placeholder={WF.channelUI.renameGroupPlaceholder}
           allowEmpty
           onClose={() => setRenameGroupModal({ open: false, groupId: '', currentName: '' })}
           onSubmit={async nextName => {
             if (onRenameGroupReq) {
-              await executeWithCatch('重命名分组', async () => {
+              await executeWithCatch(WF.channelUI.renameGroup, async () => {
                 await onRenameGroupReq(renameGroupModal.groupId, nextName)
                 setRenameGroupModal({ open: false, groupId: '', currentName: '' })
               })
             } else {
-              setOpError({ message: '分组功能需要宿主支持，当前环境不可用' })
+              setOpError({ message: WF.channelUI.groupFeatureUnavailable })
               setRenameGroupModal({ open: false, groupId: '', currentName: '' })
             }
           }}
@@ -688,9 +694,9 @@ export function WorkforceChannels({
       {/* 删除频道二次确认 */}
       {deleteChannelConfirm.open && (
         <ConfirmDialog
-          title="删除频道"
-          message={`确定要删除频道「${deleteChannelConfirm.channelName}」吗？删除后该频道下的任务历史不可恢复。`}
-          confirmLabel="确认删除"
+          title={WF.channelUI.deleteChannelTitle}
+          message={WF.channelUI.deleteChannelConfirm(deleteChannelConfirm.channelName)}
+          confirmLabel={WF.channelUI.deleteChannelTitle}
           danger
           error={deleteChannelConfirm.error}
           onCancel={() => setDeleteChannelConfirm({ open: false, channelId: '', channelName: '', error: undefined })}
@@ -727,38 +733,38 @@ function CreateChannelModal({
   return (
     <div className={css.dialogBackdrop} onClick={onClose}>
       <div className={css.dialogCard} role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3 className={css.dialogTitle}>创建新频道</h3>
+        <h3 className={css.dialogTitle}>{WF.channelUI.createChannel}</h3>
         <form className={css.dialogForm} onSubmit={handleSubmit}>
           <div className={css.formItem}>
-            <label className={css.formLabel} htmlFor="new-channel-name">频道名称</label>
+            <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
             <input
               id="new-channel-name"
               type="text"
               className={css.inputField}
               value={name}
-              placeholder="例如：文案创作"
+              placeholder={WF.channelUI.channelNameExamplePlaceholder}
               maxLength={30}
               autoFocus
               onChange={e => setName(e.target.value)}
             />
           </div>
           <div className={css.formItem}>
-            <label className={css.formLabel} htmlFor="channel-group-select">归属分组</label>
+            <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
             <select
               id="channel-group-select"
               className={css.selectField}
               value={groupId}
               onChange={e => setGroupId(e.target.value)}
             >
-              <option value="">未分组</option>
+              <option value="">{WF.channelUI.ungrouped}</option>
               {groups.map(g => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
           </div>
           <div className={css.dialogFooter}>
-            <button type="button" className={css.cancelBtn} onClick={onClose}>取消</button>
-            <button type="submit" className={css.submitBtn} disabled={!name.trim()}>确认创建</button>
+            <button type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
+            <button type="submit" className={css.submitBtn} disabled={!name.trim()}>{WF.common.confirm}</button>
           </div>
         </form>
       </div>
@@ -808,15 +814,15 @@ function RenameModal({
               type="text"
               className={css.inputField}
               value={val}
-              placeholder={placeholder || '请输入名称'}
+              placeholder={placeholder || WF.channelUI.defaultNamePlaceholder}
               maxLength={30}
               autoFocus
               onChange={e => setVal(e.target.value)}
             />
           </div>
           <div className={css.dialogFooter}>
-            <button type="button" className={css.cancelBtn} onClick={onClose}>取消</button>
-            <button type="submit" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>确认</button>
+            <button type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
+            <button type="submit" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>{WF.common.confirm}</button>
           </div>
         </form>
       </div>

@@ -3,8 +3,8 @@ import { Handle, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
 import type { TurnNodeData } from './workforce-canvas-data.ts'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-canvas.module.css'
-
 export const TurnCanvasNode = memo(function TurnCanvasNode({
   data,
   selected,
@@ -39,7 +39,7 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
 
   const copyId = (text: string, label: string) => {
     void navigator.clipboard.writeText(text)
-    setCopiedText(`${label} 已复制`)
+    setCopiedText(`${label} ${WF.common.copied}`)
     setMenuOpen(false)
     window.setTimeout(() => setCopiedText(null), 2000)
   }
@@ -57,14 +57,14 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
 
       <div className={css.turnHeader}>
         <span className={css.channelTag}>{channelTitle}</span>
-        {status === 'running' && <span className={`${css.statusBadge} ${css.statusRunning}`}>执行中</span>}
-        {status === 'done' && <span className={`${css.statusBadge} ${css.statusDone}`}>已完成</span>}
-        {status === 'failed' && <span className={`${css.statusBadge} ${css.statusFailed}`}>失败</span>}
+        {status === 'running' && <span className={`${css.statusBadge} ${css.statusRunning}`}>{WF.common.running}</span>}
+        {status === 'done' && <span className={`${css.statusBadge} ${css.statusDone}`}>{WF.common.done}</span>}
+        {status === 'failed' && <span className={`${css.statusBadge} ${css.statusFailed}`}>{WF.common.failed}</span>}
         <div className={css.moreMenuWrap}>
           <button
             type="button"
             className={css.nodeMoreBtn}
-            title="更多操作"
+            title={WF.common.moreOptions}
             onClick={e => {
               e.stopPropagation()
               setMenuOpen(o => !o)
@@ -77,14 +77,14 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
               className={css.nodeDropdownMenu}
               onClick={e => e.stopPropagation()}
             >
-              <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.threadId, '会话 ID')}>
+              <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.threadId, WF.canvas.threadId)}>
                 <span>📋</span>
-                <span>复制会话 ID ({data.threadId.slice(0, 8)}…)</span>
+                <span>{WF.canvas.copyThreadId(data.threadId.slice(0, 8))}</span>
               </button>
               {data.taskId && (
-                <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.taskId!, '任务 ID')}>
+                <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.taskId!, WF.canvas.taskId)}>
                   <span>📋</span>
-                  <span>复制任务 ID ({data.taskId!.slice(0, 8)}…)</span>
+                  <span>{WF.canvas.copyTaskId(data.taskId!.slice(0, 8))}</span>
                 </button>
               )}
             </div>
@@ -94,7 +94,7 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
 
       <div className={css.promptRow}>
         <div className={css.userBubble}>
-          <span className={css.userPrefix}>{senderName}:</span>
+          <span className={css.userPrefix}>{(!senderName || senderName === '你' || senderName === 'You') ? WF.canvas.userPrefix : `${senderName}:`}</span>
           <span className={css.promptContent}>{promptText}</span>
         </div>
       </div>
@@ -103,7 +103,7 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
         <div className={css.replyRow}>
           <div className={css.agentAvatarWrap}>
             <WorkforceAvatar
-              name={agentName || '员工'}
+              name={agentName || WF.common.employee}
               role={agentRole}
               color={agentAvatarColor}
               size={28}
@@ -121,12 +121,12 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
       <div className={css.turnFooter}>
         {toolsCount > 0 && (
           <span className={css.toolBadge}>
-            🛠️ {toolsCount} 工具
+            {WF.canvas.toolsCount(toolsCount)}
           </span>
         )}
         {usage && (
-          <span className={css.cacheBadge} title={`输入: ${totalIn} (缓存: ${cached}) · 输出: ${usage.outputTokens}`}>
-            {hitRate > 0 ? `⚡ 缓存 ${hitRate}%` : `入 ${formatK(totalIn)}`}
+          <span className={css.cacheBadge} title={WF.canvas.cacheTitle(totalIn, cached, usage.outputTokens)}>
+            {WF.canvas.cacheBadge(hitRate, formatK(totalIn))}
           </span>
         )}
       </div>

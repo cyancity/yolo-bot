@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const KEY = 'workforce.preferences'
-const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, avatarStyle: 'terminal', typingEffect: 'hash', showTokenStats: true }
+const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, avatarStyle: 'circle', typingEffect: 'hash', showTokenStats: false }
 let backing: Map<string, string>
 let storage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void; removeItem: (k: string) => void; clear: () => void }
 

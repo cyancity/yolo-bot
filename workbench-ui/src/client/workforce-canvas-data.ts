@@ -1,6 +1,8 @@
 import dagre from 'dagre'
 import type { Node, Edge } from '@xyflow/react'
 import type { WorkforceSnapshot, WorkforceMessage, Employee, WorkforceUsage } from './workforce-types.ts'
+import { WF } from './workforce-strings.ts'
+import { stripMarkdown } from './workforce-strip-markdown.ts'
 
 export interface TurnNodeData extends Record<string, unknown> {
   readonly id: string
@@ -117,9 +119,9 @@ export function buildConversationGraph(snapshot: WorkforceSnapshot): {
           channelId: thread.channelId,
           channelTitle,
           taskId: task?.id,
-          promptText: currentPrompt || (latestAgent ? '任务启动' : '消息'),
-          replySnippet: latestAgent ? latestAgent.text.slice(0, 120) : '',
-          senderName: '你',
+          promptText: stripMarkdown(currentPrompt) || (latestAgent ? '任务启动' : '消息'),
+          replySnippet: latestAgent ? stripMarkdown(latestAgent.text).slice(0, 120) : '',
+          senderName: WF.common.you,
           agentName: emp?.name ?? latestAgent?.senderName,
           agentRole: emp?.role,
           agentAvatarColor: emp?.avatarColor,
@@ -202,18 +204,26 @@ export function computeAutoLayout(
   const g = new dagre.graphlib.Graph()
   g.setGraph({
     rankdir,
-    nodesep: 40,
+    nodesep: 60,
     ranksep: 100,
     marginx: 50,
     marginy: 50,
   })
   g.setDefaultEdgeLabel(() => ({}))
 
-  const nodeWidth = 320
-  const nodeHeight = 150
+  const defaultNodeWidth = 320
+  const defaultNodeHeight = 260
+
+  const nodeHeightMap = new Map<string, number>()
+  const nodeWidthMap = new Map<string, number>()
 
   for (const node of nodes) {
-    g.setNode(node.id, { width: nodeWidth, height: nodeHeight })
+    const measured = (node as unknown as { measured?: { width?: number; height?: number } }).measured
+    const w = measured?.width && measured.width > 0 ? measured.width : defaultNodeWidth
+    const h = measured?.height && measured.height > 0 ? measured.height : defaultNodeHeight
+    nodeWidthMap.set(node.id, w)
+    nodeHeightMap.set(node.id, h)
+    g.setNode(node.id, { width: w, height: h })
   }
 
   for (const edge of edges) {
@@ -226,10 +236,12 @@ export function computeAutoLayout(
 
   const result = nodes.map(node => {
     const pos = g.node(node.id)
+    const w = nodeWidthMap.get(node.id) ?? defaultNodeWidth
+    const h = nodeHeightMap.get(node.id) ?? defaultNodeHeight
     const position = pos
       ? {
-          x: Math.round(pos.x - nodeWidth / 2),
-          y: Math.round(pos.y - nodeHeight / 2),
+          x: Math.round(pos.x - w / 2),
+          y: Math.round(pos.y - h / 2),
         }
       : node.position
     updatedPositions[node.id] = position
@@ -251,6 +263,38 @@ export function computeAutoLayout(
       if (parentNode && childNode) {
         childNode.position.y = parentNode.position.y
         updatedPositions[childNode.id] = childNode.position
+      }
+    }
+  }
+
+  // Ensure minimum vertical separation (>= 24px) between nodes in the same column
+  const columns = new Map<number, typeof result>()
+  for (const node of result) {
+    let placed = false
+    for (const [colX, colNodes] of columns.entries()) {
+      if (Math.abs(node.position.x - colX) <= 80) {
+        colNodes.push(node)
+        placed = true
+        break
+      }
+    }
+    if (!placed) {
+      columns.set(node.position.x, [node])
+    }
+  }
+
+  for (const colNodes of columns.values()) {
+    colNodes.sort((a, b) => a.position.y - b.position.y)
+    for (let i = 1; i < colNodes.length; i++) {
+      const prev = colNodes[i - 1]
+      const curr = colNodes[i]
+      if (!prev || !curr) continue
+      const prevH = nodeHeightMap.get(prev.id) ?? defaultNodeHeight
+      const minDistance = 24
+      const expectedMinY = prev.position.y + prevH + minDistance
+      if (curr.position.y < expectedMinY) {
+        curr.position.y = Math.round(expectedMinY)
+        updatedPositions[curr.id] = curr.position
       }
     }
   }

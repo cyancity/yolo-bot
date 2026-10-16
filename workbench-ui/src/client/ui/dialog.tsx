@@ -10,6 +10,7 @@ import css from './dialog.module.css'
 import { Button } from './button.tsx'
 import { IconButton } from './icon-button.tsx'
 import { Icon } from './icons.tsx'
+import { WF } from '../workforce-strings.ts'
 
 export interface DialogAction {
   readonly id: string
@@ -112,7 +113,7 @@ export function Dialog({ open, onOpenChange, onClose, closeLabel, title, descrip
       <div className={css.head}>
         <h2 className={css.title} id={titleId}>{title}</h2>
         <IconButton
-          label={closeLabel ?? '关闭'}
+          label={closeLabel ?? WF.common.close}
           icon={<Icon name="close" />}
           size="sm"
           data-dialog-close

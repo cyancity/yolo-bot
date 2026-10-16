@@ -6,6 +6,7 @@
  */
 import { createContext, useContext, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { useResolvedScheme, useWorkforcePrefs, type ResolvedScheme, type WorkforceStyle } from '../workforce-prefs.ts'
+import { useLocale, type Locale } from '../i18n.ts'
 import tokens from './tokens.module.css'
 
 export const tokenRootClass: string = tokens.root ?? ''
@@ -28,12 +29,14 @@ export function useOverlayTarget(): HTMLElement | null {
 export interface SurfaceSnapshot {
   readonly style: WorkforceStyle
   readonly resolvedScheme: ResolvedScheme
+  readonly locale: Locale
 }
 
 export function useSurfaceSnapshot(): SurfaceSnapshot {
   const [prefs] = useWorkforcePrefs()
   const resolvedScheme = useResolvedScheme(prefs.scheme)
-  return { style: prefs.style, resolvedScheme }
+  const locale = useLocale()
+  return { style: prefs.style, resolvedScheme, locale }
 }
 
 export interface WorkbenchSurfaceProps extends HTMLAttributes<HTMLElement> {
@@ -42,7 +45,7 @@ export interface WorkbenchSurfaceProps extends HTMLAttributes<HTMLElement> {
 
 /** 带 token 与 overlay 容器的插件根；页面根在外层另加语义/布局类名。 */
 export function WorkbenchSurface({ children, className, style: inlineStyle, ...rest }: WorkbenchSurfaceProps) {
-  const { style, resolvedScheme } = useSurfaceSnapshot()
+  const { style, resolvedScheme, locale } = useSurfaceSnapshot()
   const [overlayRoot, setOverlayRoot] = useState<HTMLElement | null>(null)
   return (
     <section
@@ -51,6 +54,8 @@ export function WorkbenchSurface({ children, className, style: inlineStyle, ...r
       data-wb-root
       data-wb-style={style}
       data-wb-scheme={resolvedScheme}
+      data-wb-locale={locale}
+      lang={locale === 'zh' ? 'zh-CN' : 'en'}
       style={{ colorScheme: resolvedScheme, ...inlineStyle }}
     >
       <OverlayRootContext.Provider value={overlayRoot}>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { cx, Dialog } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
+import { getLocale } from './i18n.ts'
 import { DEFAULT_CHANNEL, type WorkbenchView } from './nav.ts'
 import type { Employee, EmployeeInput, McpServer, McpServerInput, SkillSummary, WorkforceSnapshot, WorkforceTemplate, WorkforceUserSkill } from './workforce-types.ts'
 import type { WorkforceSource } from './workforce-source.ts'
@@ -97,7 +98,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   }
 
   const save = async (): Promise<void> => {
-    if (name.trim() === '') { setError('名字不能为空'); return }
+    if (name.trim() === '') { setError(WF.workspace.nameRequired); return }
     const input: EmployeeInput = {
       name: name.trim(),
       title: title.trim(),
@@ -113,10 +114,10 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     try {
       if (selectedId === 'new') {
         await source.createEmployee(input)
-        setNotice(`员工「${input.name}」创建成功`)
+        setNotice(WF.workspace.createdSuccess(input.name))
       } else if (currentEmployee !== 'new' && currentEmployee !== undefined) {
         await source.updateEmployee(currentEmployee.id, input)
-        setNotice(`员工「${input.name}」配置已保存`)
+        setNotice(WF.workspace.savedSuccess(input.name))
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -150,20 +151,20 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
         {/* 左侧：员工列表 + MCP + 模板 */}
         <div className={css.empSidebarList}>
           <div className={css.empSidebarHead}>
-            <span className={css.empSidebarTitle}>员工列表 ({snapshot.employees.length})</span>
+            <span className={css.empSidebarTitle}>{WF.workspace.employeeListTitle(snapshot.employees.length)}</span>
             <button
               type="button"
               className={css.empBtnAdd}
               style={{ padding: '3px 10px', fontSize: 12 }}
               onClick={() => selectEmployee('new')}
             >
-              ＋ 新建
+              ＋ {WF.employeesPage.add}
             </button>
           </div>
           {selectedId === 'new' && (
             <div className={css.empCompactCard} data-selected="true">
               <WorkforceAvatar
-                name={name.trim() || '新员工'}
+                name={name.trim() || WF.workspace.newEmployee}
                 isUser={false}
                 color={avatarColor || undefined}
                 live={false}
@@ -171,10 +172,10 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               />
               <div className={css.empCompactCardBody}>
                 <div className={css.empCompactCardName}>
-                  {name.trim() || '新建员工'}
+                  {name.trim() || WF.workspace.creatingEmployee}
                   {lead && <span className={css.msgLead}>{WF.employee.lead}</span>}
                 </div>
-                <div className={css.empCompactCardTitle}>{title.trim() || '正在创建…'}</div>
+                <div className={css.empCompactCardTitle}>{title.trim() || WF.workspace.creatingEllipsis}</div>
               </div>
             </div>
           )}
@@ -200,7 +201,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     {employee.name}
                     {employee.isLeader && <span className={css.msgLead}>{WF.employee.lead}</span>}
                   </div>
-                  <div className={css.empCompactCardTitle}>{employee.title || employee.persona || '无职责说明'}</div>
+                  <div className={css.empCompactCardTitle}>{employee.title || employee.persona || WF.workspace.noRoleDescription}</div>
                 </div>
               </div>
             )
@@ -220,7 +221,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               onToggle={async (id, enabled) => { await source.patchTemplate(id, enabled); setResourcesVersion(v => v + 1) }}
               onApply={async id => {
                 const result = await source.applyTemplate(id)
-                setNotice(`已创建 ${result.created.length} 名员工${result.skipped.length > 0 ? `，跳过同名 ${result.skipped.length} 名` : ''}`)
+                setNotice(WF.workspace.templateApplyNotice(result.created.length, result.skipped.length))
                 setResourcesVersion(v => v + 1)
               }}
             />
@@ -231,7 +232,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
         <div className={css.empMainForm}>
           <div className={css.empFormHeader}>
             <h3 className={css.empFormTitle}>
-              {selectedId === 'new' ? '新建数字员工' : `编辑员工：${name || (currentEmployee !== 'new' && currentEmployee !== undefined ? currentEmployee.name : '')}`}
+              {selectedId === 'new' ? WF.workspace.newDigitalEmployee : WF.workspace.editEmployeePrefix(name || (currentEmployee !== 'new' && currentEmployee !== undefined ? currentEmployee.name : ''))}
             </h3>
           </div>
 
@@ -250,12 +251,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
           <div className={css.empForm} data-workforce-employee-form>
             {/* Card 1: 基础档案与头像 */}
             <div className={css.empCardSection}>
-              <h4 className={css.empCardSectionTitle}>基础档案与头像</h4>
+              <h4 className={css.empCardSectionTitle}>{WF.workspace.profileSectionTitle}</h4>
               <div className={css.empField}>
                 <label>{WF.employeesPage.avatarColor}</label>
                 <div className={css.avatarColorPicker}>
                   <WorkforceAvatar
-                    name={name.trim() || '员工'}
+                    name={name.trim() || WF.common.employee}
                     isUser={false}
                     color={avatarColor || undefined}
                     live={false}
@@ -266,7 +267,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       type="button"
                       className={`${css.colorDefaultBtn} ${avatarColor === '' ? css.colorDefaultBtnActive : ''}`}
                       onClick={() => setAvatarColor('')}
-                      title="默认配色（根据员工角色或姓名自动分配）"
+                      title={WF.workspace.defaultColorTooltip}
                     >
                       {WF.employeesPage.avatarColorDefault}
                     </button>
@@ -282,7 +283,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                           onClick={() => setAvatarColor(`palette:${palette.id}`)}
                         >
                           <WorkforceAvatar
-                            name={name.trim() || '员工'}
+                            name={name.trim() || WF.common.employee}
                             isUser={false}
                             palette={palette.id}
                             live={false}
@@ -301,7 +302,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                         aria-label={WF.employeesPage.avatarColorCustom}
                       />
                       <span className={css.colorCustomLabel}>
-                        {avatarColor.startsWith('#') ? avatarColor.toUpperCase() : '自定义'}
+                        {avatarColor.startsWith('#') ? avatarColor.toUpperCase() : WF.workspace.customColor}
                       </span>
                     </label>
                   </div>
@@ -315,12 +316,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                 </div>
                 <div className={css.empField}>
                   <label htmlFor="wf-emp-title">{WF.employeesPage.role}</label>
-                  <input id="wf-emp-title" className={cx('wb-input', css.empInput)} value={title} onChange={e => setTitle(e.target.value)} placeholder="负责人 / 分析员 / 文案员…" />
+                  <input id="wf-emp-title" className={cx('wb-input', css.empInput)} value={title} onChange={e => setTitle(e.target.value)} placeholder={WF.workspace.rolePlaceholder} />
                 </div>
               </div>
 
               <div className={css.empField}>
-                <label htmlFor="wf-emp-persona">职责说明</label>
+                <label htmlFor="wf-emp-persona">{WF.workspace.roleDescription}</label>
                 <textarea id="wf-emp-persona" rows={2} value={persona} onChange={e => setPersona(e.target.value)} />
               </div>
 
@@ -334,7 +335,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
 
             {/* Card 2: 核心能力与模型 */}
             <div className={css.empCardSection}>
-              <h4 className={css.empCardSectionTitle}>核心能力与模型</h4>
+              <h4 className={css.empCardSectionTitle}>{WF.workspace.coreCapabilitiesSection}</h4>
               <div className={css.empField}>
                 <label htmlFor="wf-emp-model">{WF.employeesPage.model}</label>
                 <select
@@ -351,7 +352,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     )}
                   </option>
                   {model && !selectableModels.some(m => m.value === model) && (
-                    <option value={model}>{model} (当前)</option>
+                    <option value={model}>{model} ({WF.workspace.currentTag})</option>
                   )}
                   {modelsState.providers.map(provider => (
                     <optgroup key={provider.id} label={provider.displayName}>
@@ -368,10 +369,10 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
 
               {/* 技能配置：Chip 标签墙与自定义添加，绝不截断 */}
               <div className={css.empField}>
-                <label>技能配置 (已选 {skills.length})</label>
+                <label>{WF.workspace.skillsConfigLabel(skills.length)}</label>
                 <div className={css.skillChipsContainer}>
                   {skills.length === 0 ? (
-                    <span className={css.skillEmptyHint}>暂未配置专属技能，可从下方技能库点选或手动输入添加</span>
+                    <span className={css.skillEmptyHint}>{WF.workspace.noSkillsConfiguredHint}</span>
                   ) : (
                     skills.map(skillName => (
                       <span key={skillName} className={css.skillChipSelected}>
@@ -380,8 +381,8 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                         <button
                           type="button"
                           className={css.skillChipRemove}
-                          title={`移除 ${skillName}`}
-                          aria-label={`移除 ${skillName}`}
+                          title={WF.workspace.removeSkill(skillName)}
+                          aria-label={WF.workspace.removeSkill(skillName)}
                           onClick={() => removeSkill(skillName)}
                         >
                           ×
@@ -394,7 +395,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                   <input
                     type="text"
                     className={cx('wb-input', css.customSkillInput)}
-                    placeholder="输入自定义技能名后按 Enter 添加…"
+                    placeholder={WF.workspace.customSkillPlaceholder}
                     value={customSkillInput}
                     onChange={e => setCustomSkillInput(e.target.value)}
                     onKeyDown={e => {
@@ -414,12 +415,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       setCustomSkillInput('')
                     }}
                   >
-                    添加
+                    {WF.workspace.addBtn}
                   </button>
                 </div>
                 {(catalogSkills ?? []).length + (userSkills ?? []).length > 0 && (
                   <div className={css.skillLibraryWrap}>
-                    <span className={css.skillLibraryTitle}>从系统/用户技能库点选添加：</span>
+                    <span className={css.skillLibraryTitle}>{WF.workspace.skillLibraryTitle}</span>
                     <div className={css.skillPickList} aria-label={WF.employeesPage.skillPickerLabel}>
                       {(catalogSkills ?? []).map(skill => {
                         const isAdded = skills.includes(skill.name)
@@ -460,7 +461,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               <div className={css.empField}>
                 <label className={css.empCheckboxLabel}>
                   <input type="checkbox" checked={mcpLimited} onChange={e => setMcpLimited(e.target.checked)} />
-                  限定可用 MCP 服务器（高级）
+                  {WF.workspace.limitMcpServersLabel}
                 </label>
                 {mcpLimited && (
                   <div className={css.empFieldRow}>
@@ -471,21 +472,21 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                           checked={mcpIds.includes(server.id)}
                           onChange={e => setMcpIds(e.target.checked ? [...mcpIds, server.id] : mcpIds.filter(id => id !== server.id))}
                         />
-                        {server.label}（{server.transport === 'stdio' ? '本地命令' : 'HTTP'}）
+                        {server.label}（{server.transport === 'stdio' ? WF.workspace.localCommand : 'HTTP'}）
                       </label>
                     ))}
-                    {mcpServers !== undefined && mcpServers.length === 0 && <span className={css.empModelHint}>暂无已配置服务器，在左侧「MCP 服务器」添加</span>}
+                    {mcpServers !== undefined && mcpServers.length === 0 && <span className={css.empModelHint}>{WF.workspace.noMcpServersConfigured}</span>}
                   </div>
                 )}
-                <span className={css.empModelHint}>不勾选时该员工可用全部已启用服务器；改动在该员工下次会话生效。</span>
+                <span className={css.empModelHint}>{WF.workspace.mcpServersUncheckedHint}</span>
               </div>
             </div>
 
             {/* Card 3: 长期记忆交代 */}
             <div className={css.empCardSection}>
-              <h4 className={css.empCardSectionTitle}>对 TA 的交代（长期记忆）</h4>
+              <h4 className={css.empCardSectionTitle}>{WF.workspace.instructionsTitle}</h4>
               {selectedId === 'new' ? (
-                <p className={css.empModelHint}>先保存员工，再添加长期交代。</p>
+                <p className={css.empModelHint}>{WF.workspace.saveFirstHint}</p>
               ) : (
                 <WorkforceMemoryEditor
                   key={selectedId}
@@ -505,10 +506,10 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     type="button"
                     className={css.empBtnDelete}
                     disabled
-                    title="负责人为工作台核心角色，默认无法删除"
+                    title={WF.workspace.leadCannotDeleteTooltip}
                     style={{ opacity: 0.4, cursor: 'not-allowed' }}
                   >
-                    删除员工
+                    {WF.workspace.deleteEmployeeBtn}
                   </button>
                 ) : (
                   <button
@@ -525,7 +526,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                 className={css.empBtnCancel}
                 onClick={() => selectEmployee(currentEmployee)}
               >
-                取消修改
+                {WF.workspace.cancelChanges}
               </button>
               <button
                 type="button"
@@ -533,7 +534,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                 disabled={busy}
                 onClick={() => void save()}
               >
-                {busy ? '保存中…' : WF.employeesPage.save}
+                {busy ? WF.workspace.saving : WF.employeesPage.save}
               </button>
               {error !== undefined && <span className={css.empFormError} role="alert">{error}</span>}
             </div>
@@ -543,7 +544,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
         {deleting !== undefined && (
           <Dialog title={WF.employeesPage.deleteTitle} closeLabel={WF.employeesPage.cancel} onClose={() => setDeleting(undefined)} busy={busy}>
             <p className={css.empDeletePrompt}>
-              确定要删除数字员工「<strong>{deleting.name}</strong>」（{deleting.title || '无头衔'}）吗？删除后此员工绑定的任务和历史数据将解除关联，此操作不可撤销。
+              {WF.workspace.deleteEmployeeConfirm(deleting.name, deleting.title || WF.workspace.noTitle)}
             </p>
             {error && <p className={css.empFormError} role="alert">{error}</p>}
             <div className={css.empFormActions} style={{ marginTop: 16 }}>
@@ -582,7 +583,7 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
   }, [view.kind, 'id' in view ? view.id : ''])
   const openMemorySource: MemorySourceNavigation = (threadId, messageId) => {
     const thread = snapshot.threads.find(item => item.id === threadId)
-    if (!thread) throw new Error('来源会话尚未加载，请刷新后重试。')
+    if (!thread) throw new Error(WF.workspace.sourceSessionNotLoaded)
     if (thread.kind === 'dm' && thread.employeeId) {
       pendingMemorySource.current = { threadId, messageId }
       if (view.kind === 'dm' && view.id === thread.employeeId) { setSourceMessageId(messageId); pendingMemorySource.current = undefined }
@@ -590,7 +591,7 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
     } else if (thread.channelId) {
       if (view.kind === 'channel' && view.id === thread.channelId) { setOpenThreadId(threadId); setSourceMessageId(messageId) }
       else { pendingMemorySource.current = { threadId, messageId }; setView({ kind: 'channel', id: thread.channelId }) }
-    } else throw new Error('来源会话没有频道或员工归属。')
+    } else throw new Error(WF.workspace.sourceSessionNoOwner)
   }
 
   // home = 默认频道。
@@ -664,22 +665,22 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
       <div className={css.employeeSurface} data-wb-style={prefs.style}>
         <div className={css.streamHead} data-section="stream-head">
           <div className={css.streamHeadRow}>
-            <button type="button" className={css.navigationToggle} aria-label="展开频道导航" onClick={onNavigation}>
+            <button type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <line x1="4" y1="6" x2="20" y2="6"/>
                 <line x1="4" y1="12" x2="20" y2="12"/>
                 <line x1="4" y1="18" x2="20" y2="18"/>
               </svg>
             </button>
-            <h2 className={css.streamTitle}>数字员工</h2>
+            <h2 className={css.streamTitle}>{WF.brand}</h2>
             <span className={css.streamHeadDivider} aria-hidden="true" />
-            <span className={css.streamDesc}>管理工作台的数字员工与技能配置</span>
+            <span className={css.streamDesc}>{WF.employeesPage.intro}</span>
             <div className={css.streamSettingsWrap}>
               <button
                 type="button"
                 className={css.streamHeadActionBtn}
-                title="模型设置"
-                aria-label="模型设置"
+                title={WF.models.title}
+                aria-label={WF.models.title}
                 onClick={() => source.models.open()}
               >
                 <Icon name="settings" width={18} height={18} />
@@ -743,8 +744,8 @@ function TemplatesSection({ templates, onToggle, onApply }: {
   }
   return (
     <div className={css.empForm} data-workforce-templates>
-      <h2 className={css.empTitle}>员工预设</h2>
-      <p className={css.empIntro}>模板提供者管理预设及技能来源；「应用员工配置」按预设批量创建员工（不覆盖同名）。</p>
+      <h2 className={css.empTitle}>{WF.workspace.employeePresetsTitle}</h2>
+      <p className={css.empIntro}>{WF.workspace.employeePresetsIntro}</p>
       {error !== undefined && <div className={css.empFormError} role="alert">{error}</div>}
       {templates.map(template => (
         <div key={template.id} className={css.empCard}>
@@ -752,14 +753,14 @@ function TemplatesSection({ templates, onToggle, onApply }: {
             <div className={css.empCardName}>{template.label}</div>
             <div className={css.empCardRole}>{template.description}</div>
             <div className={css.empCardMeta}>
-              <span className={css.empModelHint}>{template.skills.length} 个 skill · {template.employees.length} 个员工配置</span>
+              <span className={css.empModelHint}>{WF.workspace.templateStats(template.skills.length, template.employees.length)}</span>
             </div>
           </div>
           <div className={css.empCardActions}>
             <label className={css.empAction}>
-              <input type="checkbox" checked={template.enabled} disabled={busy === template.id} onChange={e => void run(template.id, () => onToggle(template.id, e.target.checked))} /> 启用
+              <input type="checkbox" checked={template.enabled} disabled={busy === template.id} onChange={e => void run(template.id, () => onToggle(template.id, e.target.checked))} /> {WF.workspace.enable}
             </label>
-            <button type="button" className={css.empAction} disabled={busy === template.id} onClick={() => void run(template.id, () => onApply(template.id))}>应用员工配置</button>
+            <button type="button" className={css.empAction} disabled={busy === template.id} onClick={() => void run(template.id, () => onApply(template.id))}>{WF.workspace.applyTemplateBtn}</button>
           </div>
         </div>
       ))}
@@ -777,7 +778,7 @@ function parsePairs(text: string): Record<string, { kind: 'literal'; value: stri
     const trimmed = line.trim()
     if (trimmed === '') continue
     const eq = trimmed.indexOf('=')
-    if (eq <= 0) throw new Error(`行「${trimmed}」缺少 KEY=`)
+    if (eq <= 0) throw new Error(getLocale() === 'en' ? `Line "${trimmed}" is missing KEY=` : `行「${trimmed}」缺少 KEY=`)
     const key = trimmed.slice(0, eq).trim()
     const value = trimmed.slice(eq + 1).trim()
     out[key] = value.startsWith('@') ? { kind: 'credential', ref: value.slice(1) } : { kind: 'literal', value }
@@ -819,8 +820,8 @@ function McpServersSection({ servers, employees, source, onSaved }: {
   }
 
   const save = async (): Promise<void> => {
-    if (serverName.trim() === '' || label.trim() === '') { setError('服务器名与显示名不能为空'); return }
-    if (!/^[A-Za-z0-9_-]{1,32}$/.test(serverName.trim())) { setError('服务器名只能包含字母、数字、下划线与连字符（≤32）'); return }
+    if (serverName.trim() === '' || label.trim() === '') { setError(WF.workspace.mcpServerNameRequired); return }
+    if (!/^[A-Za-z0-9_-]{1,32}$/.test(serverName.trim())) { setError(WF.workspace.mcpServerNameFormat); return }
     let env: ReturnType<typeof parsePairs>, headers: ReturnType<typeof parsePairs>
     try { env = parsePairs(envText); headers = parsePairs(headersText) } catch (e) { setError(e instanceof Error ? e.message : String(e)); return }
     const input: McpServerInput = {
@@ -843,33 +844,33 @@ function McpServersSection({ servers, employees, source, onSaved }: {
   return (
     <div className={css.empForm} data-workforce-mcp-servers>
       <div className={css.empHead}>
-        <h2 className={css.empTitle}>MCP 服务器</h2>
-        <button type="button" className={css.listAdd} onClick={() => beginEdit('new')}>＋ 添加服务器</button>
+        <h2 className={css.empTitle}>{WF.workspace.mcpServersTitle}</h2>
+        <button type="button" className={css.listAdd} onClick={() => beginEdit('new')}>＋ {WF.workspace.addServer}</button>
       </div>
-      <p className={css.empIntro}>服务器在对应员工的会话里启动（scoped 挂载）；密码与密钥填凭据引用名（@NAME），不落盘。改动在员工下次会话生效。</p>
-      {servers !== undefined && servers.length === 0 && editing === undefined && <p className={css.empIntro}>尚未配置服务器。员工默认可用全部已启用服务器。</p>}
+      <p className={css.empIntro}>{WF.workspace.mcpServersIntro}</p>
+      {servers !== undefined && servers.length === 0 && editing === undefined && <p className={css.empIntro}>{WF.workspace.mcpNoServersHint}</p>}
       {(servers ?? []).map(server => (
         <div key={server.id} className={css.empCard}>
           <div className={css.empCardBody}>
             <div className={css.empCardName}>
               {server.label}
-              {!server.enabled && <span className={css.msgLead}>已停用</span>}
+              {!server.enabled && <span className={css.msgLead}>{WF.skillDrafts.statusDisabled}</span>}
             </div>
             <div className={css.empCardRole}>
-              {server.transport === 'stdio' ? `本地命令 ${server.command} ${(server.args ?? []).join(' ')}` : `HTTP ${server.url}`}
+              {server.transport === 'stdio' ? `${WF.workspace.localCommand} ${server.command} ${(server.args ?? []).join(' ')}` : `HTTP ${server.url}`}
               {` · mcp__${server.serverName}__*`}
             </div>
             <div className={css.empCardMeta}>
-              <span className={css.empModelHint}>{assigned(server).length} 名员工可用</span>
+              <span className={css.empModelHint}>{WF.workspace.assignedEmployeesCount(assigned(server).length)}</span>
               {server.status?.credentials.map(cred => (
-                <span key={cred.key} className={css.empModelHint}>{cred.key}→@{cred.ref} {cred.configured ? '已配置' : '未配置'}</span>
+                <span key={cred.key} className={css.empModelHint}>{cred.key}→@{cred.ref} {cred.configured ? WF.models.configured : WF.models.notConfigured}</span>
               ))}
               {server.status?.errors.map((message, index) => <span key={index} className={css.empFormError}>{message}</span>)}
-              {server.status !== undefined && !server.status.available && <span className={css.empModelHint}>MCP 客户端不可用</span>}
+              {server.status !== undefined && !server.status.available && <span className={css.empModelHint}>{WF.workspace.mcpClientUnavailable}</span>}
             </div>
           </div>
           <div className={css.empCardActions}>
-            <button type="button" className={css.empAction} onClick={() => void (async () => { await source.patchMcpServer(server.id, { enabled: !server.enabled }); onSaved() })()}>{server.enabled ? '停用' : '启用'}</button>
+            <button type="button" className={css.empAction} onClick={() => void (async () => { await source.patchMcpServer(server.id, { enabled: !server.enabled }); onSaved() })()}>{server.enabled ? WF.workspace.disable : WF.workspace.enable}</button>
             <button type="button" className={css.empAction} onClick={() => beginEdit(server)}>{WF.employeesPage.edit}</button>
             <button type="button" className={`${css.empAction} ${css.empActionDanger}`} onClick={() => setConfirmDelete(server)}>{WF.employeesPage.delete}</button>
           </div>
@@ -880,47 +881,47 @@ function McpServersSection({ servers, employees, source, onSaved }: {
         <div className={css.empForm} data-workforce-mcp-form>
           <div className={css.empFormGrid}>
             <div className={css.empField}>
-              <label htmlFor="wf-mcp-name">服务器名（工具命名空间）</label>
+              <label htmlFor="wf-mcp-name">{WF.workspace.serverNameLabel}</label>
               <input id="wf-mcp-name" className={cx('wb-input', css.empInput)} value={serverName} onChange={e => setServerName(e.target.value)} placeholder="filesystem" />
             </div>
             <div className={css.empField}>
-              <label htmlFor="wf-mcp-label">显示名</label>
+              <label htmlFor="wf-mcp-label">{WF.workspace.displayNameLabel}</label>
               <input id="wf-mcp-label" className={cx('wb-input', css.empInput)} value={label} onChange={e => setLabel(e.target.value)} />
             </div>
             <div className={css.empField}>
-              <label htmlFor="wf-mcp-transport">连接方式</label>
+              <label htmlFor="wf-mcp-transport">{WF.workspace.transportLabel}</label>
               <select id="wf-mcp-transport" className={cx('wb-input', css.empInput)} value={transport} onChange={e => setTransport(e.target.value as 'stdio' | 'streamable-http')}>
-                <option value="stdio">本地命令（stdio）</option>
-                <option value="streamable-http">远程 HTTP</option>
+                <option value="stdio">{WF.workspace.transportStdio}</option>
+                <option value="streamable-http">{WF.workspace.transportHttp}</option>
               </select>
             </div>
             {transport === 'stdio' ? (
               <>
                 <div className={css.empField + ' ' + css.empFieldRow}>
-                  <label htmlFor="wf-mcp-command">启动命令</label>
-                  <input id="wf-mcp-command" className={cx('wb-input', css.empInput)} value={command} onChange={e => setCommand(e.target.value)} placeholder="npx / uvx / 可执行文件" />
+                  <label htmlFor="wf-mcp-command">{WF.workspace.startCommand}</label>
+                  <input id="wf-mcp-command" className={cx('wb-input', css.empInput)} value={command} onChange={e => setCommand(e.target.value)} placeholder={WF.workspace.commandPlaceholder} />
                 </div>
                 <div className={css.empField}>
-                  <label htmlFor="wf-mcp-args">参数（空格分隔）</label>
+                  <label htmlFor="wf-mcp-args">{WF.workspace.argsPlaceholder}</label>
                   <input id="wf-mcp-args" className={cx('wb-input', css.empInput)} value={args} onChange={e => setArgs(e.target.value)} placeholder="-y @modelcontextprotocol/server-filesystem" />
                 </div>
                 <div className={css.empField}>
-                  <label htmlFor="wf-mcp-cwd">工作目录（可选）</label>
+                  <label htmlFor="wf-mcp-cwd">{WF.workspace.cwdLabel}</label>
                   <input id="wf-mcp-cwd" className={cx('wb-input', css.empInput)} value={cwd} onChange={e => setCwd(e.target.value)} />
                 </div>
                 <div className={css.empField + ' ' + css.empFieldRow}>
-                  <label htmlFor="wf-mcp-env">环境变量（每行 KEY=value；凭据引用写 KEY=@NAME）</label>
+                  <label htmlFor="wf-mcp-env">{WF.workspace.envLabel}</label>
                   <textarea id="wf-mcp-env" rows={2} value={envText} onChange={e => setEnvText(e.target.value)} placeholder={'API_KEY=@MY_MCP_KEY\nDEBUG=false'} />
                 </div>
               </>
             ) : (
               <>
                 <div className={css.empField + ' ' + css.empFieldRow}>
-                  <label htmlFor="wf-mcp-url">服务地址</label>
+                  <label htmlFor="wf-mcp-url">{WF.workspace.urlLabel}</label>
                   <input id="wf-mcp-url" className={cx('wb-input', css.empInput)} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://mcp.example.com/mcp" />
                 </div>
                 <div className={css.empField + ' ' + css.empFieldRow}>
-                  <label htmlFor="wf-mcp-headers">请求头（每行 KEY=value；凭据引用写 KEY=@NAME）</label>
+                  <label htmlFor="wf-mcp-headers">{WF.workspace.headersLabel}</label>
                   <textarea id="wf-mcp-headers" rows={2} value={headersText} onChange={e => setHeadersText(e.target.value)} placeholder={'Authorization=@MCP_TOKEN'} />
                 </div>
               </>
@@ -935,10 +936,9 @@ function McpServersSection({ servers, employees, source, onSaved }: {
       )}
 
       {confirmDelete !== undefined && (
-        <Dialog title="删除 MCP 服务器" closeLabel={WF.employeesPage.cancel} onClose={() => setConfirmDelete(undefined)} busy={busy}>
+        <Dialog title={WF.workspace.deleteMcpServerTitle} closeLabel={WF.employeesPage.cancel} onClose={() => setConfirmDelete(undefined)} busy={busy}>
           <p className={css.empIntro}>
-            确定删除「{confirmDelete.label}」？
-            {assigned(confirmDelete).length > 0 && ` ${assigned(confirmDelete).length} 名员工（${assigned(confirmDelete).map(e => e.name).join('、')}）的限定列表会移除该服务器。`}
+            {WF.workspace.deleteMcpServerConfirm(confirmDelete.label, assigned(confirmDelete).length, assigned(confirmDelete).map(e => e.name).join('、'))}
           </p>
           {error && <p className={css.empFormError} role="alert">{error}</p>}
           <div className={css.empFormActions}>

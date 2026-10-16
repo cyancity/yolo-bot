@@ -1253,7 +1253,7 @@ it('一条消息@多员工：负责人收到带系统说明的一份，直达员
   // 负责人那份投递附直达名单说明；直达会话是顶层 agent，不经 subagents 链路
   const ownerText = parent.followup.mock.calls.at(-1)![0].content.map((part: any) => part.text).join('\n')
   expect(ownerText).toContain('@负责人 @分析员 @执行员 @分析员 一起评估')
-  expect(ownerText).toContain('分析员、执行员')
+  expect(ownerText).toContain('分析、执行')
   expect(ownerText).toContain('本批对这些员工的派工会被系统拒绝')
   expect(services.subagents.prompt).not.toHaveBeenCalled()
   expect(services.subagents.startContinuable).not.toHaveBeenCalled()

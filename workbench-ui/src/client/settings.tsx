@@ -6,7 +6,7 @@ import type { WorkbenchNavActions, WorkbenchNavState } from './nav.ts'
 import type { WorkbenchChromeProps } from '../extension.ts'
 import type { PrefsSource, ZoomPref } from './prefs.ts'
 import type { PreferenceFields } from '../extension.ts'
-import { ZOOM_CHOICES, normalizeZoom, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
+import { ZOOM_CHOICES, normalizeZoom, normalizeLocale, LOCALE_FIELD, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
 import { Select, Switch, WorkbenchSurface } from './ui/index.tsx'
 import { useZoom } from './ui/zoom.ts'
 import { S } from './strings.ts'
@@ -28,6 +28,7 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
   const chrome: WorkbenchChromeProps = { ...props.chrome, activePageId: view.kind === 'extension' ? view.id : null }
   const zoomPref = normalizeZoom(props.usePrefs(value => value.zoom))
   const { zoom } = useZoom(zoomPref)
+  const localePref = normalizeLocale(props.usePrefs(value => value[LOCALE_FIELD]))
   const takeover = props.usePrefs(value => value[SIDEBAR_TAKEOVER_FIELD] !== false)
   const [prefs, setPrefs] = useWorkforcePrefs()
   const [error, setError] = useState<string>()
@@ -42,6 +43,17 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
         }}>
           <option value="auto">{S.nav.zoomAuto(zoom)}</option>
           {ZOOM_CHOICES.map(choice => <option key={choice} value={String(choice)}>{Math.round(choice * 1000) / 10}%</option>)}
+        </Select>
+      </label>
+      <label className={css.row}>
+        <span className={css.rowLabel}>{S.settings.languageLabel}</span>
+        <Select aria-label={S.settings.languageLabel} value={localePref} onChange={event => {
+          const next = normalizeLocale(event.target.value)
+          void props.patchPrefs({ [LOCALE_FIELD]: next })
+        }}>
+          <option value="auto">{S.settings.languageAuto}</option>
+          <option value="zh">{S.settings.languageZh}</option>
+          <option value="en">{S.settings.languageEn}</option>
         </Select>
       </label>
       {error && <p role="alert">{error}</p>}
