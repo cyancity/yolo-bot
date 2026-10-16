@@ -6,6 +6,7 @@ import { forwardRef, useId, type ReactNode, type TextareaHTMLAttributes } from '
 import css from './composer.module.css'
 import { Button } from './button.tsx'
 import { Icon } from './icons.tsx'
+import { WF } from '../workforce-strings.ts'
 
 export type ComposerState = 'ready' | 'sending' | 'blocked' | 'failed'
 
@@ -49,7 +50,7 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
   {
     contextKey, label, text, onTextChange, onSubmit, state = 'ready', blockedReason, error,
     attachments, onRemoveAttachment, onRetryAttachment, onStop, tools, hint,
-    retryLabel = '重试发送', sendLabel = '发送', stopLabel = '停止',
+    retryLabel = WF.composer.retry, sendLabel = WF.composer.send, stopLabel = WF.composer.stop,
     popup, textareaProps, textareaRef,
   },
   ref,
@@ -61,19 +62,19 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
   return (
     <div ref={ref} className={css.composer} data-state={state} data-context-key={contextKey} data-composer-card>
       {attachments && attachments.length > 0 && (
-        <ul className={css.attachments} aria-label="附件">
+        <ul className={css.attachments} aria-label={WF.ui.attachmentsAria}>
           {attachments.map(a => (
             <li key={a.id} className={css.attachment} data-state={a.state}>
               <Icon name="file" />
               <span className={css.attachName}>{a.name}</span>
-              {a.state === 'uploading' && <span className={css.attachState}>上传中</span>}
+              {a.state === 'uploading' && <span className={css.attachState}>{WF.ui.uploadingState}</span>}
               {a.state === 'failed' && (
                 <button type="button" className={css.attachRetry} onClick={() => onRetryAttachment?.(a.id)}>
-                  {a.error ? `失败：${a.error}` : '失败'}，重试
+                  {WF.ui.attachmentFailed(a.error)}，{WF.ui.retryAttachment}
                 </button>
               )}
               {onRemoveAttachment && (
-                <button type="button" className={css.attachRemove} aria-label={`移除附件 ${a.name}`} onClick={() => onRemoveAttachment(a.id)}>
+                <button type="button" className={css.attachRemove} aria-label={WF.ui.removeAttachmentAria(a.name)} onClick={() => onRemoveAttachment(a.id)}>
                   ×
                 </button>
               )}

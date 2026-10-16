@@ -10,6 +10,7 @@ import {
   ViewportPortal,
   ReactFlowProvider,
   useReactFlow,
+  useNodesInitialized,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import type { NodeTypes, OnNodeDrag } from '@xyflow/react'
@@ -27,6 +28,7 @@ import { TurnCanvasNode } from './workforce-canvas-node.tsx'
 import { ConfirmDialog } from './workforce-context-menu.tsx'
 import { ThreadPanel } from './workforce.tsx'
 import { Icon } from './ui/icons.tsx'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-canvas.module.css'
 
 const nodeTypes: NodeTypes = {
@@ -57,7 +59,9 @@ function WorkforceCanvasViewContent({
   readonly onCloseCanvas?: (() => void) | undefined
   readonly onDrawerChange?: ((open: boolean) => void) | undefined
 }) {
-  const { setCenter, getZoom } = useReactFlow()
+  const { setCenter, getZoom, getNodes } = useReactFlow()
+  const nodesInitialized = useNodesInitialized()
+  const hasAutoLaidOutRef = useRef(false)
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null)
   const [selectedMessageId, setSelectedMessageId] = useState<string | undefined>()
   const [confirmAutoLayoutOpen, setConfirmAutoLayoutOpen] = useState(false)
@@ -128,7 +132,7 @@ function WorkforceCanvasViewContent({
               // Position horizontally to the right of parent
               const siblings = rawGraph.edges.filter(e => e.source === parentId)
               const sibIndex = siblings.findIndex(e => e.target === n.id)
-              const yOffset = sibIndex > 0 ? sibIndex * 190 : 0
+              const yOffset = sibIndex > 0 ? sibIndex * 290 : 0
               pos = {
                 x: parentPos.x + 420,
                 y: parentPos.y + yOffset,
@@ -144,7 +148,7 @@ function WorkforceCanvasViewContent({
               for (const p of Object.values(newSaved)) {
                 if (p.y > maxY) maxY = p.y
               }
-              pos = { x: 50, y: (prevPosMap.size > 0 || Object.keys(newSaved).length > 0) ? maxY + 190 : 50 }
+              pos = { x: 50, y: (prevPosMap.size > 0 || Object.keys(newSaved).length > 0) ? maxY + 290 : 50 }
             }
             newSaved[n.id] = pos
             hasNewPositions = true
@@ -164,6 +168,17 @@ function WorkforceCanvasViewContent({
     }
     setEdges(rawGraph.edges)
   }, [rawGraph, setNodes, setEdges])
+
+  // Once nodes are initialized and measured by React Flow, recompute layout with exact measured heights
+  useEffect(() => {
+    if (!nodesInitialized || hasAutoLaidOutRef.current || isDraggingRef.current) return
+    hasAutoLaidOutRef.current = true
+    const currentNodes = getNodes() as CanvasTurnNode[]
+    if (currentNodes.length > 0) {
+      const laidOut = computeAutoLayout(currentNodes, edges, 'LR')
+      setNodes(laidOut)
+    }
+  }, [nodesInitialized, edges, getNodes, setNodes])
   // Magnetic horizontal & vertical center snapping while dragging with visual alignment guide lines
   const handleNodeDrag: OnNodeDrag = useCallback((_event, node) => {
     let matchedY: typeof node | undefined
@@ -229,10 +244,11 @@ function WorkforceCanvasViewContent({
   }, [])
   const handleConfirmAutoLayout = useCallback(() => {
     clearSavedPositions()
-    const laidOut = computeAutoLayout(nodes, edges, 'LR')
+    const currentNodes = getNodes() as CanvasTurnNode[]
+    const laidOut = computeAutoLayout(currentNodes.length > 0 ? currentNodes : nodes, edges, 'LR')
     setNodes(laidOut)
     setConfirmAutoLayoutOpen(false)
-  }, [nodes, edges, setNodes])
+  }, [getNodes, nodes, edges, setNodes])
 
   // Node click: select turn, open thread drawer, and center node in left 1/3 of screen
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: { id: string; data?: unknown; position: { x: number; y: number } }) => {
@@ -260,34 +276,34 @@ function WorkforceCanvasViewContent({
             type="button"
             className={css.toolbarBtn}
             onClick={onCloseCanvas}
-            title="返回会话"
-            aria-label="返回会话"
+            title={WF.canvas.backToChat}
+            aria-label={WF.canvas.backToChat}
           >
             <Icon name="reply" width={14} height={14} />
-            <span>返回会话</span>
+            <span>{WF.canvas.backToChat}</span>
           </button>
         )}
         <button
           type="button"
           className={css.toolbarBtn}
           onClick={() => setConfirmAutoLayoutOpen(true)}
-          title="自动排版对话树"
-          aria-label="自动排版"
+          title={WF.canvas.autoLayoutTree}
+          aria-label={WF.canvas.autoLayout}
         >
           <Icon name="direction" width={14} height={14} />
-          <span>自动排版</span>
+          <span>{WF.canvas.autoLayout}</span>
         </button>
         <span className={css.toolbarMeta}>
-          {nodes.length} 个轮次 · {edges.length} 条分支
+          {WF.canvas.stats(nodes.length, edges.length)}
         </span>
       </div>
 
       {/* Confirmation Dialog for Auto Layout */}
       {confirmAutoLayoutOpen && (
         <ConfirmDialog
-          title="确认重新自动排版？"
-          message="自动排版将依据对话分支层级重新对齐所有节点位置，已手动拖拽的位置将被覆盖更新。"
-          confirmLabel="确认排版"
+          title={WF.canvas.confirmLayoutTitle}
+          message={WF.canvas.confirmLayoutMessage}
+          confirmLabel={WF.canvas.confirmLayoutButton}
           onConfirm={handleConfirmAutoLayout}
           onCancel={() => setConfirmAutoLayoutOpen(false)}
         />
@@ -307,11 +323,12 @@ function WorkforceCanvasViewContent({
         onPaneClick={handlePaneClick}
         onInit={instance => {
           window.setTimeout(() => {
-            instance.fitView({ padding: 0.35, maxZoom: 0.85, duration: 250 })
+            const single = nodes.length <= 1
+            instance.fitView({ padding: single ? 0.2 : 0.35, maxZoom: single ? 1.0 : 0.85, duration: 250 })
           }, 80)
         }}
         fitView
-        fitViewOptions={{ padding: 0.35, maxZoom: 0.85 }}
+        fitViewOptions={{ padding: nodes.length <= 1 ? 0.2 : 0.35, maxZoom: nodes.length <= 1 ? 1.0 : 0.85 }}
         snapToGrid
         snapGrid={[10, 10]}
         minZoom={0.15}
@@ -323,15 +340,17 @@ function WorkforceCanvasViewContent({
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--wb-line, #e3e3e5)" />
         <Controls showInteractive={false} />
-        <MiniMap
-          nodeColor="var(--wb-accent, #00c375)"
-          maskColor="color-mix(in srgb, var(--wb-bg) 70%, transparent)"
-          style={{
-            background: 'var(--wb-surface)',
-            border: '1px solid var(--wb-line)',
-            borderRadius: '8px',
-          }}
-        />
+        {nodes.length >= 3 && (
+          <MiniMap
+            nodeColor="var(--wb-accent, #00c375)"
+            maskColor="color-mix(in srgb, var(--wb-bg) 70%, transparent)"
+            style={{
+              background: 'var(--wb-surface)',
+              border: '1px solid var(--wb-line)',
+              borderRadius: '8px',
+            }}
+          />
+        )}
         {helperLines && (
           <ViewportPortal>
             <svg
@@ -362,7 +381,7 @@ function WorkforceCanvasViewContent({
                   <g transform={`translate(${(helperLines.horizontal.x1 + helperLines.horizontal.x2) / 2}, ${helperLines.horizontal.y - 12})`}>
                     <rect x={-32} y={-10} width={64} height={18} rx={9} fill="var(--wb-accent, #00c375)" />
                     <text x={0} y={3} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight={600} fontFamily="inherit">
-                      水平对齐
+                      {WF.canvas.alignHorizontal}
                     </text>
                   </g>
                 </g>
@@ -383,7 +402,7 @@ function WorkforceCanvasViewContent({
                   <g transform={`translate(${helperLines.vertical.x + 38}, ${(helperLines.vertical.y1 + helperLines.vertical.y2) / 2})`}>
                     <rect x={-32} y={-10} width={64} height={18} rx={9} fill="var(--wb-accent, #00c375)" />
                     <text x={0} y={3} textAnchor="middle" fill="#ffffff" fontSize={11} fontWeight={600} fontFamily="inherit">
-                      居中对齐
+                      {WF.canvas.alignCenter}
                     </text>
                   </g>
                 </g>

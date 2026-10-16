@@ -11,6 +11,7 @@ import type { ReactNode } from 'react'
 import { Dialog } from './ui/index.tsx'
 import { WorkforceAttachment, gateAttachment } from './workforce-attachments.tsx'
 import type { Employee, WorkforceFile, WorkforceMessage } from './workforce-types.ts'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-files.module.css'
 
 /**
@@ -40,12 +41,6 @@ function fmtFileTime(ts: string): string {
   return date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function dirOf(path: string): string | undefined {
-  const clean = path.replace(/\/+$/, '')
-  const index = Math.max(clean.lastIndexOf('/'), clean.lastIndexOf('\\'))
-  return index > 0 ? clean.slice(0, index) : undefined
-}
-
 /** 时间线列表：时间 + 真实文件行（路径 / 作者 / 版本 / 来源），复用附件卡片能力。 */
 export function WorkforceFilesTimeline({ files, employees }: {
   readonly files: readonly WorkforceFile[]
@@ -55,15 +50,14 @@ export function WorkforceFilesTimeline({ files, employees }: {
   if (rows.length === 0) {
     return (
       <div className={css.empty}>
-        <p className={css.emptyTitle}>暂无可展示的文件</p>
-        <p className={css.emptyHint}>脚本文件已按规则隐藏；员工在此对话中生成或引用的其他文件，会按时间显示在这里。</p>
+        <p className={css.emptyTitle}>{WF.files.emptyTitle}</p>
+        <p className={css.emptyHint}>{WF.files.emptyHintFiltered}</p>
       </div>
     )
   }
   return (
-    <ol className={css.timeline} aria-label="文件时间线">
+    <ol className={css.timeline} aria-label={WF.files.timelineAria}>
       {rows.map(file => {
-        const directory = dirOf(file.path)
         const author = employees.find(employee => employee.id === file.employeeId)?.name
         return (
           <li key={file.id} className={css.fileItem}>
@@ -76,9 +70,8 @@ export function WorkforceFilesTimeline({ files, employees }: {
                 sizeBytes={file.sizeBytes}
                 mime={file.mime}
               />
-              <div className={css.fileMetaLine}>
-                <span className={css.filePath} title={file.path}>{directory !== undefined ? `${directory}/` : file.path}</span>
-                <span className={css.fileSource}>{file.source === 'deliverable' ? '成果' : file.source === 'tool' ? '写入' : '对话'}</span>
+              <div className={css.fileMetaLine} title={file.path}>
+                <span className={css.fileSource}>{file.source === 'deliverable' ? WF.files.sourceDeliverable : file.source === 'tool' ? WF.files.sourceTool : WF.files.sourceChat}</span>
                 {file.version !== undefined && <span className={css.fileVersion}>v{file.version}</span>}
                 {author !== undefined && <span className={css.fileAuthor}>{author}</span>}
               </div>
@@ -103,19 +96,19 @@ export function WorkforceFilesDrawer({ title, contextLabel, status, error, child
 }) {
   let content: ReactNode
   if (status === 'loading') {
-    content = <div className={css.loading} role="status" aria-label="正在加载文件"><span /><span /><span /></div>
+    content = <div className={css.loading} role="status" aria-label={WF.files.loading}><span /><span /><span /></div>
   } else if (status === 'empty') {
     content = (
       <div className={css.empty}>
-        <p className={css.emptyTitle}>暂无可展示的文件</p>
-        <p className={css.emptyHint}>员工在此对话中生成或引用的文件，会按时间显示在这里。</p>
+        <p className={css.emptyTitle}>{WF.files.emptyTitle}</p>
+        <p className={css.emptyHint}>{WF.files.emptyHint}</p>
       </div>
     )
   } else {
     content = children
   }
   return (
-    <Dialog title={title} closeLabel="关闭文件面板" onClose={onClose}>
+    <Dialog title={title} closeLabel={WF.files.closeDialog} onClose={onClose}>
       <div className={css.drawer}>
         {contextLabel !== undefined && <p className={css.scope}>{contextLabel}</p>}
         {error !== undefined && <p className={css.error} role="alert">{error}</p>}

@@ -8,6 +8,7 @@ import { WorkforceAttachment, WorkforceFileLink, WorkforceImageGallery, isAttach
 import type { DeliverableInfo } from './workforce-attachments.tsx'
 import css from './workforce-message-text.module.css'
 import workforceCss from './workforce.module.css'
+import { WF } from './workforce-strings.ts'
 
 interface MarkdownNode {
   type: string
@@ -103,14 +104,20 @@ function attachmentMetadata(title?: string): ParsedAttachmentMeta {
     }
   } catch { return {} }
 }
+function cleanMessageText(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/(?:^|\n\n?)附件：(?=\n\s*-\s*\[)/g, '\n\n')
+    .replace(/(-\s*\[[^\]]+\]\([^\)]+\))\s*·\s*名称：[^\n]*?·\s*类型：[^\n]*?·\s*material\s*id：[^\n]*/gi, '$1')
+    .trim()
+}
+
 /**
  * 校验 HAST 列表项节点是否为纯文件引用条目：
- * 仅在存在本轮附件真源时生效；
  * 节点内容必须仅包含空白文本 + 唯一个 <a> 标签（允许单 <p> 包裹），
  * 且该链接指向经过安全门控可见的合法文件路由。
  */
-function isPureFileHastNode(node: unknown, hasAttachments: boolean): boolean {
-  if (!hasAttachments) return false
+function isPureFileHastNode(node: unknown): boolean {
   if (!node || typeof node !== 'object' || !('children' in node)) return false
   const rawChildren = node.children
   if (!Array.isArray(rawChildren)) return false
@@ -168,9 +175,9 @@ function MessageCodeBlock({ children }: { readonly children?: ReactNode }) {
   const lineCount = code.split('\n').length
   const [expanded, setExpanded] = useState(false)
   return <section className={css.codeFence} data-collapsed={lineCount > 20 && !expanded}>
-    <CodeBlock code={code} lang={language ?? 'text'} copyLabel="复制" copiedLabel="已复制" />
+    <CodeBlock code={code} lang={language ?? 'text'} copyLabel={WF.ui.copyCode} copiedLabel={WF.ui.copiedCode} />
     {lineCount > 20 && <button type="button" className={css.expandCode} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
-      {expanded ? '收起代码' : `展开全部 ${lineCount} 行`}
+      {expanded ? WF.ui.collapseCode : WF.ui.expandCode(lineCount)}
     </button>}
   </section>
 }
@@ -178,14 +185,13 @@ function MessageCodeBlock({ children }: { readonly children?: ReactNode }) {
 /** GFM for both roles; model-authored HTML remains inert literal text.
  *  memo 后未变化正文零重渲染；内部对 <Markdown> 元素再按 text 记忆化，
  *  即使外层因 tasks/employees 引用变化重渲染，也不重解析 markdown。 */
-export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false }: {
+export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false, hasDeliverables = false }: {
   readonly text: string
   readonly employees: readonly Employee[]
   readonly onDm: (id: string) => void
-  /** 当前任务快照：用于给成果链接解析版本信息图标；缺省则不显示图标。 */
   readonly tasks?: readonly Task[] | undefined
-  /** 是否存在本轮真实附件：存在时正文文件链接保普通可点文件名，不渲染重复大卡。 */
   readonly hasAttachments?: boolean | undefined
+  readonly hasDeliverables?: boolean | undefined
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
   // tasks、employees、onDm 每次轮询都可能是新引用；经 ref 读取，保持 components 稳定，避免附件卡片重挂（tooltip 被关掉）。
@@ -205,10 +211,10 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
   const mentionPlugin = useMemo(() => mentionsPlugin(employees), [employees])
   const authorNameOf = useCallback((authorId: string) =>
     authorId === 'user'
-      ? '你'
+      ? WF.common.you
       : authorId === 'unknown' || authorId === ''
-        ? '未知'
-        : employeesRef.current.find(item => item.id === authorId)?.name ?? '未知', [])
+        ? WF.common.unknown
+        : employeesRef.current.find(item => item.id === authorId)?.name ?? WF.common.unknown, [])
   const components: Components = useMemo(() => ({
     table: ({ children }: { children?: ReactNode }) => <div className={css.tableScroll}><table>{children}</table></div>,
     pre: MessageCodeBlock,
@@ -224,7 +230,8 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
       const gate = gateAttachment(fileName, meta.mime)
       if (!gate.visible) return null
       if (isAttachmentUrl(url)) {
-        if (hasAttachments) {
+        const isDeliverable = url.includes('/deliverables/')
+        if (hasAttachments || (isDeliverable && hasDeliverables)) {
           return (
             <WorkforceFileLink
               url={url}
@@ -269,19 +276,18 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
       )
     },
     li: ({ children, node, ...props }) => {
-      const isPureFile = isPureFileHastNode(node, Boolean(hasAttachments))
+      const isPureFile = isPureFileHastNode(node)
       return (
         <li data-file-item={isPureFile ? 'true' : undefined} {...props}>
           {children}
         </li>
       )
     },
-  }), [openImage, authorNameOf, hasAttachments])
-  // markdown 解析是长列表的主要成本：元素级记忆化后，text/plugin/components
-  // 不变时 React 直接复用子树，不再重新解析。text 变化才重解析本条。
+  }), [openImage, authorNameOf, hasAttachments, hasDeliverables])
+  const cleanedText = useMemo(() => cleanMessageText(text), [text])
   const rendered = useMemo(() => (
-    <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{text}</Markdown>
-  ), [text, mentionPlugin, components])
+    <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{cleanedText}</Markdown>
+  ), [cleanedText, mentionPlugin, components])
   return <div ref={rootRef} className={css.messageText}>
     {rendered}
     {gallery && <WorkforceImageGallery images={gallery.images} initialIndex={gallery.index} onClose={closeGallery} />}

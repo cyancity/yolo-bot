@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
 import css from './thread-panel.module.css'
 import { IconButton } from './icon-button.tsx'
 import { Icon } from './icons.tsx'
+import { WF } from '../workforce-strings.ts'
 import type { TaskRef } from './message-item.tsx'
 
 export interface ThreadPanelProps {
@@ -56,7 +57,7 @@ export function ThreadPanel({
           <span className={css.context}>{contextLabel}</span>
         </div>
         {tools}
-        <IconButton label="关闭任务面板" icon={<Icon name="close" />} size="sm" onClick={onClose} />
+        <IconButton label={WF.ui.closeTaskPanel} icon={<Icon name="close" />} size="sm" onClick={onClose} />
       </header>
       {sourceMessage && <div className={css.sourceMessage}>{sourceMessage}</div>}
       {(status || trace) && (

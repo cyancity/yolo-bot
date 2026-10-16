@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { API_PREFIX } from './transport.ts'
 import { useWorkforceFileSession } from './workforce-attachments.tsx'
 import { Button, Dialog, Select, Switch } from './ui/index.tsx'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-memory.module.css'
 
 export interface DiagnosticTaskChoice { readonly id: string; readonly title: string }
@@ -11,7 +12,7 @@ async function diagnosticRequest(path: string, signal: AbortSignal): Promise<unk
   const body: unknown = await response.json()
   if (!body || typeof body !== 'object' || !('ok' in body) || body.ok !== true || !('data' in body) || !response.ok) {
     const error = body && typeof body === 'object' && 'error' in body ? body.error : undefined
-    throw new Error(error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : '诊断读取失败，请重试')
+    throw new Error(error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' ? error.message : WF.diagnostics.readFailed)
   }
   return body.data
 }
@@ -47,13 +48,13 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
     if (suppliedTasks !== undefined && suppliedTasks.length > 0) { install(suppliedTasks); return () => controller.abort() }
     void diagnosticRequest('/tasks', controller.signal).then(value => {
       if (controller.signal.aborted) return
-      if (!value || typeof value !== 'object' || !('tasks' in value) || !Array.isArray(value.tasks)) throw new Error('任务列表格式无效')
+      if (!value || typeof value !== 'object' || !('tasks' in value) || !Array.isArray(value.tasks)) throw new Error(WF.diagnostics.tasksFormatInvalid)
       const next: DiagnosticTaskChoice[] = []
       for (const task of value.tasks as unknown[]) {
         if (task && typeof task === 'object' && 'id' in task && typeof task.id === 'string' && 'title' in task && typeof task.title === 'string') next.push({ id: task.id, title: task.title })
       }
       install(next); setTaskError(undefined)
-    }).catch(failure => { if (!controller.signal.aborted) { setTaskError(failure instanceof Error ? failure.message : '任务列表读取失败'); setTasksSettled(true) } })
+    }).catch(failure => { if (!controller.signal.aborted) { setTaskError(failure instanceof Error ? failure.message : WF.diagnostics.tasksReadFailed); setTasksSettled(true) } })
     return () => controller.abort()
   }, [suppliedTasks, refresh])
   useEffect(() => {
@@ -65,7 +66,7 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
     void diagnosticRequest(`/diagnostics${query}`, controller.signal).then(data => {
       if (!controller.signal.aborted) setReport({ taskId: requestedTask, data })
     }).catch(failure => {
-      if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : '诊断读取失败，请重试')
+      if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : WF.diagnostics.readFailed)
     }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [requestedTask, includeConversation, refresh])
@@ -79,7 +80,7 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
       const link = document.createElement('a')
       link.href = url; link.download = `workbench-diagnostics-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
       try { document.body.append(link); link.click() } finally { link.remove(); URL.revokeObjectURL(url) }
-    } catch { setError('文件下载未完成，请重试') }
+    } catch { setError(WF.diagnostics.downloadFailed) }
   }
   // 桌面版：写数据根 diagnostics/ 后可直接系统级定位；与预览同参数（同 taskId）保证内容一致。
   const saveLocal = async () => {
@@ -90,55 +91,55 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
       const body: unknown = await response.json()
       const path = body && typeof body === 'object' && 'data' in body && body.data && typeof body.data === 'object' && 'path' in body.data && typeof body.data.path === 'string' ? body.data.path : undefined
       if (!response.ok || !(body && typeof body === 'object' && 'ok' in body && body.ok === true) || !path) {
-        const message = body && typeof body === 'object' && 'error' in body && body.error && typeof body.error === 'object' && 'message' in body.error && typeof body.error.message === 'string' ? body.error.message : '保存到本机失败，请重试'
+        const message = body && typeof body === 'object' && 'error' in body && body.error && typeof body.error === 'object' && 'message' in body.error && typeof body.error.message === 'string' ? body.error.message : WF.diagnostics.saveFailed
         throw new Error(message)
       }
       setSavedPath(path)
-    } catch (failure) { setError(failure instanceof Error ? failure.message : '保存到本机失败，请重试') }
+    } catch (failure) { setError(failure instanceof Error ? failure.message : WF.diagnostics.saveFailed) }
     finally { setSaving(false) }
   }
   const revealSaved = async () => {
     if (!fileSession || !savedPath || revealing) return
     setRevealing(true); setError(undefined)
-    try { const result = await fileSession.openWorkspacePath({ path: savedPath, action: 'reveal' }); if (!result.ok) throw new Error('无法在资源管理器中显示，请手动打开路径') }
-    catch (failure) { setError(failure instanceof Error ? failure.message : '无法在资源管理器中显示，请手动打开路径') }
+    try { const result = await fileSession.openWorkspacePath({ path: savedPath, action: 'reveal' }); if (!result.ok) throw new Error(WF.diagnostics.revealFailed) }
+    catch (failure) { setError(failure instanceof Error ? failure.message : WF.diagnostics.revealFailed) }
     finally { setRevealing(false) }
   }
-  return <Dialog title="导出诊断" closeLabel="关闭诊断" onClose={onClose}>
-    <section className={css.editor} aria-label="诊断导出设置">
-      <p className={css.hint}>诊断文件不会自动上传。默认不包含对话、记忆或材料正文；附加的对话取所选任务最近 50 条消息，含工具名与状态、不含工具参数；常见密钥形态已遮蔽，但不能保证识别全部秘密，请在分享前检查预览。</p>
+  return <Dialog title={WF.diagnostics.title} closeLabel={WF.diagnostics.close} onClose={onClose}>
+    <section className={css.editor} aria-label={WF.diagnostics.editorAria}>
+      <p className={css.hint}>{WF.diagnostics.hint}</p>
       {/* 没有任务时不放一个点不动的开关，只说明原因 */}
-      {tasks.length > 0 && <Switch label="附上某个任务的对话" checked={includeConversation} onChange={setIncludeConversation} />}
+      {tasks.length > 0 && <Switch label={WF.diagnostics.includeTaskSwitch} checked={includeConversation} onChange={setIncludeConversation} />}
       {includeConversation && <div className={css.form}>
-        <label htmlFor={selectId}>选择任务（附最近 50 条消息）</label>
+        <label htmlFor={selectId}>{WF.diagnostics.selectTaskLabel}</label>
         <Select id={selectId} value={taskId} onChange={event => setTaskId(event.target.value)}>
           {tasks.map(task => <option key={task.id} value={task.id}>{task.title || task.id}</option>)}
         </Select>
       </div>}
-      {taskError && <p className={css.hint}>任务列表未能读取：{taskError}。仍可导出不含对话的诊断。</p>}
-      {!taskError && !tasksSettled && <p role="status" className={css.hint}>正在读取任务列表…</p>}
-      {!taskError && tasksSettled && tasks.length === 0 && <p className={css.hint}>还没有任务，所以暂时不能附上任务对话；默认诊断照常可以保存。</p>}
-      {loading && <p role="status" className={css.hint}>正在生成诊断…</p>}
+      {taskError && <p className={css.hint}>{WF.diagnostics.tasksReadFailedNotice(taskError)}</p>}
+      {!taskError && !tasksSettled && <p role="status" className={css.hint}>{WF.diagnostics.readingTasksList}</p>}
+      {!taskError && tasksSettled && tasks.length === 0 && <p className={css.hint}>{WF.diagnostics.noTasksToAttach}</p>}
+      {loading && <p role="status" className={css.hint}>{WF.diagnostics.loading}</p>}
       {error && <p role="alert" className={css.error}>{error}</p>}
-      {partial && <p role="status" className={css.hint}>部分信息未能读取，已在预览的 errors 中说明；仍可下载。</p>}
+      {partial && <p role="status" className={css.hint}>{WF.diagnostics.partialErrorNotice}</p>}
       <div className={css.form}>
-        <label htmlFor={previewId}>JSON 预览</label>
+        <label htmlFor={previewId}>{WF.diagnostics.jsonPreview}</label>
         <textarea id={previewId} aria-busy={loading} readOnly rows={12} value={preview} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)', maxHeight: '40vh', resize: 'vertical' }} />
       </div>
       {savedPath && <div className={css.form}>
-        <label>已保存到本机<textarea readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
+        <label>{WF.diagnostics.savedToLocalMachine}<textarea readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
       </div>}
       <div className={css.actions}>
         {fileSession ? (
           <>
-            <Button disabled={!ready || saving} onClick={() => void saveLocal()}>{saving ? '正在保存…' : '保存到本机'}</Button>
-            {savedPath && <Button disabled={revealing} onClick={() => void revealSaved()}>{revealing ? '正在打开…' : '在资源管理器中显示'}</Button>}
+            <Button disabled={!ready || saving} onClick={() => void saveLocal()}>{saving ? WF.diagnostics.saving : WF.diagnostics.saveLocal}</Button>
+            {savedPath && <Button disabled={revealing} onClick={() => void revealSaved()}>{revealing ? WF.diagnostics.revealing : WF.diagnostics.reveal}</Button>}
           </>
         ) : (
-          <Button disabled={!ready} onClick={download}>下载诊断文件</Button>
+          <Button disabled={!ready} onClick={download}>{WF.diagnostics.download}</Button>
         )}
-        <Button disabled={loading || saving} onClick={() => setRefresh(value => value + 1)}>重新生成</Button>
-        <Button onClick={onClose}>取消</Button>
+        <Button disabled={loading || saving} onClick={() => setRefresh(value => value + 1)}>{WF.message.regenerate}</Button>
+        <Button onClick={onClose}>{WF.common.cancel}</Button>
       </div>
     </section>
   </Dialog>

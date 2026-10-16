@@ -8,6 +8,7 @@ import { useOverlayTarget } from './root.tsx'
 import { Button } from './button.tsx'
 import { IconButton } from './icon-button.tsx'
 import { Icon } from './icons.tsx'
+import { WF } from '../workforce-strings.ts'
 import css from './toast.module.css'
 import type { Tone } from './badge.tsx'
 
@@ -61,7 +62,7 @@ export function Toast({ message, tone = 'neutral', open, onDismiss, durationMs =
           {action.label}
         </Button>
       )}
-      <IconButton label="关闭" icon={<Icon name="close" />} size="sm" onClick={onDismiss} />
+      <IconButton label={WF.common.close} icon={<Icon name="close" />} size="sm" onClick={onDismiss} />
     </div>,
     overlay ?? document.body,
   )
@@ -69,5 +70,5 @@ export function Toast({ message, tone = 'neutral', open, onDismiss, durationMs =
 
 /** 多条 Toast 的堆叠容器，渲染在根底部。 */
 export function ToastRegion({ children }: { children?: ReactNode }) {
-  return <div className={css.region} aria-label="通知">{children}</div>
+  return <div className={css.region} aria-label={WF.common.notifications}>{children}</div>
 }

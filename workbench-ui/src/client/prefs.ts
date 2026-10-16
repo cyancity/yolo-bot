@@ -6,7 +6,13 @@ export const ZOOM_CHOICES: readonly number[] = [0.75, 0.875, 1, 1.125, 1.25, 1.5
 export const ZOOM_AUTO_BASE = 2560
 export const ZOOM_AUTO_MAX = 2
 export const SIDEBAR_ZOOM_MAX = 1.5
-export interface WorkbenchPrefs { readonly zoom: ZoomPref }
+export type LocalePref = 'auto' | 'zh' | 'en'
+export const LOCALE_CHOICES: readonly LocalePref[] = ['auto', 'zh', 'en']
+export const LOCALE_FIELD = 'locale'
+export interface WorkbenchPrefs {
+  readonly zoom: ZoomPref
+  readonly locale?: LocalePref
+}
 /** 侧栏接管开关（偏好字段名）：默认 true；置 false 恢复经典导航。 */
 export const SIDEBAR_TAKEOVER_FIELD = 'sidebarTakeover'
 export interface PrefsSource extends WorkbenchPreferences {
@@ -18,9 +24,9 @@ function viewportWidth(): number | undefined {
   return typeof width === 'number' && width > 0 ? width : undefined
 }
 export function autoZoom(viewport: number | undefined = viewportWidth()): number {
-  if (viewport === undefined || !Number.isFinite(viewport)) return 0.99
+  if (viewport === undefined || !Number.isFinite(viewport)) return 1.09
   const raw = Math.min(ZOOM_AUTO_MAX, Math.max(1, viewport / ZOOM_AUTO_BASE))
-  return Math.round(Math.floor(raw * 8) / 8 * 0.99 * 1000) / 1000
+  return Math.round(Math.floor(raw * 8) / 8 * 1.09 * 1000) / 1000
 }
 export function effectiveZoom(pref: ZoomPref, viewport?: number): number {
   return pref === 'auto' ? autoZoom(viewport) : pref
@@ -30,6 +36,9 @@ export function effectiveViewport(pref: ZoomPref, viewport: number | undefined =
 }
 export function normalizeZoom(value: unknown): ZoomPref {
   return typeof value === 'number' && ZOOM_CHOICES.includes(value) ? value : 'auto'
+}
+export function normalizeLocale(value: unknown): LocalePref {
+  return value === 'zh' || value === 'en' ? value : 'auto'
 }
 
 const PREFS_KEY = 'workbench.prefs.v1'
@@ -64,7 +73,12 @@ export function createPrefsStore(): PrefsSource {
       const raw = localStorage.getItem(PREFS_KEY)
       if (raw !== null) {
         const stored = copyFields(JSON.parse(raw))
-        snapshot = Object.freeze({ ...stored, zoom: normalizeZoom(stored.zoom) })
+        const next: PreferenceFields & WorkbenchPrefs = {
+          ...stored,
+          zoom: normalizeZoom(stored.zoom),
+          ...('locale' in stored && stored.locale !== undefined ? { locale: normalizeLocale(stored.locale) } : {}),
+        }
+        snapshot = Object.freeze(next)
       }
     } catch (error) { console.error('Workbench preferences could not be read', error) }
   }

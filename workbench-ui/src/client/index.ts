@@ -6,6 +6,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { createPrefsStore, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
+import { initLocale } from './i18n.ts'
+import { WF } from './workforce-strings.ts'
 import { createWorkbenchFace } from './face.ts'
 import { createWorkbenchNavStore, CORE_CHANNELS_PAGE, CORE_CANVAS_PAGE, CORE_EMPLOYEES_PAGE, PANEL_ID } from './nav.ts'
 import { WorkbenchPage } from './page.tsx'
@@ -49,6 +51,7 @@ export const inject = ['slots', 'layout', 'sessions', 'uiWorkspace']
 
 export function apply(ctx: ClientContext): void {
   const prefs = createPrefsStore()
+  initLocale(ctx, prefs)
   const navHandle = createWorkbenchNavStore()
   const nav = navHandle.create()
   const navStore = { ...navHandle, create: () => nav }
@@ -150,9 +153,9 @@ export function apply(ctx: ClientContext): void {
       const view = state.view.kind === 'extension' ? { kind: 'home' as const } : state.view
       return createElement(WorkforceWorkspace, { source: face.workforce, view, setView: nav.actions.setView, onNavigation: face.toggleSidebar })
     }
-    yield ui.registerPage({ id: CORE_CHANNELS_PAGE, label: '频道', order: -20, icon: () => createElement(Icon, { name: 'chat' }), component: CorePage })
-    yield ui.registerPage({ id: CORE_CANVAS_PAGE, label: '分支树', order: -15, icon: () => createElement(Icon, { name: 'direction' }), component: CorePage })
-    yield ui.registerPage({ id: CORE_EMPLOYEES_PAGE, label: '员工', order: -10, icon: () => createElement(Icon, { name: 'profile' }), component: CorePage })
+    yield ui.registerPage({ id: CORE_CHANNELS_PAGE, label: () => WF.nav.channels, order: -20, icon: () => createElement(Icon, { name: 'chat' }), component: CorePage })
+    yield ui.registerPage({ id: CORE_CANVAS_PAGE, label: () => WF.nav.canvas, order: -15, icon: () => createElement(Icon, { name: 'direction' }), component: CorePage })
+    yield ui.registerPage({ id: CORE_EMPLOYEES_PAGE, label: () => WF.nav.employees, order: -10, icon: () => createElement(Icon, { name: 'profile' }), component: CorePage })
   }))
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workbench', order: 20, label: () => S.settings.tab,

@@ -15,7 +15,9 @@ import { ConfirmDialog, WorkforceContextMenu, type ContextMenuSection } from './
 import { cx } from './ui/index.tsx'
 import dialogCss from './workforce-channels.module.css'
 import css from './workforce-chat-list.module.css'
-
+import { WF } from './workforce-strings.ts'
+import { getLocale } from './i18n.ts'
+import { stripMarkdown } from './workforce-strip-markdown.ts'
 export interface ChatChannelPatch {
   readonly pinned?: boolean | undefined
   readonly groupChatName?: string | null | undefined
@@ -79,8 +81,10 @@ export function chatTimeLabel(ts: string | undefined): string {
   const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
   const days = Math.round((startOfToday - startOfDate) / 86400000)
   if (days <= 0) return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-  if (days === 1) return '昨天'
-  if (days < 7 && days > 1) return `星期${'日一二三四五六'[date.getDay()]}`
+  if (days === 1) return WF.chatList.yesterday
+  if (days < 7 && days > 1) {
+    return WF.chatList.weekday(date.getDay())
+  }
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${m}-${d}`
@@ -91,7 +95,7 @@ export function chatTitleOf(channel: HostChannel, members: readonly Employee[]):
   const override = channel.groupChatName?.trim()
   if (override) return override
   if (channel.memberIds !== undefined && members.length > 0) return members.map(m => m.name).join('、')
-  return channel.name.trim() || '群聊'
+  return channel.name.trim() || WF.common.groupChat
 }
 
 /** 已缓存消息里的最新一条真实正文；与宿主 lastMessageAt 同口径——只认用户/员工普通文本，
@@ -117,23 +121,23 @@ function previewOf(message: WorkforceMessage): string {
   const senderPrefix = message.senderName ? `${message.senderName}: ` : ''
   if (message.tool !== undefined) {
     const status = message.tool.status
-    if (status === 'running') return `${senderPrefix}正在执行工具…`
-    if (status === 'error') return `${senderPrefix}工具执行失败`
-    return `${senderPrefix}任务已完成`
+    if (status === 'running') return `${senderPrefix}${WF.employee.running}…`
+    if (status === 'error') return `${senderPrefix}${WF.common.failed}`
+    return `${senderPrefix}${WF.common.done}`
   }
   if (message.question !== undefined) {
     const q = message.question.items[0]?.question?.trim() || message.question.items[0]?.header?.trim()
-    return `${senderPrefix}${q ? `[提问] ${q}` : '等待回答…'}`
+    return `${senderPrefix}${q ? `${WF.chatList.questionPrefix}${q}` : WF.chatList.awaitingAnswer}`
   }
   if (message.approval !== undefined) {
     const tool = message.approval.toolName?.trim() || message.approval.displayReason?.trim() || message.approval.reason?.trim()
-    return `${senderPrefix}${tool ? `[审批] ${tool}` : '等待审批…'}`
+    return `${senderPrefix}${tool ? `${WF.chatList.approvalPrefix}${tool}` : WF.chatList.awaitingApproval}`
   }
   if (message.role === 'system' || message.tip === true) {
     const t = message.text.replace(/\s+/g, ' ').trim()
-    return t || '系统通知'
+    return t || WF.chatList.systemNotification
   }
-  const text = message.text.replace(/\s+/g, ' ').trim()
+  const text = stripMarkdown(message.text)
   return message.role === 'agent' ? `${senderPrefix}${text}` : (message.senderName ? `${message.senderName}: ${text}` : text)
 }
 
@@ -177,8 +181,8 @@ function channelMeta(channel: HostChannel, threads: readonly Thread[], messages:
   const subtitle = last !== undefined
     ? previewOf(last)
     : running
-      ? `${activeNames.length > 0 ? `${activeNames.join('、')} ` : ''}执行中…`
-      : '暂无预览'
+      ? `${activeNames.length > 0 ? `${activeNames.join(', ')} ` : ''}${WF.employee.running}…`
+      : WF.chatList.noPreview
   const unreadCount = channel && typeof channel === 'object' && 'unreadCount' in channel && typeof channel.unreadCount === 'number'
     ? channel.unreadCount
     : undefined
@@ -196,14 +200,8 @@ function dmMeta(thread: Thread | undefined, _fallbackTitle: string, messages: Re
   const running = thread?.status === 'running'
   const last = thread ? lastCachedMessage([thread.id], messages) : undefined
   let activityTs = thread ? threadActivityTs(thread, last?.ts) : ''
-  if (!activityTs && thread) {
+  if (!activityTs && running && thread) {
     activityTs = thread.updatedAt || thread.createdAt || ''
-  }
-  if (!activityTs && employee) {
-    activityTs = employee.updatedAt || employee.createdAt || ''
-  }
-  if (!activityTs) {
-    activityTs = new Date().toISOString()
   }
   const unread = Boolean(thread && typeof thread === 'object' && 'unread' in thread && thread.unread === true)
   const unreadCount = thread && typeof thread === 'object' && 'unreadCount' in thread && typeof thread.unreadCount === 'number'
@@ -213,8 +211,8 @@ function dmMeta(thread: Thread | undefined, _fallbackTitle: string, messages: Re
   const subtitle = last !== undefined
     ? previewOf(last)
     : running
-      ? '执行中…'
-      : '暂无预览'
+      ? `${WF.employee.running}…`
+      : employee?.title?.trim() || employee?.persona?.trim() || WF.chatList.noPreview
   return {
     activityTs,
     pinned,
@@ -244,7 +242,7 @@ const GroupAvatar = memo(function GroupAvatar({ members, avatarStyle }: {
   return (
     <span className={css.chatGroupAvatar} data-faces={faces.length} aria-hidden="true">
       {faces.length === 0 ? (
-        <span className={css.chatAvatarFallback}>群</span>
+        <span className={css.chatAvatarFallback}>{WF.chatList.groupFallbackChar}</span>
       ) : (
         <span className={css.chatAvatarGrid} data-count={faces.length}>
           {faces.map(employee => (
@@ -298,7 +296,9 @@ export function WorkforceChatList({
       await action()
     } catch (err: unknown) {
       setOpError({
-        message: `${actionDesc}失败: ${err instanceof Error ? err.message : String(err)}`,
+        message: getLocale() === 'en'
+          ? `${actionDesc} failed: ${err instanceof Error ? err.message : String(err)}`
+          : `${actionDesc}失败: ${err instanceof Error ? err.message : String(err)}`,
         retry: () => executeWithCatch(actionDesc, action),
       })
     }
@@ -334,11 +334,12 @@ export function WorkforceChatList({
       list.push({ row, meta: dmMeta(thread, employee.title, messages, employee) })
     }
     for (const thread of stale) {
-      const row: ChatRow = { kind: 'dm-stale', key: `dm-stale:${thread.id}`, thread, title: thread.title.trim() || '员工' }
-      list.push({ row, meta: dmMeta(thread, '历史会话', messages) })
+      const row: ChatRow = { kind: 'dm-stale', key: `dm-stale:${thread.id}`, thread, title: thread.title.trim() || WF.common.employee }
+      list.push({ row, meta: dmMeta(thread, WF.chatList.historySession, messages) })
     }
     return list.sort((a, b) =>
       Number(b.meta.pinned) - Number(a.meta.pinned)
+      || Number(Boolean(b.meta.activityTs)) - Number(Boolean(a.meta.activityTs))
       || b.meta.activityTs.localeCompare(a.meta.activityTs)
       || a.row.title.localeCompare(b.row.title))
   }, [channels, threads, employees, messages, employeeById])
@@ -354,11 +355,11 @@ export function WorkforceChatList({
       {
         id: 'chat-status',
         items: [
-          { id: 'mark-read', label: '标记为已读', onClick: () => runOp('标记已读', onMarkChannelReadReq ? () => onMarkChannelReadReq(channel.id) : undefined) },
+          { id: 'mark-read', label: WF.sidebarActions.markAsRead, onClick: () => runOp(WF.sidebarActions.markAsRead, onMarkChannelReadReq ? () => onMarkChannelReadReq(channel.id) : undefined) },
           ...(!isGeneral ? [{
             id: 'toggle-pin',
-            label: meta.pinned ? '取消置顶' : '置顶聊天',
-            onClick: () => runOp(meta.pinned ? '取消置顶' : '置顶聊天', onPatchChannelReq ? () => onPatchChannelReq(channel.id, { pinned: !meta.pinned }) : undefined),
+            label: meta.pinned ? WF.chatList.unpinChat : WF.chatList.pinChat,
+            onClick: () => runOp(meta.pinned ? WF.chatList.unpinChat : WF.chatList.pinChat, onPatchChannelReq ? () => onPatchChannelReq(channel.id, { pinned: !meta.pinned }) : undefined),
           }] : []),
         ],
       },
@@ -367,13 +368,13 @@ export function WorkforceChatList({
         items: [
           {
             id: 'rename-chat',
-            label: '群聊名称',
+            label: WF.chatList.groupChatName,
             onClick: () => setRenameTarget({ channelId: channel.id, current: channel.groupChatName ?? '', fallback: chatTitleOf(channel, row.members), opener }),
           },
           ...(!isGeneral && onDuplicateChannelReq ? [{
             id: 'dup-chat',
-            label: '复制群聊',
-            onClick: () => runOp('复制群聊', () => onDuplicateChannelReq(channel.id)),
+            label: WF.chatList.duplicateChat,
+            onClick: () => runOp(WF.chatList.duplicateChat, () => onDuplicateChannelReq(channel.id)),
           }] : []),
         ],
       },
@@ -382,7 +383,7 @@ export function WorkforceChatList({
         items: [
           {
             id: 'delete-chat',
-            label: isGeneral ? '删除群聊（默认会话不可删除）' : '删除群聊',
+            label: isGeneral ? WF.chatList.deleteChatGeneralDisabled : WF.chatList.deleteChat,
             danger: true,
             disabled: isGeneral,
             onClick: () => { if (!isGeneral) setDeleteTarget({ channelId: channel.id, title: row.title, error: undefined }) },
@@ -394,7 +395,7 @@ export function WorkforceChatList({
         items: [
           {
             id: 'copy-id',
-            label: '复制会话 ID',
+            label: WF.chatList.copySessionId,
             onClick: () => { if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(channel.id) },
           },
         ],
@@ -413,17 +414,17 @@ export function WorkforceChatList({
         items: [
           {
             id: 'mark-read',
-            label: '标记为已读',
-            onClick: () => { if (thread) runOp('标记已读', onPatchThreadReq ? () => onPatchThreadReq(thread.id, { markRead: true }) : undefined) },
+            label: WF.sidebarActions.markAsRead,
+            onClick: () => { if (thread) runOp(WF.sidebarActions.markAsRead, onPatchThreadReq ? () => onPatchThreadReq(thread.id, { markRead: true }) : undefined) },
           },
           {
             id: 'toggle-pin',
-            label: meta.pinned ? '取消置顶' : '置顶聊天',
-            onClick: () => { if (thread) runOp(meta.pinned ? '取消置顶' : '置顶聊天', onPatchThreadReq ? () => onPatchThreadReq(thread.id, { pinned: !meta.pinned }) : undefined) },
+            label: meta.pinned ? WF.chatList.unpinChat : WF.chatList.pinChat,
+            onClick: () => { if (thread) runOp(meta.pinned ? WF.chatList.unpinChat : WF.chatList.pinChat, onPatchThreadReq ? () => onPatchThreadReq(thread.id, { pinned: !meta.pinned }) : undefined) },
           },
           {
             id: 'rename-bot',
-            label: '重命名',
+            label: WF.sidebarActions.rename,
             onClick: () => setRenameEmployeeTarget({ employeeId: targetId, current: employeeName, opener }),
           },
         ],
@@ -433,7 +434,7 @@ export function WorkforceChatList({
         items: [
           {
             id: 'copy-id',
-            label: '复制 ID',
+            label: WF.sidebarActions.copyId,
             onClick: () => { if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(targetId) },
           },
         ],
@@ -447,12 +448,12 @@ export function WorkforceChatList({
     if (meta.unreadCount && meta.unreadCount > 0) {
       const text = meta.unreadCount > 99 ? '99+' : String(meta.unreadCount)
       return (
-        <span className={css.chatBadgeCount} title={`有 ${meta.unreadCount} 条未读消息`}>
+        <span className={css.chatBadgeCount} title={WF.ui.unreadCount(meta.unreadCount)}>
           {text}
         </span>
       )
     }
-    return <span className={css.chatBadgeDot} title="有未读消息" />
+    return <span className={css.chatBadgeDot} title={WF.chatList.hasUnread} />
   }
 
   const renderRow = ({ row, meta }: { row: ChatRow; meta: RowMeta }) => {
@@ -480,7 +481,7 @@ export function WorkforceChatList({
             </span>
             <span className={css.chatLine}>
               <span className={css.chatPreview}>{meta.subtitle}</span>
-              {meta.pinned && <span className={css.chatPin} title="已置顶"><PinGlyph /></span>}
+              {meta.pinned && <span className={css.chatPin} title={WF.common.pinned}><PinGlyph /></span>}
             </span>
           </span>
         </button>
@@ -491,12 +492,12 @@ export function WorkforceChatList({
     const thread = row.thread
     const targetId = isStale ? row.thread.employeeId! : row.employee.id
     const active = activeDmEmployeeId === targetId
-    const displayName = employee?.name?.trim() || row.title.trim() || '员工'
+    const displayName = employee?.name?.trim() || row.title.trim() || WF.common.employee
     const isLeader = employee?.isLeader === true
     const roleTag = isStale
-      ? '已离线'
-      : isLeader && !displayName.includes('负责人')
-        ? '负责人'
+      ? WF.common.offline
+      : isLeader && !displayName.includes(WF.common.lead)
+        ? WF.common.lead
         : undefined
 
     return (
@@ -533,7 +534,7 @@ export function WorkforceChatList({
           </span>
           <span className={css.chatLine}>
             <span className={css.chatPreview}>{meta.subtitle}</span>
-            {meta.pinned && <span className={css.chatPin} title="已置顶"><PinGlyph /></span>}
+            {meta.pinned && <span className={css.chatPin} title={WF.common.pinned}><PinGlyph /></span>}
           </span>
         </span>
       </button>
@@ -546,9 +547,9 @@ export function WorkforceChatList({
     const allSelected = input.memberIds.length > 0 && input.memberIds.length === employees.length
     // 微信空群名回退：前 3 名成员名串；全选与不选一样视为全员，不落 memberIds。
     const fallback = members.length > 0
-      ? `${members.slice(0, 3).map(employee => employee.name).join('、')}${members.length > 3 ? `等${members.length}人` : ''}`
-      : '群聊'
-    await executeWithCatch('发起群聊', async () => {
+      ? `${members.slice(0, 3).map(employee => employee.name).join(', ')}${members.length > 3 ? WF.chatList.etAl(members.length) : ''}`
+      : WF.common.groupChat
+    await executeWithCatch(WF.common.createGroupChat, async () => {
       const createdId = onCreateChatReq
         ? await onCreateChatReq({ name: title || fallback, groupChatName: title || undefined, memberIds: members.length > 0 && !allSelected ? input.memberIds : undefined })
         : undefined
@@ -567,7 +568,7 @@ export function WorkforceChatList({
         (typeof err === 'object' && err !== null && ('status' in err && (err as { status: number }).status === 409))
         || (typeof err === 'object' && err !== null && ('code' in err && (err as { code: string }).code === 'conflict'))
         || (err instanceof Error && (err.message.includes('409') || err.message.includes('conflict') || err.message.includes('正在执行') || err.message.includes('任务')))
-      setDeleteTarget(prev => prev && { ...prev, error: isConflict ? '群聊里还有执行中的任务' : (err instanceof Error ? err.message : '删除群聊失败') })
+      setDeleteTarget(prev => prev && { ...prev, error: isConflict ? WF.chatList.deleteChatHasRunningTasks : (err instanceof Error ? err.message : WF.chatList.deleteChatFailed) })
     }
   }
 
@@ -578,14 +579,14 @@ export function WorkforceChatList({
         <div className={dialogCss.errorBanner} role="alert">
           <span className={dialogCss.errorMessage}>{opError.message}</span>
           <span className={dialogCss.errorActions}>
-            {opError.retry && <button type="button" className={dialogCss.errorRetryBtn} onClick={() => void opError.retry?.()}>重试</button>}
-            <button type="button" className={dialogCss.errorDismissBtn} onClick={() => setOpError(null)} aria-label="关闭">×</button>
+            {opError.retry && <button type="button" className={dialogCss.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</button>}
+            <button type="button" className={dialogCss.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</button>
           </span>
         </div>
       )}
 
       <div className={css.chatList}>
-        {rows.length === 0 && <div className={css.chatEmpty}>还没有会话。点上方 + 发起群聊。</div>}
+        {rows.length === 0 && <div className={css.chatEmpty}>{WF.chatList.emptyChats}</div>}
         {rows.map(renderRow)}
       </div>
 
@@ -615,7 +616,7 @@ export function WorkforceChatList({
           onSubmit={async value => {
             const target = renameTarget
             setRenameTarget(undefined)
-            await executeWithCatch('保存群聊名称', async () => {
+            await executeWithCatch(WF.chatList.groupChatName, async () => {
               await onPatchChannelReq?.(target.channelId, { groupChatName: value === '' ? null : value })
             })
           }}
@@ -625,8 +626,8 @@ export function WorkforceChatList({
         <ChatNameModal
           current={renameEmployeeTarget.current}
           fallback={renameEmployeeTarget.current}
-          title="重命名员工"
-          inputLabel="员工名称"
+          title={WF.sidebarActions.renameEmployee}
+          inputLabel={WF.sidebarActions.employeeName}
           hint=""
           restoreFocus={renameEmployeeTarget.opener}
           onClose={() => setRenameEmployeeTarget(undefined)}
@@ -635,7 +636,7 @@ export function WorkforceChatList({
             setRenameEmployeeTarget(undefined)
             const newName = value.trim()
             if (!newName) return
-            await executeWithCatch('重命名员工', async () => {
+            await executeWithCatch(WF.sidebarActions.renameEmployee, async () => {
               await onPatchEmployeeReq?.(target.employeeId, { name: newName })
             })
           }}
@@ -644,9 +645,9 @@ export function WorkforceChatList({
 
       {deleteTarget !== undefined && (
         <ConfirmDialog
-          title="删除群聊"
-          message={`确定要删除「${deleteTarget.title}」吗？删除后该会话下的任务历史不可恢复。`}
-          confirmLabel="确认删除"
+          title={WF.chatList.deleteChatTitle}
+          message={WF.chatList.deleteChatConfirm(deleteTarget.title)}
+          confirmLabel={WF.chatList.deleteChatTitle}
           danger
           error={deleteTarget.error}
           onCancel={() => setDeleteTarget(undefined)}
@@ -689,39 +690,39 @@ export function CreateChatModal({ employees, onClose, onSubmit }: {
 
   const modal = (
     <div className={dialogCss.dialogBackdrop} onClick={onClose}>
-      <div className={dialogCss.dialogCard} role="dialog" aria-modal="true" aria-label="发起群聊"
+      <div className={dialogCss.dialogCard} role="dialog" aria-modal="true" aria-label={WF.common.createGroupChat}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Escape' && !busy) { e.preventDefault(); e.stopPropagation(); onClose() } }}>
-        <h3 className={dialogCss.dialogTitle}>发起群聊</h3>
+        <h3 className={dialogCss.dialogTitle}>{WF.common.createGroupChat}</h3>
         <form className={dialogCss.dialogForm} onSubmit={e => void submit(e)}>
           <div className={dialogCss.formItem}>
-            <label className={dialogCss.formLabel} htmlFor="new-chat-name">群聊名称（可选）</label>
+            <label className={dialogCss.formLabel} htmlFor="new-chat-name">{WF.chatList.groupChatNameOptional}</label>
             <input
               id="new-chat-name"
               type="text"
               className={dialogCss.inputField}
               value={title}
-              placeholder="留空按成员名显示"
+              placeholder={WF.chatList.chatNamePlaceholder}
               maxLength={30}
               autoFocus
               onChange={e => setTitle(e.target.value)}
             />
           </div>
           <div className={dialogCss.formItem}>
-            <label className={dialogCss.formLabel}>选择成员（不选 = 全员；成员决定收件人、@ 与派工范围）</label>
-            <div className={css.memberList} role="group" aria-label="选择群聊成员">
+            <label className={dialogCss.formLabel}>{WF.chatList.selectMembersLabel}</label>
+            <div className={css.memberList} role="group" aria-label={WF.chatList.selectMembersAria}>
               {employees.map(employee => (
                 <label key={employee.id} className={css.memberRow}>
                   <input type="checkbox" checked={picked.has(employee.id)} onChange={() => toggle(employee.id)} />
-                  <span className={css.memberName}>{employee.name}{employee.isLeader && <span className={css.chatTag}>负责人</span>}</span>
+                  <span className={css.memberName}>{employee.name}{employee.isLeader && <span className={css.chatTag}>{WF.common.lead}</span>}</span>
                 </label>
               ))}
-              {employees.length === 0 && <span className={css.chatPreview}>还没有员工，先到员工管理添加。</span>}
+              {employees.length === 0 && <span className={css.chatPreview}>{WF.chatList.noEmployeesHint}</span>}
             </div>
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>取消</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? '创建中…' : '完成'}</button>
+            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
+            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.chatList.creating : WF.chatList.finish}</button>
           </div>
         </form>
       </div>
@@ -731,7 +732,7 @@ export function CreateChatModal({ employees, onClose, onSubmit }: {
 }
 
 /** 群聊名称编辑：留空保存 = 清除覆盖，回退到成员名串显示。 */
-function ChatNameModal({ current, fallback, title = '群聊名称', inputLabel, hint = '留空保存则按成员名显示', restoreFocus, onClose, onSubmit }: {
+function ChatNameModal({ current, fallback, title = WF.chatList.groupChatName, inputLabel, hint = WF.chatList.chatNameHint, restoreFocus, onClose, onSubmit }: {
   readonly current: string
   readonly fallback: string
   readonly title?: string | undefined
@@ -778,8 +779,8 @@ function ChatNameModal({ current, fallback, title = '群聊名称', inputLabel, 
             {hint && <span className={css.chatHint}>{hint}</span>}
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>取消</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? '保存中…' : '保存'}</button>
+            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
+            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.models.saving : WF.common.save}</button>
           </div>
         </form>
       </div>

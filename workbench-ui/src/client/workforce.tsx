@@ -107,11 +107,11 @@ function fmtHm(ts: string): string {
 function formatErrorReason(raw: string): string {
   if (!raw) return ''
   return raw
-    .replace(/\binterrupted\b/gi, '任务已被中断')
-    .replace(/\btimeout\b/gi, '执行超时')
-    .replace(/\bcancelled\b|\bcanceled\b/gi, '任务已取消')
-    .replace(/\baborted\b|\babort\b/gi, '执行已中止')
-    .replace(/执行停止：\s*/g, '执行已停止：')
+    .replace(/\binterrupted\b/gi, WF.taskStatus.taskInterrupted)
+    .replace(/\btimeout\b/gi, WF.taskStatus.executionTimeout)
+    .replace(/\bcancelled\b|\bcanceled\b/gi, WF.taskStatus.taskCancelled)
+    .replace(/\baborted\b|\babort\b/gi, WF.taskStatus.executionAborted)
+    .replace(/执行停止：\s*/g, WF.taskStatus.executionStopped)
 }
 function isStoppedReason(raw: string): boolean {
   return /^\s*(?:执行(?:已)?停止[：:]\s*)?(?:aborted|abort|cancelled|canceled|执行已中止|任务已取消|已停止)\s*$/i.test(raw)
@@ -140,15 +140,15 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
       <span className={css.taskStatus} data-state={task.status}>{WF.employee.running}</span>
     </div>}
     {stopped && <div className={css.taskActions}>
-      <span className={css.taskStatus} data-state={task.status}>■ 已停止{quiet ? ' · 本轮未产生回复' : ''}</span>
+      <span className={css.taskStatus} data-state={task.status}>{WF.taskStatus.stopped(quiet)}</span>
       {onSelectContinuation && (
         <button
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
-          title="在任务大厅以此任务为上下文继续追问"
+          title={WF.taskStatus.continueTitle}
         >
-          {isCurrentContinuation ? '✓ 正在延续此任务' : '↩ 继续此任务'}
+          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
         </button>
       )}
     </div>}
@@ -159,9 +159,9 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
-          title="在任务大厅以此任务为上下文继续追问"
+          title={WF.taskStatus.continueTitle}
         >
-          {isCurrentContinuation ? '✓ 正在延续此任务' : '↩ 继续此任务'}
+          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
         </button>
       )}
     </div>}
@@ -171,9 +171,9 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
-          title="在任务大厅以此任务为上下文继续追问"
+          title={WF.taskStatus.continueTitle}
         >
-          {isCurrentContinuation ? '✓ 正在延续此任务' : '↩ 继续此任务'}
+          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
         </button>
       </div>
     )}
@@ -181,7 +181,25 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
   </div>
 }
 
-/** 同一 turn 内折叠的工具/步骤行（showSteps 开启时使用）。 */
+function humanizeToolActivity(toolName: string): string {
+  switch (toolName) {
+    case 'wb_delegate_employee': return WF.toolActivity.delegate
+    case 'wb_create_employee': return WF.toolActivity.createEmployee
+    case 'wb_read_material': return WF.toolActivity.readMaterial
+    case 'wb_read_deliverable': return WF.toolActivity.readDeliverable
+    case 'wb_save_deliverable': return WF.toolActivity.saveDeliverable
+    case 'wb_publish_deliverable': return WF.toolActivity.publishDeliverable
+    case 'wb_save_skill_draft': return WF.toolActivity.saveSkillDraft
+    case 'wb_install_skill_draft': return WF.toolActivity.installSkillDraft
+    case 'wb_remember': return WF.toolActivity.remember
+    case 'wb_forget': return WF.toolActivity.forget
+    case 'wb_recall': return WF.toolActivity.recall
+    case 'wb_check_arithmetic': return WF.toolActivity.checkArithmetic
+    case 'web_search': return WF.toolActivity.webSearch
+    default: return WF.skeleton.tool(toolName)
+  }
+}
+
 function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessage[]; readonly onToggle: () => void }) {
   const [open, setOpen] = useState(false)
   const hasRunning = steps.some(s => s.running === true || s.tool?.status === 'running')
@@ -225,7 +243,7 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
           })}
         </div>
       )}
-      {open && <button type="button" className={css.stepsCollapse} onClick={toggle}>收起执行步骤 ▴</button>}
+      {open && <button type="button" className={css.stepsCollapse} onClick={toggle}>{WF.steps.collapseSteps}</button>}
     </div>
   )
 }
@@ -259,7 +277,7 @@ function SkeletonBubble({
   let statusText: string = WF.skeleton.processing
   if (activity?.state === 'tool') {
     avatarMotionState = 'searching'
-    statusText = activity.tool ? WF.skeleton.tool(activity.tool) : WF.skeleton.processing
+    statusText = activity.tool ? humanizeToolActivity(activity.tool) : WF.skeleton.processing
   } else if (activity?.state === 'thinking') {
     avatarMotionState = 'thinking'
     statusText = WF.skeleton.thinking
@@ -268,10 +286,10 @@ function SkeletonBubble({
     statusText = WF.skeleton.typing
   } else if (!woken) {
     avatarMotionState = 'waking'
-    statusText = '正在唤醒员工…'
+    statusText = WF.taskStatus.wakingEmployee
   } else {
     avatarMotionState = 'listening'
-    statusText = '已收到任务，等待开始…'
+    statusText = WF.taskStatus.taskReceivedWaiting
   }
 
   return (
@@ -965,14 +983,14 @@ function EarlierMessages({ loading, errors, onEarlier }: {
   // 容器不参与滚动锚定（见 .earlierRow）：它在新插入的历史行上方，被选为锚点会让补页后视口跳回顶端。
   if (errors.length > 0) return (
     <div className={css.earlierRow}>
-      <button type="button" className={css.earlierRetry} aria-label="重试加载更早消息" title="重试加载更早消息" onClick={onEarlier}>
+      <button type="button" className={css.earlierRetry} aria-label={WF.employee.older} title={WF.employee.older} onClick={onEarlier}>
         <IconRefreshOutlineRegular size={14} />
       </button>
     </div>
   )
   // 不加载时也保留这一行的高度，只隐藏 spinner：读者停在最顶时若整行卸载，内容会上跳一个行高。
   if (!loading) return <div className={css.earlierRow} aria-hidden="true"><span className={`${css.earlierSpinner} ${css.earlierSpinnerIdle}`} /></div>
-  return <div className={css.earlierRow} aria-label="加载更早消息"><span className={css.earlierSpinner} /></div>
+  return <div className={css.earlierRow} aria-label={WF.employee.older}><span className={css.earlierSpinner} /></div>
 }
 
 /** 一条消息行。React.memo：流式期间未变化行零重渲染——props 全部传原始值或
@@ -1140,7 +1158,7 @@ const MessageRow = memo(function MessageRow({
               </span>
             </button>
           ) : (
-            <div className={css.replyQuote} title={repliedSnippet ? `引用原文：${repliedSnippet}` : undefined}>
+            <div className={css.replyQuote} title={repliedSnippet ? WF.reply.quoteSnippet(repliedSnippet) : undefined}>
               <span className={css.replyTarget}>@{profile.name}</span>
               <span className={css.replyDivider}>·</span>
               <span className={css.replySnippet}>
@@ -1157,13 +1175,14 @@ const MessageRow = memo(function MessageRow({
               onDm={onDm}
               tasks={tasks}
               hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
+              hasDeliverables={task !== undefined && task.deliverables.length > 0}
             />
             {actionBar}
           </div>
         )}
         {message.attachments !== undefined && message.attachments.length > 0 && (
           <AttachmentBar
-            label="本轮文件"
+            label={WF.attachments.currentRoundFiles}
             items={message.attachments.map(file => ({ url: file.url, locationUrl: file.locationUrl, name: file.name, sizeBytes: file.sizeBytes, mime: file.mime }))}
           />
         )}
@@ -1192,7 +1211,7 @@ const MessageRow = memo(function MessageRow({
             ) : (
               openThreadId !== undefined && onOpenThread !== undefined && (task !== undefined || tasks.some(t => t.threadId === message.threadId || t.id === message.threadId)) ? (
                 <button type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
-                  查看任务
+                  {WF.thread.open}
                 </button>
               ) : null
             )}
@@ -1226,8 +1245,8 @@ const MessageRow = memo(function MessageRow({
               const hitRate = totalIn > 0 && cached > 0 ? Math.round((cached / totalIn) * 100) : 0
               const formatK = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
               return (
-                <span className={css.tokenHitBadge} title={`输入总计: ${totalIn} (缓存命中 ${cached}) · 输出: ${u.outputTokens}`}>
-                  {hitRate > 0 ? `⚡ 缓存 ${hitRate}%` : `入 ${formatK(totalIn)}`}
+                <span className={css.tokenHitBadge} title={WF.canvas.cacheTitle(totalIn, cached, u.outputTokens)}>
+                  {WF.canvas.cacheBadge(hitRate, formatK(totalIn))}
                 </span>
               )
             })()}
@@ -1250,13 +1269,13 @@ const MessageRow = memo(function MessageRow({
             )}
           </div>
         )}
-        {message.delivery === 'sending' && <span className={css.deliveryStatus} role="status">发送中…</span>}
+        {message.delivery === 'sending' && <span className={css.deliveryStatus} role="status">{WF.ui.sendingDelivery}…</span>}
         {message.delivery === 'failed' && (
           <div className={css.sendFailure} role="alert">
-            <span>发送失败</span><span aria-hidden="true">·</span>
+            <span>{WF.common.failed}</span><span aria-hidden="true">·</span>
             <button type="button" disabled={source === undefined} onClick={() => {
               if (message.clientId) void source?.retryMessage(message.clientId).catch(() => { /* Failure remains visible on this message. */ })
-            }}>重试</button>
+            }}>{WF.common.retry}</button>
             {message.deliveryError && <span>{formatErrorReason(message.deliveryError)}</span>}
           </div>
         )}
@@ -1358,7 +1377,7 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
   const isError = notice.error !== undefined && !stopped
   const modelError = classifyModelError(notice.errorCode, raw)
   const detail = modelError?.message ?? formatErrorReason(raw).replace(/^(?:执行(?:已)?停止|执行失败)[：:]\s*/, '')
-  const summary = isError ? `执行失败：${detail}` : detail
+  const summary = isError ? `${WF.taskStatus.executionFailedPrefix}${detail}` : detail
   const errorAction = parseModelErrorAction(notice.errorCode, raw)
   const retry = async (): Promise<void> => {
     if (busy || retryTarget === undefined) return
@@ -1368,7 +1387,7 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
     catch (error) { setActionError(formatErrorReason(error instanceof Error ? error.message : String(error))) }
     finally { setBusy(false) }
   }
-  if (stopped) return <div className={css.msgNotice} data-kind="info"><div className={css.msgNoticeLine}><span className={css.msgNoticeIcon} aria-hidden="true">■</span><span className={css.msgNoticeText}>已停止</span></div></div>
+  if (stopped) return <div className={css.msgNotice} data-kind="info"><div className={css.msgNoticeLine}><span className={css.msgNoticeIcon} aria-hidden="true">■</span><span className={css.msgNoticeText}>{WF.taskStatus.taskStoppedStatus}</span></div></div>
   return (
     <div className={css.msgNotice} data-kind={isError ? 'error' : 'info'}>
       <button type="button" className={css.msgNoticeLine} aria-expanded={open} onClick={() => setOpen(value => !value)}>
@@ -1434,7 +1453,7 @@ function TriggerMenu({ items, activeIndex, loading, onPick }: {
     }
   }, [activeIndex])
 
-  if (loading) return <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}><div className={css.atItem}>加载中…</div></div>
+  if (loading) return <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}><div className={css.atItem}>{WF.common.loading}</div></div>
   if (items.length === 0) return <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}><div className={css.atItem}>{WF.composer.atEmpty}</div></div>
   return (
     <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}>
@@ -1548,6 +1567,17 @@ export function WorkforceComposer(props: ComposerProps) {
     try { return localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? '' } catch { return props.initialDraft ?? '' }
   })
   useEffect(() => { try { localStorage.setItem(`workforce.draft.${props.draftKey}`, draft) } catch {} }, [draft, props.draftKey])
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ draftKey?: string; text?: string }>).detail
+      if (detail && detail.draftKey === props.draftKey && typeof detail.text === 'string') {
+        setDraft(detail.text)
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('workforce:fill-draft', handler)
+    return () => window.removeEventListener('workforce:fill-draft', handler)
+  }, [props.draftKey])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [trigger, setTrigger] = useState<ComposerTrigger | undefined>()
@@ -1599,7 +1629,7 @@ export function WorkforceComposer(props: ComposerProps) {
         sizeBytes: file.size,
         mime: file.type || 'application/octet-stream',
         ...(!tooLarge && attachmentKind(file.name, file.type) === 'image' ? { previewUrl: URL.createObjectURL(file) } : {}),
-        ...(tooLarge ? { error: '单个附件不能超过 32 MiB' } : {}),
+        ...(tooLarge ? { error: WF.taskStatus.attachmentSizeLimit } : {}),
       }
       updateAttachments([...attachmentsRef.current, attachment])
       if (tooLarge) continue
@@ -1730,6 +1760,8 @@ export function WorkforceComposer(props: ComposerProps) {
       if (mountedRef.current) setSending(false)
     }
   }
+  const continuationPrompt = props.continuationTask?.prompt?.trim() || props.continuationTask?.title || WF.taskStatus.currentTask
+  const continuationFirstLine = continuationPrompt.split(/\r?\n/)[0]?.trim() || continuationPrompt
   return (
     <div
       className={`${css.composerWrap}${dragging ? ` ${attachmentCss.dropActive}` : ''}`}
@@ -1765,9 +1797,9 @@ export function WorkforceComposer(props: ComposerProps) {
           <div className={css.contextRibbon}>
             <div className={css.contextRibbonPill}>
               <span className={css.contextRibbonIcon}>↩</span>
-              <span className={css.contextRibbonLabel}>延续：</span>
-              <span className={css.contextRibbonTitle} title={props.continuationTask?.title}>
-                {props.continuationTask?.title || props.continuationTask?.prompt?.slice(0, 30) || '当前任务'}
+              <span className={css.contextRibbonLabel}>{WF.taskStatus.continueLabel}</span>
+              <span className={css.contextRibbonTitle} title={continuationPrompt}>
+                {continuationFirstLine}
               </span>
             </div>
             <button
@@ -1777,24 +1809,24 @@ export function WorkforceComposer(props: ComposerProps) {
                 setContinuationMode('new')
                 props.onResetContinuation?.()
               }}
-              title="切换为发起全新任务 (Esc)"
+              title={WF.taskStatus.startNewTaskTitle}
             >
-              ✕ 发起新任务
+              {WF.taskStatus.startNewTask}
             </button>
           </div>
         ) : (
           <div className={css.contextRibbonNew}>
             <div className={css.contextRibbonPillNew}>
               <span className={css.contextRibbonIcon}>✨</span>
-              <span className={css.contextRibbonLabel}>新任务</span>
+              <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
             </div>
             <button
               type="button"
               className={css.contextRibbonBtn}
               onClick={() => setContinuationMode('continue')}
-              title="切换回延续上一个任务"
+              title={WF.taskStatus.switchBackContinuationTitle}
             >
-              ↩ 切换回延续任务
+              {WF.taskStatus.switchBackContinuation}
             </button>
           </div>
         )
@@ -1809,11 +1841,11 @@ export function WorkforceComposer(props: ComposerProps) {
       )}
       <div className={css.composer} data-section="composer">
         {attachments.length > 0 && (
-          <div className={attachmentCss.attachments} aria-label="待发送附件">
+          <div className={attachmentCss.attachments} aria-label={WF.taskStatus.attachmentsToSendAria}>
             {attachments.map(attachment => {
               const kind = attachmentKind(attachment.name, attachment.mime)
-              const label = kind === 'image' ? '图片' : kind === 'video' ? '视频' : kind === 'audio' ? '音频'
-                : attachment.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? '文件'
+              const label = kind === 'image' ? WF.taskStatus.typeImage : kind === 'video' ? WF.taskStatus.typeVideo : kind === 'audio' ? WF.taskStatus.typeAudio
+                : attachment.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? WF.taskStatus.typeFile
               return (
                 <div key={attachment.key} className={attachmentCss.chip} data-attachment-name={attachment.name}>
                   {attachment.previewUrl !== undefined
@@ -1823,10 +1855,10 @@ export function WorkforceComposer(props: ComposerProps) {
                     <span className={attachmentCss.name} title={attachment.name}>{attachment.name}</span>
                     <span className={attachmentCss.meta}>{formatFileSize(attachment.sizeBytes)} · {attachment.mime}</span>
                     {attachment.error !== undefined
-                      ? <span className={attachmentCss.error} role="alert">上传失败：{attachment.error}</span>
-                      : <span className={attachmentCss.meta} role="status">{attachment.uploaded === undefined ? '上传中…' : '已上传'}</span>}
+                      ? <span className={attachmentCss.error} role="alert">{WF.taskStatus.uploadFailedPrefix}{attachment.error}</span>
+                      : <span className={attachmentCss.meta} role="status">{attachment.uploaded === undefined ? WF.ui.uploadingState : WF.taskStatus.uploadSuccess}</span>}
                   </div>
-                  <button type="button" className={attachmentCss.remove} aria-label={`移除附件 ${attachment.name}`} onClick={() => removeAttachment(attachment.key)}>×</button>
+                  <button type="button" className={attachmentCss.remove} aria-label={WF.ui.removeAttachmentAria(attachment.name)} onClick={() => removeAttachment(attachment.key)}>×</button>
                 </div>
               )
             })}
@@ -1843,7 +1875,7 @@ export function WorkforceComposer(props: ComposerProps) {
           ref={inputRef}
           className={css.composerInput}
           aria-label={WF.composer.placeholder}
-          placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? `回复任务：${props.continuationTask?.title || '当前任务'} · Enter 发送，或 Esc 发起新任务` : '发起新任务 · @ 选择员工') : WF.composer.placeholder)}
+          placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.composer.replyToTask : WF.composer.startNewTaskHint) : WF.composer.placeholder)}
           value={draft}
           rows={2}
           autoFocus={props.autoFocus === true}
@@ -1884,12 +1916,12 @@ export function WorkforceComposer(props: ComposerProps) {
           }}
         />
         <div className={css.composerTools}>
-          <span className={css.composerHint}>Enter 发送 · Shift+Enter 换行</span>
+          <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
           {props.onUploadFile !== undefined && (
-            <button type="button" className={`${css.atItem} ${css.composerAttach}`} onClick={() => fileInputRef.current?.click()}>添加附件</button>
+            <button type="button" className={`${css.atItem} ${css.composerAttach}`} onClick={() => fileInputRef.current?.click()}>{WF.ui.attachmentsAria}</button>
           )}
           <button type="button" className={css.composerSend} disabled={sendDisabled} onClick={() => void doSend(continuationMode === 'continue' && isContinuationActive)}>
-            {sending ? WF.composer.sending : uploading ? '上传中…' : WF.composer.send}
+            {sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send}
           </button>
         </div>
       </div>
@@ -1923,7 +1955,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
   const view = threadView(snapshot, threadId)
   const task = threadTask(snapshot, threadId)
   const thread = useMemo(() => snapshot.threads.find(item => item.id === threadId), [snapshot.threads, threadId])
-  const resolvedTitle = title || task?.title || thread?.title || '任务详情'
+  const resolvedTitle = title || task?.title || thread?.title || WF.thread.title
   // 群聊成员名单约束 @ 候选：任务线程沿用其所属频道的 memberIds；未配置则全员。
   const mentionable = useMemo(() => {
     const memberIds = (snapshot.channels.find(channel => channel.id === thread?.channelId) as HostChannel | undefined)?.memberIds
@@ -2071,7 +2103,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
         onPointerDown={handleResizeStart}
         role="separator"
         aria-orientation="vertical"
-        aria-label="调节侧边栏宽度"
+        aria-label={WF.taskStatus.resizeSidebarAria}
       />
       <div className={css.threadHead}>
         <div className={css.threadHeadTop}>
@@ -2080,9 +2112,9 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
             {task !== undefined && (
               <span className={css.taskStatus} data-state={task.status}>
                 {task.status === 'running' ? WF.employee.running
-                  : task.status === 'done' ? '已完成'
+                  : task.status === 'done' ? WF.common.done
                   : task.status === 'failed' ? WF.employee.failed
-                  : '已停止'}
+                  : WF.taskStatus.taskStoppedStatus}
               </span>
             )}
             {view.usage && prefs.showTokenStats !== false && (() => {
@@ -2091,8 +2123,8 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
               const totalIn = cached + u.inputTokens
               const hitRate = totalIn > 0 && cached > 0 ? Math.round((cached / totalIn) * 100) : 0
               return (
-                <span className={css.threadTokenStats} title={`输入: ${totalIn} (缓存: ${cached}) · 输出: ${u.outputTokens}`}>
-                  ⚡ 缓存 {hitRate}%
+                <span className={css.threadTokenStats} title={WF.canvas.cacheTitle(totalIn, cached, u.outputTokens)}>
+                  {WF.canvas.cacheBadge(hitRate, String(totalIn))}
                 </span>
               )
             })()}
@@ -2101,8 +2133,8 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
             <button
               type="button"
               className={css.threadActionBtn}
-              title="当前线程的文件"
-              aria-label="当前线程的文件"
+              title={WF.taskStatus.threadFiles}
+              aria-label={WF.taskStatus.threadFiles}
               onClick={() => setFilesOpen(true)}
             >
               <IconDeliverDocRegular size={14} />
@@ -2122,12 +2154,12 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
         const m = messagesById.get(sourceMessageId)!
         return (
           <div className={css.threadSource}>
-            <span>来自 · {m.senderName}</span>
+            <span>{WF.activity.fromSender(m.senderName)}</span>
             <p>{m.text}</p>
           </div>
         )
       })()}
-      {view.error && <div className={css.streamError} role="alert">{view.error}<button type="button" className={css.empAction} onClick={() => source.refresh()}>重试</button></div>}
+      {view.error && <div className={css.streamError} role="alert">{view.error}<button type="button" className={css.empAction} onClick={() => source.refresh()}>{WF.common.retry}</button></div>}
       <div className={css.scrollArea}>
       <div className={css.threadScroll} ref={scrollRef} tabIndex={-1}>
         <div className={css.messageList} ref={contentRef}>
@@ -2228,7 +2260,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
       <WorkforceComposer
         key={threadId}
         draftKey={threadId}
-        hint="回复此任务 · @ 选择员工"
+        hint={WF.taskStatus.replyTaskHint}
         employees={employees}
         mentionable={mentionable}
         allowedSkills={thread?.kind === 'dm' && thread.employeeId ? employees.find(e => e.id === thread.employeeId)?.skills : task?.assigneeId ? employees.find(e => e.id === task.assigneeId)?.skills : undefined}
@@ -2239,7 +2271,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
       />
       {filesOpen && (
         <WorkforceFilesDrawer
-          title="当前线程的文件"
+          title={WF.taskStatus.threadFiles}
           contextLabel={title}
           status={snapshot.phase === 'loading' && visibleThreadFiles.length === 0 ? 'loading' : visibleThreadFiles.length === 0 ? 'empty' : 'ready'}
           onClose={() => setFilesOpen(false)}
@@ -2254,6 +2286,63 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
 export type WorkforceSurface =
   | { readonly kind: 'channel'; readonly id: string }
   | { readonly kind: 'dm'; readonly threadId: string; readonly employeeId: string }
+
+function generateStartersForEmployee(emp: Employee): readonly string[] {
+  const role = (emp.role || '').toLowerCase()
+  const title = emp.title || ''
+  const name = emp.name || ''
+
+  if (role.includes('analyst') || title.includes('分析') || name.includes('分析')) {
+    return WF.dmStarters.analyst
+  }
+
+  if (role.includes('writer') || title.includes('文案') || title.includes('执行') || name.includes('文案') || name.includes('执行')) {
+    return WF.dmStarters.writer
+  }
+
+  if (role.includes('leader') || emp.isLeader || title.includes('协调') || title.includes('负责')) {
+    return WF.dmStarters.leader
+  }
+
+  return WF.dmStarters.generic(name)
+}
+
+function DmEmptyCard({ employee, avatarStyle, onSelectStarter }: {
+  readonly employee: Employee
+  readonly avatarStyle: AvatarStyle
+  readonly onSelectStarter: (text: string) => void
+}) {
+  const starters = useMemo(() => generateStartersForEmployee(employee), [employee])
+  return (
+    <div className={css.streamEmpty} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '40px 20px', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+      <WorkforceAvatar
+        name={employee.name}
+        color={employee.avatarColor}
+        role={employee.role}
+        size={56}
+        style={avatarStyle}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--wb-fg)' }}>{employee.name}</span>
+        {employee.title && <span style={{ fontSize: 12, color: 'var(--wb-accent, #00c375)', fontWeight: 500 }}>{employee.title}</span>}
+        {employee.persona && <p style={{ fontSize: 13, color: 'var(--wb-subtle)', margin: '4px 0 0', lineHeight: 1.5 }}>{employee.persona}</p>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', marginTop: 8 }}>
+        {starters.map((starter, idx) => (
+          <button
+            key={idx}
+            type="button"
+            className={css.empAction}
+            style={{ width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: 8, fontSize: 13, lineHeight: 1.4, cursor: 'pointer', border: '1px solid var(--wb-line)', background: 'var(--wb-surface)', color: 'var(--wb-fg)' }}
+            onClick={() => onSelectStarter(starter)}
+          >
+            💭 {starter}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 /** 主工作区：surface 决定中列内容；thread 面板由页面态选中。 */
 export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, onCloseThread, onOpenThread, onNavigation, onOpenMemorySource, sourceMessageId }: {
@@ -2323,6 +2412,23 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
     const threads = snapshot.threads.filter(thread => thread.id === surface.threadId)
     return { messages: threadView(snapshot, surface.threadId).list, threads, earlierThreads: threads }
   }, [snapshot, surface])
+  useEffect(() => {
+    if (surface.kind === 'channel') {
+      const channel = snapshot.channels.find(c => c.id === surface.id)
+      const hasUnread = Boolean(channel && typeof channel === 'object' && 'unread' in channel && channel.unread === true)
+        || Boolean(channel && typeof channel === 'object' && 'unreadCount' in channel && typeof channel.unreadCount === 'number' && channel.unreadCount > 0)
+      if (hasUnread) {
+        void source.markChannelRead(surface.id).catch(() => {})
+      }
+    } else if (surface.kind === 'dm') {
+      const thread = snapshot.threads.find(t => t.id === surface.threadId)
+      const hasUnread = Boolean(thread && typeof thread === 'object' && 'unread' in thread && thread.unread === true)
+        || Boolean(thread && typeof thread === 'object' && 'unreadCount' in thread && typeof thread.unreadCount === 'number' && thread.unreadCount > 0)
+      if (hasUnread) {
+        void source.patchThread(surface.threadId, { markRead: true }).catch(() => {})
+      }
+    }
+  }, [surface, snapshot.channels, snapshot.threads, source, messages.length])
   const mainScope = `${surface.kind}:${surface.kind === 'channel' ? surface.id : surface.threadId}`
   const displayItems = useMemo(
     () => processMessagesForDisplay(messages, prefs.showSteps),
@@ -2409,8 +2515,8 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
   const deletedDm = surface.kind === 'dm' && snapshot.phase !== 'loading' && dmEmployee === undefined
   const title = surface.kind === 'channel'
     ? (snapshot.channels.find(c => c.id === surface.id)?.name ?? surface.id)
-    : (dmEmployee?.name ?? snapshot.threads.find(thread => thread.id === surface.threadId)?.title ?? '员工历史')
-  const desc = deletedDm ? '已删除员工 · 历史只读' : surface.kind === 'channel' ? WF.channels.generalDesc : WF.dm.empty
+    : (dmEmployee?.name ?? snapshot.threads.find(thread => thread.id === surface.threadId)?.title ?? WF.taskStatus.employeeHistory)
+  const desc = deletedDm ? WF.taskStatus.deletedEmployeeHistoryDesc : surface.kind === 'channel' ? WF.channels.generalDesc : WF.dm.empty
 
   // 频道发送：POST 到频道 thread（Host 语义：channel thread 发消息=建任务）。
   // 频道 thread id 由 threads 列表给出（kind==='channel'）；暂缺时 composer 不挂。
@@ -2525,7 +2631,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
       >
         <div className={css.streamHead} data-section="stream-head">
           <div className={css.streamHeadRow}>
-            <button type="button" className={css.navigationToggle} aria-label="展开频道导航" onClick={onNavigation}>
+            <button type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <line x1="4" y1="6" x2="20" y2="6"/>
                 <line x1="4" y1="12" x2="20" y2="12"/>
@@ -2550,7 +2656,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                 <Icon name="more" width={18} height={18} />
               </button>
               {actionMenuOpen && (
-                <div className={css.headActionDropdown} role="menu" aria-label="操作与设置">
+                <div className={css.headActionDropdown} role="menu" aria-label={WF.taskStatus.actionsAndSettingsAria}>
                   {surface.kind === 'channel' && (
                     <button
                       type="button"
@@ -2562,7 +2668,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                       }}
                     >
                       <Icon name="memory" width={15} height={15} />
-                      <span>频道记忆</span>
+                      <span>{WF.taskStatus.channelMemoryTab}</span>
                     </button>
                   )}
                   <button
@@ -2575,7 +2681,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                     }}
                   >
                     <Icon name="file" width={15} height={15} />
-                    <span>会话文件</span>
+                    <span>{WF.taskStatus.sessionFilesTab}</span>
                   </button>
                   <button
                     type="button"
@@ -2600,21 +2706,21 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                     }}
                   >
                     <Icon name="settings" width={15} height={15} />
-                    <span>偏好设置</span>
+                    <span>{WF.settings.preferences}</span>
                   </button>
                 </div>
               )}
               {settingsOpen && (
                 <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>监控与统计</div>
+                    <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
                     <label className={css.settingsCheckbox}>
                       <input
                         type="checkbox"
                         checked={prefs.showTokenStats !== false}
                         onChange={e => setPrefs({ showTokenStats: e.target.checked })}
                       />
-                      <span>显示 Token 与缓存指标</span>
+                      <span>{WF.settings.showTokens}</span>
                     </label>
                   </div>
                   <div className={css.settingsDivider} />
@@ -2730,16 +2836,16 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>全局记忆</button>
+                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>{WF.taskStatus.globalMemoryTitle}</button>
                     <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setSkillDraftsOpen(true) }}>
                       {WF.skillDrafts.menuTitle}{pendingDraftCount > 0 ? `（${WF.skillDrafts.pendingBadge(pendingDraftCount)}）` : ''}
                     </button>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>导出诊断信息</button>
+                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>{WF.diagnostics.title}</button>
                     <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setBackupOpen(true) }}>{WF.backup.title}</button>
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>模型服务 (BYOK)</div>
+                    <div className={css.settingsSectionTitle}>{WF.models.title} (BYOK)</div>
                     <button
                       type="button"
                       className={css.settingsMenuAction}
@@ -2767,7 +2873,17 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           {showStreamSkeleton ? (
             <MessageStreamSkeleton />
           ) : displayItems.length === 0 && snapshot.phase === 'ready' && skeletons.length === 0 ? (
-            <div className={css.streamEmpty}>{WF.employee.empty}</div>
+            surface.kind === 'dm' && dmEmployee ? (
+              <DmEmptyCard
+                employee={dmEmployee}
+                avatarStyle={prefs.avatarStyle}
+                onSelectStarter={text => {
+                  window.dispatchEvent(new CustomEvent('workforce:fill-draft', { detail: { draftKey: activeThreadId, text } }))
+                }}
+              />
+            ) : (
+              <div className={css.streamEmpty}>{WF.employee.empty}</div>
+            )
           ) : (
             visibleItems.map((item, index) => {
               if (item.kind === 'steps') {
@@ -2866,12 +2982,14 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           {hasNewMessages && <button type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</button>}
           {replyJump.notice !== undefined && <div className={css.replyJumpNotice} role="status">{replyJump.notice}</div>}
         </div>
-        {deletedDm && <div className={css.taskActions}>员工已删除，历史消息仍可查看。</div>}
+        {deletedDm && <div className={css.taskActions}>{WF.taskStatus.deletedEmployeeNotice}</div>}
         {activeThreadId !== undefined && !deletedDm && (
           <WorkforceComposer
             key={activeThreadId}
             draftKey={activeThreadId}
-            hint={surface.kind === 'channel' ? undefined : '发私信 · Enter 发送'}
+            hint={surface.kind === 'channel'
+              ? WF.composer.messageChannel(title)
+              : WF.composer.messageDm(dmEmployee?.name || title)}
             employees={employees}
             mentionable={mentionable}
             allowedSkills={surface.kind === 'dm' ? employees.find(e => e.id === surface.employeeId)?.skills : undefined}
@@ -2911,7 +3029,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
         />
       )}
       {memoryScope !== undefined && <WorkforceMemoryDialog
-        title={memoryScope === 'channel' ? `${title} · 频道记忆` : '全局记忆'}
+        title={memoryScope === 'channel' ? WF.taskStatus.channelMemoryTitle(title) : WF.taskStatus.globalMemoryTitle}
         scope={memoryScope}
         scopeId={memoryScope === 'channel' && surface.kind === 'channel' ? surface.id : undefined}
         employees={employees}
@@ -2933,8 +3051,8 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
       />}
       {filesOpen && (
         <WorkforceFilesDrawer
-          title="当前对话的文件"
-          contextLabel={surface.kind === 'channel' ? `频道 #${title} 的任务文件` : `私信 · ${title}`}
+          title={WF.taskStatus.chatFiles}
+          contextLabel={surface.kind === 'channel' ? WF.taskStatus.channelFilesContext(title) : WF.taskStatus.dmFilesContext(title)}
           status={snapshot.phase === 'loading' && visibleContextFiles.length === 0 ? 'loading' : visibleContextFiles.length === 0 ? 'empty' : 'ready'}
           onClose={() => setFilesOpen(false)}
         >

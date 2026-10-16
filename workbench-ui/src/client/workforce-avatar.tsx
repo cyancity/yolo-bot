@@ -7,6 +7,7 @@
 import { useEffect, useId, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { useWorkforcePrefs } from './workforce-prefs.ts'
+import { WF } from './workforce-strings.ts'
 import {
   attachAvatarMotion,
   DEFAULT_GAZE_X,
@@ -51,40 +52,40 @@ export interface AvatarPaletteDefinition {
 export const AVATAR_PALETTES: readonly AvatarPaletteDefinition[] = [
   {
     id: 'retro-cream',
-    label: '复古米白',
+    get label() { return WF.employee.palettes.retroCream.label },
     caseColor: '#F4EEE0',
     eyeColor: '#FF5459',
-    description: '文案员默认 · 温暖复古',
+    get description() { return WF.employee.palettes.retroCream.desc },
   },
   {
     id: 'titanium-obsidian',
-    label: '钛金黑曜',
+    get label() { return WF.employee.palettes.titaniumObsidian.label },
     caseColor: '#383C46',
     eyeColor: '#FFB800',
-    description: '负责人默认 · 沉稳冷峻',
+    get description() { return WF.employee.palettes.titaniumObsidian.desc },
   },
   {
     id: 'cyber-cyan',
-    label: '赛博青',
+    get label() { return WF.employee.palettes.cyberCyan.label },
     caseColor: '#E2F1F5',
     eyeColor: '#00E5FF',
-    description: '分析员默认 · 科技清爽',
+    get description() { return WF.employee.palettes.cyberCyan.desc },
   },
   {
     id: 'geek-violet',
-    label: '极客紫',
+    get label() { return WF.employee.palettes.geekViolet.label },
     caseColor: '#EFEBF8',
     eyeColor: '#B066FE',
-    description: '智性极客 · 神秘优雅',
+    get description() { return WF.employee.palettes.geekViolet.desc },
   },
   {
     id: 'mint-sage',
-    label: '薄荷鼠尾草',
+    get label() { return WF.employee.palettes.mintSage.label },
     caseColor: '#E2EFE8',
     eyeColor: '#10B981',
-    description: '清新敏锐 · 专注自然',
+    get description() { return WF.employee.palettes.mintSage.desc },
   },
-] as const
+]
 
 const IS_PALETTE: Record<string, boolean> = {
   'retro-cream': true,
@@ -108,10 +109,10 @@ export function defaultPaletteForRole(name: string, role?: string): AvatarPalett
   if (normRole === 'leader' || normName === '负责人' || normName.includes('负责人') || normName === 'leader') {
     return 'titanium-obsidian'
   }
-  if (normRole === 'analyst' || normName === '分析员' || normName.includes('分析员') || normName === 'analyst') {
+  if (normRole === 'analyst' || normName === '分析' || normName === '分析员' || normName.includes('分析') || normName === 'analyst') {
     return 'cyber-cyan'
   }
-  if (normRole === 'writer' || normName === '文案员' || normName.includes('文案员') || normName === 'writer') {
+  if (normRole === 'writer' || normName === '执行' || normName === '执行员' || normName === '文案' || normName === '文案员' || normName.includes('执行') || normName.includes('文案') || normName === 'writer') {
     return 'retro-cream'
   }
 
@@ -183,7 +184,7 @@ export interface WorkforceAvatarProps {
   readonly color?: string | undefined
   /** 显式指定 5 套机身调色盘之一 */
   readonly palette?: AvatarPalette | undefined
-  /** 头像风格：circle 圆形，terminal 复古终端屏（默认 terminal） */
+  /** 头像风格：circle 圆形，terminal 复古终端屏（默认 circle） */
   readonly style?: AvatarStyle | undefined
   /** 终端输出动效类型：hash、binary、cli */
   readonly typingEffect?: TypingEffect | undefined

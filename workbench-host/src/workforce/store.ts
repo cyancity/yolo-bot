@@ -202,8 +202,8 @@ export class WorkforceStore {
         schemaVersion: WORKFORCE_SCHEMA_VERSION,
         employees: [
           employee('leader', '负责人', '任务协调', 'leader', '接收用户任务，按工作流技能核对输入与依赖，派可执行步骤给专业员工，核对实际结果并交付。', [...BUILTIN_WORKFORCE_SKILLS], true),
-          employee('analyst', '分析员', '材料分析', 'analyst', '读取用户材料，提取事实、限制与任务要求。区分事实与推断，不编造。', [...ANALYST_WORKFORCE_SKILLS]),
-          employee('writer', '执行员', '任务执行', 'writer', '依据材料和分析结果执行任务，核对限制并保存实际成果。', [...COMMON_WORKFORCE_SKILLS]),
+          employee('analyst', '分析', '材料分析', 'analyst', '读取用户材料，提取事实、限制与任务要求。区分事实与推断，不编造。', [...ANALYST_WORKFORCE_SKILLS]),
+          employee('writer', '执行', '任务执行', 'writer', '依据材料和分析结果执行任务，核对限制并保存实际成果。', [...COMMON_WORKFORCE_SKILLS]),
         ],
         channels: [{ id: 'general', name: '任务大厅', sort: 0, createdAt: stamp }],
         channelGroups: [],

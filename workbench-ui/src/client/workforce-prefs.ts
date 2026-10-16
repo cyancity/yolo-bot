@@ -46,9 +46,9 @@ const DEFAULT_PREFS: WorkforcePrefs = {
   style: 'discord',
   scheme: 'system',
   showSteps: false,
-  avatarStyle: 'terminal',
+  avatarStyle: 'circle',
   typingEffect: 'hash',
-  showTokenStats: true,
+  showTokenStats: false,
 }
 
 function migrateThemeToScheme(theme: unknown): WorkforceScheme {
@@ -67,9 +67,9 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
       style: raw.style === 'wechat' ? 'wechat' : 'discord',
       scheme: raw.scheme === 'light' || raw.scheme === 'dark' ? raw.scheme : 'system',
       showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
-      avatarStyle: raw.avatarStyle === 'circle' ? 'circle' : 'terminal',
+      avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
       typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
-      showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : true,
+      showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
     }
   }
   // V1 迁移：chatLayout=wechat 进 style；具名主题进 scheme；sidebarMode 不再使用
@@ -78,9 +78,9 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
     style: raw.chatLayout === 'wechat' ? 'wechat' : 'discord',
     scheme: migrateThemeToScheme(raw.theme),
     showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
-    avatarStyle: raw.avatarStyle === 'circle' ? 'circle' : 'terminal',
+    avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
     typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
-    showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : true,
+    showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
   }
 }
 

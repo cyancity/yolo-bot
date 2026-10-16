@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import css from './workforce-skeleton.module.css'
+import { WF } from './workforce-strings.ts'
 
 /**
  * 延迟展示骨架屏 Hook：加载时间 < delayMs（默认 150ms）时不闪烁骨架屏。
@@ -32,7 +33,7 @@ export function useDelayedLoading(loading: boolean, delayMs = 150): boolean {
  */
 export function MessageStreamSkeleton() {
   return (
-    <div className={css.streamSkeleton} data-workforce-skeleton="messages" aria-busy="true" aria-label="载入消息中…">
+    <div className={css.streamSkeleton} data-workforce-skeleton="messages" aria-busy="true" aria-label={WF.employee.loading}>
       {/* 行 1：短消息 */}
       <div className={css.msgSkeleton}>
         <div className={`${css.msgAvatar} ${css.bone}`} />

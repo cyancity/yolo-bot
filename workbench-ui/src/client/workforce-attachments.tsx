@@ -4,6 +4,7 @@ import { FileTypeIcon, IconCloseOutlineRegular, ImageLightbox, Modal, ReadBlock,
 import type { ReadBlockLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
 import { Menu, Tooltip, tokenScopeClass } from './ui/index.tsx'
+import { WF } from './workforce-strings.ts'
 import css from './workforce-attachments.module.css'
 
 /** Narrow desktop carrier, bound once by the apply-side face; no model tool receives paths. */
@@ -81,9 +82,9 @@ export function WorkforceNativeFileMenu({
       const result = action === 'reveal'
         ? await revealNativeFile({ locationUrl, url })
         : await openNativeDeliverable(url ?? '', { action: 'open' })
-      if (!result.ok) throw new Error(result.message ?? (action === 'open' ? '系统应用打开失败，请检查文件关联或重试' : '资源管理器定位失败，请重试'))
+      if (!result.ok) throw new Error(result.message ?? (action === 'open' ? WF.attachments.nativeOpenFailed : WF.attachments.revealFailed))
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : '操作失败，请重试')
+      setError(failure instanceof Error ? failure.message : WF.attachments.operationFailed)
     } finally { setBusy(false) }
   }
 
@@ -102,15 +103,14 @@ export function WorkforceNativeFileMenu({
 
   const items: Array<{ id: string; label: string }> = []
   if (dlUrl !== undefined) {
-    items.push({ id: 'download', label: '下载' })
+    items.push({ id: 'download', label: WF.attachments.download })
   }
   if (canOpen) {
-    items.push({ id: 'open', label: '在系统应用打开' })
+    items.push({ id: 'open', label: WF.attachments.openInApp })
   }
   if (canReveal) {
-    items.push({ id: 'reveal', label: '在资源管理器中显示' })
+    items.push({ id: 'reveal', label: WF.attachments.showInFolder })
   }
-
   if (items.length === 0 && !showFolderButton) return null
 
   const onSelect = (id: string) => {
@@ -124,8 +124,8 @@ export function WorkforceNativeFileMenu({
         <button
           type="button"
           className={css.nativeFolderBtn}
-          aria-label={`在资源管理器中显示 ${name}`}
-          title={canReveal ? '在资源管理器中显示' : session ? '无法获取本地文件路径' : '在资源管理器中显示（需桌面版支持）'}
+          aria-label={WF.attachments.showInFolderAria(name)}
+          title={WF.attachments.showInFolderTitle(Boolean(canReveal), Boolean(session))}
           disabled={busy || !canReveal}
           onClick={() => void invoke('reveal')}
         >
@@ -135,7 +135,7 @@ export function WorkforceNativeFileMenu({
         </button>
       )}
       <Menu
-        label={`更多操作 ${name}`}
+        label={WF.attachments.moreActionsAria(name)}
         open={open}
         onOpenChange={setOpen}
         align="end"
@@ -143,7 +143,7 @@ export function WorkforceNativeFileMenu({
           <button
             type="button"
             className={css.nativeTrigger}
-            aria-label={`更多操作 ${name}`}
+            aria-label={WF.attachments.moreActionsAria(name)}
             disabled={busy || items.length === 0}
           >
             {busy ? '…' : '⋯'}
@@ -169,40 +169,40 @@ export async function openNativeDeliverable(
   if (options?.action === 'reveal') {
     return revealNativeFile(url)
   }
-  if (!fileSession) return { ok: false, message: '当前环境不支持系统应用打开，可改用下载' }
+  if (!fileSession) return { ok: false, message: WF.attachments.desktopNotSupported }
   let supported = nativeOpenSupported()
   if (supported === undefined) {
     supported = await (desktopAvailable ?? Promise.resolve(false))
     desktopSupported = supported
   }
-  if (!supported) return { ok: false, message: '当前环境不支持系统应用打开，可改用下载' }
+  if (!supported) return { ok: false, message: WF.attachments.desktopNotSupported }
 
   const locUrl = resolveLocationUrl(url)
-  if (!locUrl) return { ok: false, message: '无法定位成果文件，可改用下载' }
+  if (!locUrl) return { ok: false, message: WF.attachments.cannotLocateDeliverable }
 
   try {
     const file = new URL(locUrl, window.location.href)
     if (file.origin !== window.location.origin) {
-      return { ok: false, message: '无法定位成果文件，可改用下载' }
+      return { ok: false, message: WF.attachments.cannotLocateDeliverable }
     }
     const response = await fetch(file.pathname + file.search, { cache: 'no-store' })
     const body: { readonly ok: boolean; readonly data?: { readonly path?: string }; readonly error?: { readonly message?: string } } = await response.json()
     if (!response.ok || !body.ok || typeof body.data?.path !== 'string') {
-      return { ok: false, message: body.error?.message ?? '无法定位成果文件，可改用下载' }
+      return { ok: false, message: body.error?.message ?? WF.attachments.cannotLocateDeliverable }
     }
     const realName = body.data.path.split(/[\\/]/).pop() ?? ''
     const gate = gateAttachment(realName)
     // 安装包、脚本与未知格式严格禁止系统应用打开直接运行，仅允许在资源管理器中显示（reveal）
     if (!gate.canNativeOpen) {
       const revealResult = await fileSession.openWorkspacePath({ path: body.data.path, action: 'reveal' })
-      if (!revealResult.ok) return { ok: false, message: '资源管理器定位失败，请改用下载' }
-      return { ok: true, message: '此格式不可直接运行，已在资源管理器中显示' }
+      if (!revealResult.ok) return { ok: false, message: WF.attachments.revealFailed }
+      return { ok: true, message: WF.attachments.notExecutableNote }
     }
     const result = await fileSession.openWorkspacePath({ path: body.data.path })
-    if (!result.ok) return { ok: false, message: '系统应用打开失败，请检查文件关联或改用下载' }
+    if (!result.ok) return { ok: false, message: WF.attachments.nativeOpenFailed }
     return { ok: true }
   } catch {
-    return { ok: false, message: '系统应用打开失败，可改用下载' }
+    return { ok: false, message: WF.attachments.nativeOpenFailed }
   }
 }
 
@@ -249,11 +249,11 @@ export async function revealNativeFile(
     : (safeLocationUrl(target.locationUrl) ?? resolveLocationUrl(target.url))
 
   if (!locUrl) {
-    return { ok: false, message: '无法获取本地文件路径，请改用下载' }
+    return { ok: false, message: WF.attachments.cannotLocateSystemPath }
   }
 
   if (!fileSession) {
-    return { ok: false, message: '当前环境不支持在资源管理器中查看，请使用下载' }
+    return { ok: false, message: WF.attachments.desktopNotSupported }
   }
   let supported = nativeOpenSupported()
   if (supported === undefined) {
@@ -261,26 +261,26 @@ export async function revealNativeFile(
     desktopSupported = supported
   }
   if (!supported) {
-    return { ok: false, message: '当前环境不支持在资源管理器中查看，请使用下载' }
+    return { ok: false, message: WF.attachments.desktopNotSupported }
   }
 
   try {
     const file = new URL(locUrl, window.location.href)
     if (file.origin !== window.location.origin) {
-      return { ok: false, message: '无法定位文件在系统中的路径，请改用下载' }
+      return { ok: false, message: WF.attachments.cannotLocateSystemPath }
     }
     const response = await fetch(file.pathname + file.search, { cache: 'no-store' })
     const body: { readonly ok: boolean; readonly data?: { readonly path?: string }; readonly error?: { readonly message?: string } } = await response.json()
     if (!response.ok || !body.ok || typeof body.data?.path !== 'string') {
-      return { ok: false, message: body.error?.message ?? '无法获取本地文件路径，请改用下载' }
+      return { ok: false, message: body.error?.message ?? WF.attachments.cannotLocateSystemPath }
     }
     const result = await fileSession.openWorkspacePath({ path: body.data.path, action: 'reveal' })
     if (!result.ok) {
-      return { ok: false, message: '资源管理器定位失败，请重试' }
+      return { ok: false, message: WF.attachments.revealFailed }
     }
     return { ok: true }
   } catch {
-    return { ok: false, message: '资源管理器定位失败，请重试' }
+    return { ok: false, message: WF.attachments.revealFailed }
   }
 }
 
@@ -299,7 +299,7 @@ export function safeAttachmentUrl(value: string): string | undefined {
 }
 
 export function attachmentName(url: string): string {
-  try { return decodeURIComponent(new URL(url, 'http://localhost').pathname.split('/').pop() ?? '') || '附件' } catch { return '附件' }
+  try { return decodeURIComponent(new URL(url, 'http://localhost').pathname.split('/').pop() ?? '') || WF.attachments.attachmentDefaultName } catch { return WF.attachments.attachmentDefaultName }
 }
 
 /** Office/压缩等真实二进制容器：能下载或交给系统应用打开，但不能按文本预览。 */
@@ -353,14 +353,14 @@ export function gateAttachment(name: string, mime?: string): AttachmentGate {
   const extension = extensionOf(name)
   const value = normalizeMimeValue(mime)
   if (extension && SCRIPT_EXTENSIONS.test(extension)) {
-    return { visible: false, canPreview: false, canNativeOpen: false, externalOnly: true, note: '脚本文件不在对话中展示' }
+    return { visible: false, canPreview: false, canNativeOpen: false, externalOnly: true, note: WF.attachments.scriptHiddenNote }
   }
   if (extension && INSTALLER_EXTENSIONS.test(extension)) {
-    return { visible: true, canPreview: false, canNativeOpen: false, externalOnly: true, isInstaller: true, note: '安装包不会在此打开或执行，请在资源管理器中查看' }
+    return { visible: true, canPreview: false, canNativeOpen: false, externalOnly: true, isInstaller: true, note: WF.attachments.installerNote }
   }
   const office = (extension !== undefined && OFFICE_EXTENSIONS.test(extension)) || (value !== undefined && OFFICE_MIME.test(value))
   if (office) {
-    return { visible: true, canPreview: false, canNativeOpen: true, externalOnly: false, note: '此格式不支持在线预览，用系统应用打开' }
+    return { visible: true, canPreview: false, canNativeOpen: true, externalOnly: false, note: WF.attachments.officeNote }
   }
   const media = value !== undefined && (value.startsWith('image/') || value.startsWith('video/') || value.startsWith('audio/') || value === 'application/pdf')
   const mediaExt = extension !== undefined && /^(?:png|jpe?g|gif|webp|avif|bmp|svg|mp4|webm|mov|m4v|mp3|wav|m4a|ogg|flac|aac|pdf)$/i.test(extension)
@@ -370,7 +370,7 @@ export function gateAttachment(name: string, mime?: string): AttachmentGate {
   if ((value !== undefined && value.startsWith('text/')) || (extension !== undefined && TEXT_EXTENSIONS.test(extension))) {
     return { visible: true, canPreview: true, canNativeOpen: true, externalOnly: false }
   }
-  return { visible: true, canPreview: false, canNativeOpen: false, externalOnly: true, note: '此格式不在此打开，请在资源管理器中查看或下载' }
+  return { visible: true, canPreview: false, canNativeOpen: false, externalOnly: true, note: WF.attachments.otherNote }
 }
 
 /**
@@ -401,18 +401,23 @@ export function isAttachmentUrl(url: string): boolean {
 }
 
 export function formatFileSize(size?: number): string {
-  return size !== undefined && Number.isFinite(size) && size >= 0 ? fileSizeText(size) : '大小未知'
+  return size !== undefined && Number.isFinite(size) && size >= 0 ? fileSizeText(size) : WF.attachments.unknownSize
 }
 
 interface PreviewImage { readonly src: string; readonly alt: string }
-const LIGHTBOX_LABELS = { dialog: '图片预览', close: '关闭图片预览' }
+const LIGHTBOX_LABELS = { get dialog() { return WF.attachments.imagePreview }, get close() { return WF.attachments.closeImagePreview } }
 const READ_WINDOW = 40
 const READ_LABELS: ReadBlockLabels = {
-  codeLabel: '文本', wrapLabel: '自动换行', unwrapLabel: '原始列',
-  window: (shown, total) => `显示 ${shown} / ${total} 行`,
-  copy: '复制', copied: '已复制',
-  collapseAria: '收起预览', expandAria: hidden => `展开剩余 ${hidden} 行`,
-  collapse: '收起', expand: hidden => `展开剩余 ${hidden} 行`,
+  get codeLabel() { return WF.attachments.textCode },
+  get wrapLabel() { return WF.attachments.wrapLine },
+  get unwrapLabel() { return WF.attachments.unwrapLine },
+  window: (shown, total) => WF.attachments.lineWindow(shown, total),
+  get copy() { return WF.common.copy },
+  get copied() { return WF.common.copied },
+  get collapseAria() { return WF.attachments.collapsePreview },
+  expandAria: hidden => WF.attachments.expandRemainder(hidden),
+  get collapse() { return WF.attachments.collapsePreview },
+  expand: hidden => WF.attachments.expandRemainder(hidden),
 }
 /** 模块级大小缓存：轮询重渲染与多张卡片共享同一 url 只发一次 HEAD。 */
 const fileSizeCache = new Map<string, number>()
@@ -508,8 +513,8 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
           <button
             type="button"
             className={css.previewCloseBtn}
-            aria-label="关闭文件预览"
-            title="关闭 (Esc)"
+            aria-label={WF.attachments.closeFilePreview}
+            title={WF.attachments.closeEsc}
             onClick={close}
           >
             <IconCloseOutlineRegular size={16} />
@@ -535,11 +540,11 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
               target="_blank"
               rel="noopener noreferrer"
             >
-              下载文件
+              {WF.attachments.downloadFile}
             </a>
           </div>
           <button type="button" className={css.previewFooterCloseBtn} onClick={close}>
-            关闭
+            {WF.common.close}
           </button>
         </div>
       </div>
@@ -572,7 +577,7 @@ function FilePdfPreview({ url, name }: {
 
     const safeUrl = safeAttachmentUrl(url)
     if (!safeUrl) {
-      setState({ status: 'failed', message: 'PDF 来源链接不符合安全策略，无法在此预览。' })
+      setState({ status: 'failed', message: WF.attachments.cannotOpenUnsafePdf })
       return
     }
 
@@ -592,7 +597,7 @@ function FilePdfPreview({ url, name }: {
         const rawType = response.headers.get('content-type') ?? ''
         const cleanType = rawType.replace(/;.*$/, '').trim().toLowerCase()
         if (cleanType !== 'application/pdf') {
-          throw new Error('服务端响应 MIME 不是 application/pdf')
+          throw new Error('Invalid PDF MIME type')
         }
 
         const chunks: Uint8Array[] = []
@@ -607,7 +612,7 @@ function FilePdfPreview({ url, name }: {
               totalBytes += value.byteLength
               if (totalBytes > MAX_PDF_BYTES) {
                 await reader.cancel()
-                throw new Error('PDF 超过 32MiB 限制')
+                throw new Error('PDF exceeds 32MiB')
               }
               chunks.push(value)
             }
@@ -615,7 +620,7 @@ function FilePdfPreview({ url, name }: {
         } else {
           const buffer = await response.arrayBuffer()
           totalBytes = buffer.byteLength
-          if (totalBytes > MAX_PDF_BYTES) throw new Error('PDF 超过 32MiB 限制')
+          if (totalBytes > MAX_PDF_BYTES) throw new Error('PDF exceeds 32MiB')
           chunks.push(new Uint8Array(buffer))
         }
 
@@ -638,7 +643,7 @@ function FilePdfPreview({ url, name }: {
         }
 
         if (!isPdfMagic) {
-          throw new Error('文件头不是合法 PDF 魔数')
+          throw new Error('Invalid PDF magic header')
         }
 
         const blob = new Blob(chunks as BlobPart[], { type: 'application/pdf' })
@@ -651,8 +656,8 @@ function FilePdfPreview({ url, name }: {
       } catch (err) {
         if (!controller.signal.aborted) {
           const msg = err instanceof Error && err.message.includes('32MiB')
-            ? 'PDF 文件大小超过 32MiB，请下载后在系统应用中查看。'
-            : 'PDF 文件验证失败或格式不正确，可直接下载查看。'
+            ? WF.attachments.pdfTooLarge
+            : WF.attachments.pdfVerifyFailed
           setState({ status: 'failed', message: msg })
         }
       }
@@ -667,7 +672,7 @@ function FilePdfPreview({ url, name }: {
   }, [url])
 
   if (state.status === 'loading') {
-    return <p className={css.textStatus} role="status">正在加载 PDF 预览…</p>
+    return <p className={css.textStatus} role="status">{WF.attachments.loadingPdf}</p>
   }
 
   if (state.status === 'failed') {
@@ -675,7 +680,7 @@ function FilePdfPreview({ url, name }: {
       <div className={css.mediaErrorContainer}>
         <p className={css.textStatus}>{state.message}</p>
         <a className={css.previewDownloadLink} href={downloadHref(url)} download={name} target="_blank" rel="noopener noreferrer">
-          下载文件
+          {WF.attachments.downloadFile}
         </a>
       </div>
     )
@@ -685,7 +690,7 @@ function FilePdfPreview({ url, name }: {
     <iframe
       className={css.pdfFrame}
       src={state.blobUrl}
-      title={`PDF 预览 ${name}`}
+      title={WF.attachments.pdfPreviewTitle(name)}
     />
   )
 }
@@ -699,9 +704,9 @@ function FileVideoPreview({ url, name, mime }: {
   if (failed) {
     return (
       <div className={css.mediaErrorContainer}>
-        <p className={css.textStatus}>视频在线播放失败，可直接下载或在系统应用中打开查看。</p>
+        <p className={css.textStatus}>{WF.attachments.videoPlaybackFailed}</p>
         <a className={css.previewDownloadLink} href={downloadHref(url)} download={name} target="_blank" rel="noopener noreferrer">
-          下载视频文件
+          {WF.attachments.downloadVideo}
         </a>
       </div>
     )
@@ -717,7 +722,7 @@ function FileVideoPreview({ url, name, mime }: {
         onError={() => setFailed(true)}
       >
         <source src={url} type={mime || undefined} />
-        您的浏览器不支持内联视频播放。
+        {WF.attachments.browserNoVideoSupport}
       </video>
     </div>
   )
@@ -732,9 +737,9 @@ function FileAudioPreview({ url, name, mime }: {
   if (failed) {
     return (
       <div className={css.mediaErrorContainer}>
-        <p className={css.textStatus}>音频在线播放失败，可直接下载或在系统应用中打开收听。</p>
+        <p className={css.textStatus}>{WF.attachments.audioPlaybackFailed}</p>
         <a className={css.previewDownloadLink} href={downloadHref(url)} download={name} target="_blank" rel="noopener noreferrer">
-          下载音频文件
+          {WF.attachments.downloadAudio}
         </a>
       </div>
     )
@@ -749,7 +754,7 @@ function FileAudioPreview({ url, name, mime }: {
         onError={() => setFailed(true)}
       >
         <source src={url} type={mime || undefined} />
-        您的浏览器不支持内联音频播放。
+        {WF.attachments.browserNoAudioSupport}
       </audio>
     </div>
   )
@@ -779,9 +784,9 @@ function FileTextPreview({ url, name, mime }: {
     }).catch(() => { if (!controller.signal.aborted) setState({ status: 'failed' }) })
     return () => controller.abort()
   }, [url, name, isBinary])
-  if (isBinary) return <p className={css.textStatus}>此格式不支持在线文本预览，可用「⋯」菜单在系统应用中打开或下载。</p>
-  if (state.status === 'loading') return <p className={css.textStatus} role="status">正在载入预览…</p>
-  if (state.status === 'failed' || (!isTextFile(url, name) && !isMarkdown)) return <p className={css.textStatus}>此文件不支持在线预览，可直接打开或下载。</p>
+  if (isBinary) return <p className={css.textStatus}>{WF.attachments.binaryNoPreviewHint}</p>
+  if (state.status === 'loading') return <p className={css.textStatus} role="status">{WF.attachments.loadingPreview}</p>
+  if (state.status === 'failed' || (!isTextFile(url, name) && !isMarkdown)) return <p className={css.textStatus}>{WF.attachments.noOnlinePreviewHint}</p>
   if (isMarkdown) return <div className={css.markdownBody}><WorkforceMessageText text={state.text} employees={[]} onDm={() => {}} /></div>
   const lines = state.text.split('\n').map((text, index) => ({ number: index + 1, text }))
   return <ReadBlock
@@ -818,9 +823,9 @@ export function WorkforceImageGallery({ images, initialIndex, onClose }: {
   return <>
     <ImageLightbox src={image.src} alt={image.alt} labels={LIGHTBOX_LABELS} onClose={onClose} />
     {images.length > 1 && createPortal(<div className={`${tokenScopeClass} ${css.galleryControls}`}>
-      <button type="button" aria-label="上一张图片" onClick={() => move(-1)}>‹</button>
+      <button type="button" aria-label={WF.attachments.prevImage} onClick={() => move(-1)}>‹</button>
       <span aria-live="polite">{index + 1} / {images.length}</span>
-      <button type="button" aria-label="下一张图片" onClick={() => move(1)}>›</button>
+      <button type="button" aria-label={WF.attachments.nextImage} onClick={() => move(1)}>›</button>
     </div>, document.body)}
   </>
 }
@@ -848,7 +853,7 @@ export function WorkforceFileLink({
 }) {
   const url = authoredUrl ? safeAttachmentUrl(authoredUrl) : undefined
   const locationUrl = safeLocationUrl(authoredLocationUrl)
-  const filename = name || (url ? attachmentName(url) : (locationUrl ? attachmentName(locationUrl) : '附件'))
+  const filename = name || (url ? attachmentName(url) : (locationUrl ? attachmentName(locationUrl) : WF.attachments.attachmentDefaultName))
   const kind = url ? attachmentKind(url, mime) : 'file'
   const [preview, setPreview] = useState(false)
   const [actionBusy, setActionBusy] = useState(false)
@@ -890,14 +895,14 @@ export function WorkforceFileLink({
         setActionBusy(true)
         try {
           const result = await revealNativeFile({ locationUrl, url })
-          if (!result.ok) setActionError(result.message || '在资源管理器中定位失败')
+          if (!result.ok) setActionError(result.message || WF.attachments.revealFailed)
         } catch {
-          setActionError('在资源管理器中定位失败')
+          setActionError(WF.attachments.revealFailed)
         } finally {
           setActionBusy(false)
         }
       } else {
-        setActionError('安装包仅支持在桌面版资源管理器中查看')
+        setActionError(WF.attachments.installerDesktopOnly)
       }
       return
     }
@@ -908,11 +913,11 @@ export function WorkforceFileLink({
         try {
           const result = await openNativeDeliverable(url ?? '', { action: 'open' })
           if (!result.ok) {
-            setActionError(result.message || '系统应用打开失败，正在下载')
+            setActionError(result.message || WF.attachments.failedOpeningDownloading)
             if (url) triggerDownload(url)
           }
         } catch {
-          setActionError('系统应用打开失败，正在下载')
+          setActionError(WF.attachments.failedOpeningDownloading)
           if (url) triggerDownload(url)
         } finally {
           setActionBusy(false)
@@ -920,7 +925,7 @@ export function WorkforceFileLink({
       } else if (url) {
         triggerDownload(url)
       } else {
-        setActionError('无法获取下载链接')
+        setActionError(WF.attachments.cannotGetDownloadUrl)
       }
       return
     }
@@ -931,11 +936,11 @@ export function WorkforceFileLink({
       try {
         const result = await revealNativeFile({ locationUrl, url })
         if (!result.ok) {
-          setActionError(result.message || '定位失败，正在下载')
+          setActionError(result.message || WF.attachments.failedLocatingDownloading)
           if (url) triggerDownload(url)
         }
       } catch {
-        setActionError('在资源管理器中定位失败，正在下载')
+        setActionError(WF.attachments.failedLocatingDownloading)
         if (url) triggerDownload(url)
       } finally {
         setActionBusy(false)
@@ -943,7 +948,7 @@ export function WorkforceFileLink({
     } else if (url) {
       triggerDownload(url)
     } else {
-      setActionError('无法获取下载链接')
+      setActionError(WF.attachments.cannotGetDownloadUrl)
     }
   }
 
@@ -952,12 +957,12 @@ export function WorkforceFileLink({
   const actionTitle = actionError
     ? actionError
     : mode === 'preview'
-      ? `预览 ${filename}`
+      ? `${WF.attachments.preview} ${filename}`
       : gate.isInstaller
-        ? (canReveal ? `在资源管理器中查看 ${filename}` : `需桌面版支持查看 ${filename}`)
+        ? (canReveal ? WF.attachments.showInFolderAria(filename) : WF.attachments.showInFolderTitle(false, true))
         : mode === 'native'
-          ? (canNative ? `系统应用打开 ${filename}` : `下载 ${filename}`)
-          : (canReveal ? `在资源管理器中查看 ${filename}` : `下载 ${filename}`)
+          ? (canNative ? `${WF.attachments.openInApp} ${filename}` : `${WF.attachments.download} ${filename}`)
+          : (canReveal ? WF.attachments.showInFolderAria(filename) : `${WF.attachments.download} ${filename}`)
 
   return (
     <span className={css.fileLinkWrapper}>
@@ -1008,7 +1013,7 @@ export function WorkforceAttachment({
 }) {
   const url = authoredUrl ? safeAttachmentUrl(authoredUrl) : undefined
   const locationUrl = safeLocationUrl(authoredLocationUrl)
-  const filename = name || (url ? attachmentName(url) : (locationUrl ? attachmentName(locationUrl) : '附件'))
+  const filename = name || (url ? attachmentName(url) : (locationUrl ? attachmentName(locationUrl) : WF.attachments.attachmentDefaultName))
   const kind = url ? attachmentKind(url, mime) : 'file'
   const [size, setSize] = useState(sizeBytes ?? (url === undefined ? undefined : fileSizeCache.get(url)))
   const [preview, setPreview] = useState(false)
@@ -1060,7 +1065,7 @@ export function WorkforceAttachment({
   }
 
   const media = !compact && !mediaError && url && gate.canPreview ? (kind === 'image'
-    ? <button type="button" className={css.thumbnail} aria-label={`预览图片 ${filename}`} onClick={openImage}>
+    ? <button type="button" className={css.thumbnail} aria-label={`${WF.attachments.previewImage} ${filename}`} onClick={openImage}>
       <img src={url} alt={filename} loading="lazy" data-message-image onError={() => setMediaError(true)} />
     </button>
     : kind === 'video'
@@ -1087,7 +1092,7 @@ export function WorkforceAttachment({
         setActionError(result.message)
       }
     } catch {
-      setActionError(action === 'reveal' ? '在资源管理器中定位失败，请重试' : '系统应用打开失败，请改用下载')
+      setActionError(action === 'reveal' ? WF.attachments.revealFailed : WF.attachments.nativeOpenFailed)
     } finally {
       setActionBusy(false)
     }
@@ -1097,23 +1102,23 @@ export function WorkforceAttachment({
     <button
       type="button"
       className={css.mainActionBtn}
-      aria-label={kind === 'image' ? `预览图片 ${filename}` : `预览 ${filename}`}
+      aria-label={kind === 'image' ? `${WF.attachments.previewImage} ${filename}` : `${WF.attachments.preview} ${filename}`}
       onClick={() => (kind === 'image' && onImageOpen ? onImageOpen(url) : setPreview(true))}
     >
-      {kind === 'image' ? '预览图片' : '预览'}
+      {kind === 'image' ? WF.attachments.previewImage : WF.attachments.preview}
     </button>
   ) : mode === 'native' && url ? (
-    <button type="button" className={css.mainActionBtn} disabled={actionBusy} onClick={() => void handleAction('open')}>打开</button>
+    <button type="button" className={css.mainActionBtn} disabled={actionBusy} onClick={() => void handleAction('open')}>{WF.deliverables.open}</button>
   ) : (
     <button
       type="button"
       className={css.mainActionBtn}
       disabled={actionBusy || !canReveal}
-      aria-label={`在资源管理器中显示 ${filename}`}
-      title={canReveal ? '在资源管理器中显示' : session ? '无法获取本地文件路径' : '需桌面版支持在文件夹中查看'}
+      aria-label={WF.attachments.showInFolderAria(filename)}
+      title={WF.attachments.showInFolderTitle(Boolean(canReveal), Boolean(session))}
       onClick={() => void handleAction('reveal')}
     >
-      文件夹
+      {WF.attachments.folder}
     </button>
   )
 
@@ -1125,7 +1130,7 @@ export function WorkforceAttachment({
         <span className={css.fileName} title={filename}>{filename}</span>
         <span className={css.fileMeta}>
           {filename.includes('.') ? formatFileSize(size) : `${extension} · ${formatFileSize(size)}`}
-          {mediaError ? ' · 播放失败，可打开或下载' : ''}
+          {mediaError ? WF.attachments.playFailed : ''}
           {actionError ? ` · ${actionError}` : ''}
         </span>
       </span>
@@ -1140,10 +1145,10 @@ export function WorkforceAttachment({
       )}
       {deliverableInfo !== undefined && (
         <Tooltip
-          content={`版本 v${deliverableInfo.version}\n作者 ${deliverableInfo.authorName}\n${deliverableInfo.published ? '最终版' : '草稿'}\n${deliverableInfo.charCount} 字\n${fmtInfoTime(deliverableInfo.createdAt)}`}
+          content={`v${deliverableInfo.version}\n${deliverableInfo.authorName}\n${deliverableInfo.published ? WF.deliverables.final : WF.deliverables.draft}\n${deliverableInfo.charCount}\n${fmtInfoTime(deliverableInfo.createdAt)}`}
           side="top" align="end" openOnClick maxWidth={240}
         >
-          <button type="button" className={css.infoIcon} aria-label={`成果信息 v${deliverableInfo.version}`}>
+          <button type="button" className={css.infoIcon} aria-label={WF.deliverables.infoAria(deliverableInfo.version)}>
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.01" />
             </svg>
@@ -1191,14 +1196,13 @@ export function AttachmentBar({
 }) {
   const [open, setOpen] = useState(false)
   const visible = items.filter(item => {
-    const filename = item.name ?? (item.url ? attachmentName(item.url) : (item.locationUrl ? attachmentName(item.locationUrl) : '附件'))
+    const filename = item.name ?? (item.url ? attachmentName(item.url) : (item.locationUrl ? attachmentName(item.locationUrl) : WF.attachments.attachmentDefaultName))
     return gateAttachment(filename, item.mime).visible
   })
   if (visible.length === 0) return null
   const summary = visible.length === 1
-    ? (visible[0]!.name ?? (visible[0]!.url ? attachmentName(visible[0]!.url) : '1 个文件'))
-    : `${visible.length} 个文件`
-
+    ? (visible[0]!.name ?? (visible[0]!.url ? attachmentName(visible[0]!.url) : WF.attachments.filesCount(1)))
+    : WF.attachments.filesCount(visible.length)
   const colCount = Math.min(visible.length, 3)
 
   return (
@@ -1215,17 +1219,17 @@ export function AttachmentBar({
           </svg>
         </span>
         <span className={css.attachmentBarTitleRow}>
-          <span className={css.fileName}>{label ?? '本轮文件'} · {summary}</span>
+          <span className={css.fileName}>{label ?? WF.attachments.currentRoundFiles} · {summary}</span>
           {supportedFormatsHint && (
             <Tooltip
-              content="支持格式：图片（PNG、JPG、WEBP、GIF）；视频（MP4、WEBM、MOV）；音频（MP3、WAV）；文档（PDF、MD、TXT、CSV、JSON）；Office（DOCX、XLSX、PPTX 系统应用打开或下载）；安装包（在资源管理器中查看）。脚本文件已隐藏。"
+              content={WF.attachments.formatSupportHint}
               side="top" align="center" openOnClick maxWidth={280}
             >
               <span
                 className={css.infoIcon}
                 role="button"
                 tabIndex={0}
-                aria-label="格式支持说明"
+                aria-label={WF.attachments.formatSupportAria}
                 onClick={e => e.stopPropagation()}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation() }}
               >
@@ -1236,7 +1240,7 @@ export function AttachmentBar({
             </Tooltip>
           )}
         </span>
-        <span className={css.attachmentBarAction}>{open ? '收起' : '展开'}</span>
+        <span className={css.attachmentBarAction}>{open ? WF.deliverables.toggleVersions(true) : WF.deliverables.toggleVersions(false)}</span>
       </button>
 
       {open && (
@@ -1244,7 +1248,7 @@ export function AttachmentBar({
           className={css.attachmentGrid}
           data-count={colCount}
           role="region"
-          aria-label={label ?? '本轮文件'}
+          aria-label={label ?? WF.attachments.currentRoundFiles}
         >
           {visible.map((item, index) => (
             <WorkforceAttachment

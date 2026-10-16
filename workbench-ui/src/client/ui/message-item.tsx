@@ -7,6 +7,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import css from './message-item.module.css'
 import { Bubble } from './bubble.tsx'
 import { Icon } from './icons.tsx'
+import { WF } from '../workforce-strings.ts'
 
 export interface TaskRef {
   readonly id: string
@@ -61,8 +62,8 @@ export function MessageItem({
           <div className={css.meta}>
             <span className={css.author}>{author.name}</span>
             {timestamp && <time className={css.time}>{timestamp}</time>}
-            {delivery === 'sending' && <span className={css.delivery}>发送中</span>}
-            {delivery === 'waiting' && <span className={css.delivery}>待处理</span>}
+            {delivery === 'sending' && <span className={css.delivery}>{WF.ui.sendingDelivery}</span>}
+            {delivery === 'waiting' && <span className={css.delivery}>{WF.ui.waitingDelivery}</span>}
           </div>
         )}
         {quote && (
@@ -95,7 +96,7 @@ export function MessageItem({
         )}
         {delivery === 'failed' && (
           <div className={css.failedRow} role="alert">
-            <span className={css.failedText}>{error ?? '发送失败'}</span>
+            <span className={css.failedText}>{error ?? WF.common.failed}</span>
           </div>
         )}
         {task && (
@@ -107,7 +108,7 @@ export function MessageItem({
         )}
         {thread && (
           <button type="button" className={css.threadBtn} onClick={thread.onOpen}>
-            查看任务{thread.replyCount > 0 ? `（${thread.replyCount} 条）` : ''}
+            {WF.ui.viewTask(thread.replyCount)}
           </button>
         )}
         {children}

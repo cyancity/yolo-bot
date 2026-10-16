@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import css from './workforce-question-card.module.css'
 import { Button, IconButton, Menu } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
+import { WF } from './workforce-strings.ts'
 
 /** One option of a question item (mirrors host WorkforceQuestionOption). */
 export interface QuestionCardOption {
@@ -65,7 +66,7 @@ export interface WorkforceQuestionCardProps {
   onAnswer(requestId: string, payload: { answers?: QuestionCardAnswer[]; outcome?: 'allowed-once' | 'rejected' }): Promise<unknown> | unknown
 }
 
-const approvalLabel = (outcome: 'allowed-once' | 'rejected') => outcome === 'allowed-once' ? '已允许一次' : '已拒绝'
+const approvalLabel = (outcome: 'allowed-once' | 'rejected') => outcome === 'allowed-once' ? WF.questions.allowedOnce : WF.questions.rejected
 
 /** Question/approval card an employee raises to the user; answered state is read-only. */
 export function WorkforceQuestionCard({ question, approval, onAnswer }: WorkforceQuestionCardProps) {
@@ -115,7 +116,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
       else setAnswered(payload.answers ?? [])
     } catch (cause) {
       if (generationRef.current !== callGen || activeRequestIdRef.current !== callRequestId) return
-      setError(cause instanceof Error ? cause.message : '提交失败，请重试')
+      setError(cause instanceof Error ? cause.message : WF.questions.submitFailed)
     } finally {
       if (generationRef.current === callGen && activeRequestIdRef.current === callRequestId) {
         setSubmitting(false)
@@ -129,18 +130,18 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
     const disabled = submitting || inactive || isApprovalAnswered
     return (
       <div className={css.card} data-ask-card="approval">
-        <div className={css.title}>{inactive ? '请求已结束' : '请求批准'}</div>
-        <div className={css.questionText}>「{approval.toolName}」需要你的批准才能继续</div>
+        <div className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</div>
+        <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
         {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
         {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
         {approval.reason && !approval.displayReason ? <div className={css.detail}>{approval.reason}</div> : null}
         {approval.detail ? (
           <details className={css.detailDisclosure}>
-            <summary className={css.detailToggle}>操作详情{approval.detail.truncated ? '（已截断）' : ''}</summary>
+            <summary className={css.detailToggle}>{WF.questions.operationDetail(Boolean(approval.detail.truncated))}</summary>
             <pre className={css.detailBody}>{approval.detail.text}</pre>
           </details>
         ) : (
-          <div className={css.detailMissing}>操作详情不可用</div>
+          <div className={css.detailMissing}>{WF.questions.detailUnavailable}</div>
         )}
         {done !== undefined ? (
           <div className={css.answeredTag}>{approvalLabel(done)}</div>
@@ -153,13 +154,13 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
               loading={submitting}
               onClick={() => { if (!disabled) void submit({ outcome: 'allowed-once' }) }}
             >
-              允许一次
+              {WF.questions.allowOnce}
             </Button>
             <Menu
-              label="更多审批操作"
+              label={WF.questions.moreApprovalActions}
               side="top"
-              trigger={<IconButton label="更多审批操作" icon={<Icon name="more" />} size="sm" disabled={disabled} />}
-              items={[{ id: 'reject', label: '拒绝', tone: 'danger', onSelect: () => { if (!disabled) void submit({ outcome: 'rejected' }) } }]}
+              trigger={<IconButton label={WF.questions.moreApprovalActions} icon={<Icon name="more" />} size="sm" disabled={disabled} />}
+              items={[{ id: 'reject', label: WF.questions.reject, tone: 'danger', onSelect: () => { if (!disabled) void submit({ outcome: 'rejected' }) } }]}
             />
           </div>
         )}
@@ -192,7 +193,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
 
   return (
     <div className={css.card} data-ask-card="question">
-      <div className={css.title}>{inactive ? '提问已结束' : isContinued ? '补充提问（可随时回答）' : '向你提问'}</div>
+      <div className={css.title}>{inactive ? WF.questions.questionEnded : isContinued ? WF.questions.additionalQuestion : WF.questions.askQuestion}</div>
       {question.items.map(item => {
         const answeredItem = done?.find(answer => answer.id === item.id)
         return (
@@ -204,7 +205,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
               <div className={css.answeredList}>
                 {(answeredItem?.selected ?? []).map(label => <span className={css.answeredTag} key={label}>{label}</span>)}
                 {answeredItem?.custom ? <span className={css.answeredCustom}>{answeredItem.custom}</span> : null}
-                {answeredItem !== undefined && answeredItem.selected.length === 0 && !answeredItem.custom ? <span className={css.answeredTag}>已跳过</span> : null}
+                {answeredItem !== undefined && answeredItem.selected.length === 0 && !answeredItem.custom ? <span className={css.answeredTag}>{WF.questions.skipped}</span> : null}
               </div>
             ) : (
               <>
@@ -226,7 +227,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
                 ) : null}
                 <input
                   className={css.customInput}
-                  placeholder={item.options?.length ? '其他（可选，自由输入）' : '自由输入'}
+                  placeholder={item.options?.length ? WF.questions.customPlaceholderWithOptions : WF.questions.customPlaceholder}
                   value={customs[item.id] ?? ''}
                   disabled={disabled}
                   readOnly={inactive || isQuestionAnswered}
@@ -248,7 +249,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
             loading={submitting}
             onClick={() => { if (!disabled) void submit({ answers: answersOf(question.items) }) }}
           >
-            {submitting ? '提交中…' : '提交回答'}
+            {submitting ? WF.questions.submitting : WF.questions.submitAnswer}
           </Button>
         </div>
       ) : null}

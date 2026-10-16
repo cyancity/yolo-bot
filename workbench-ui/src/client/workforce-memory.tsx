@@ -5,8 +5,9 @@ import { WorkbenchApiError } from './transport.ts'
 import { WorkforceApi, type WorkforceMemories, type WorkforceMemory, type WorkforceMemoryScope } from './workforce-api.ts'
 import type { Employee, WorkforceMessage } from './workforce-types.ts'
 import css from './workforce-memory.module.css'
+import { WF } from './workforce-strings.ts'
 
-const SCOPE_LABELS: Record<WorkforceMemoryScope, string> = { global: '全局', channel: '频道', employee: '员工' }
+const getScopeLabels = (): Record<WorkforceMemoryScope, string> => ({ global: WF.memory.scopeGlobal, channel: WF.memory.scopeChannel, employee: WF.memory.scopeEmployee })
 export type MemorySourceNavigation = (threadId: string, messageId?: string) => void
 
 export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSource, api: suppliedApi }: {
@@ -56,7 +57,7 @@ export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSo
       if (editing) await api.updateMemory(editing.id, draft.trim())
       else await api.createMemory({ scope, scopeId, text: draft.trim() })
       if (!mounted.current) return
-      setEditing(undefined); setDraft(''); setNotice('已保存。新任务生效；私信在下一条消息生效。')
+      setEditing(undefined); setDraft(''); setNotice(WF.memory.saveSuccess)
       await reload()
     } catch (failure) { if (mounted.current) setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { if (mounted.current) setBusy(false) }
@@ -68,46 +69,47 @@ export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSo
       await api.deleteMemory(deleting.id)
       if (!mounted.current) return
       if (editing?.id === deleting.id) { setEditing(undefined); setDraft('') }
-      setDeleting(undefined); setNotice('已删除记忆。'); await reload()
+      setDeleting(undefined); setNotice(WF.memory.deleteSuccess); await reload()
     } catch (failure) { if (mounted.current) setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { if (mounted.current) setBusy(false) }
   }
   const usage = data?.usage[`${scope}:${scopeId ?? ''}`] ?? 0
-  return <section className={css.editor} aria-label={`${SCOPE_LABELS[scope]}记忆编辑器`}>
-    <p className={css.hint}>记忆作为长期约束供员工参考。修改在新任务生效，私信在下一条消息生效；不会改变进行中的任务。</p>
-    {data && <div className={css.usage} role="status">已用 {usage} / {data.limits[scope]} 字（不含空白）</div>}
-    {loading && !data && <div className={css.loading} role="status" aria-label="正在加载记忆"><span /><span /><span /></div>}
-    {error && !deleting && <div className={css.error} role="alert">{error}<button type="button" disabled={busy} onClick={() => void reload()}>重新加载</button></div>}
+  const scopeLabels = getScopeLabels()
+  return <section className={css.editor} aria-label={WF.memory.editorAria(scopeLabels[scope])}>
+    <p className={css.hint}>{WF.memory.hint}</p>
+    {data && <div className={css.usage} role="status">{WF.memory.usage(usage, data.limits[scope])}</div>}
+    {loading && !data && <div className={css.loading} role="status" aria-label={WF.memory.loading}><span /><span /><span /></div>}
+    {error && !deleting && <div className={css.error} role="alert">{error}<button type="button" disabled={busy} onClick={() => void reload()}>{WF.memory.reload}</button></div>}
     {data && <>
       <ul className={css.list}>
         {data.memories.map(memory => <li key={memory.id} className={css.item}>
           <p className={css.text}>{memory.text}</p>
-          <div className={css.meta}>由{memory.source.by === 'user' ? '你' : employees.find(employee => employee.id === memory.source.by)?.name ?? '员工'}记录 · {new Date(memory.updatedAt).toLocaleString('zh-CN')}</div>
+          <div className={css.meta}>{WF.memory.recordedBy(memory.source.by === 'user' ? WF.common.you : (employees.find(employee => employee.id === memory.source.by)?.name ?? WF.common.employee), new Date(memory.updatedAt).toLocaleString())}</div>
           <div className={css.actions}>
             {memory.source.threadId && onOpenSource && <button type="button" onClick={() => {
               try { onOpenSource(memory.source.threadId!, memory.source.messageId) }
               catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
-            }}>查看来源</button>}
-            <button type="button" disabled={busy} onClick={() => { setEditing(memory); setDraft(memory.text); setError(undefined); setNotice('') }}>编辑</button>
-            <button type="button" disabled={busy} onClick={() => { setDeleting(memory); setError(undefined) }}>删除</button>
+            }}>{WF.memory.viewSource}</button>}
+            <button type="button" disabled={busy} onClick={() => { setEditing(memory); setDraft(memory.text); setError(undefined); setNotice('') }}>{WF.common.edit}</button>
+            <button type="button" disabled={busy} onClick={() => { setDeleting(memory); setError(undefined) }}>{WF.common.delete}</button>
           </div>
         </li>)}
       </ul>
-      {data.memories.length === 0 && <p className={css.hint}>还没有记忆。添加明确的偏好、事实或对员工的交代。</p>}
+      {data.memories.length === 0 && <p className={css.hint}>{WF.memory.emptyHint}</p>}
       <div className={css.form}>
-        <label htmlFor={inputId}>{editing ? (scope === 'employee' ? '编辑交代' : '编辑记忆') : (scope === 'employee' ? '添加交代' : '添加记忆')}</label>
-        <textarea id={inputId} rows={3} value={draft} disabled={busy} onChange={event => { setDraft(event.target.value); setNotice('') }} placeholder={scope === 'employee' ? '例如：文案用短句，核对数据源，不加外部自选推断' : '例如：文案用短句，不用夸张承诺'} />
+        <label htmlFor={inputId}>{editing ? (scope === 'employee' ? WF.memory.instructionEdit : WF.memory.memoryEdit) : (scope === 'employee' ? WF.memory.instructionAdd : WF.memory.memoryAdd)}</label>
+        <textarea id={inputId} rows={3} value={draft} disabled={busy} onChange={event => { setDraft(event.target.value); setNotice('') }} placeholder={scope === 'employee' ? WF.memory.instructionPlaceholder : WF.memory.memoryPlaceholder} />
         <div className={css.actions}>
-          <button type="button" disabled={busy || loading || draft.trim() === ''} onClick={() => void save()}>{busy ? '保存中…' : scope === 'employee' ? '保存交代' : '保存记忆'}</button>
-          {editing && <button type="button" disabled={busy} onClick={() => { setEditing(undefined); setDraft('') }}>取消编辑</button>}
+          <button type="button" disabled={busy || loading || draft.trim() === ''} onClick={() => void save()}>{busy ? WF.models.saving : scope === 'employee' ? WF.memory.instructionSave : WF.memory.memorySave}</button>
+          {editing && <button type="button" disabled={busy} onClick={() => { setEditing(undefined); setDraft('') }}>{WF.memory.cancelEdit}</button>}
         </div>
       </div>
     </>}
     {notice && <p className={css.hint} role="status">{notice}</p>}
-    {deleting && <Dialog title="删除记忆" closeLabel="取消" busy={busy} onClose={() => setDeleting(undefined)}>
-      <div className={css.editor}><p>删除后，新任务不再使用这条记忆。</p><p className={css.text}>{deleting.text}</p>
+    {deleting && <Dialog title={WF.memory.deleteMemoryTitle} closeLabel={WF.common.cancel} busy={busy} onClose={() => setDeleting(undefined)}>
+      <div className={css.editor}><p>{WF.memory.deleteMemoryDesc}</p><p className={css.text}>{deleting.text}</p>
         {error && <p className={css.error} role="alert">{error}</p>}
-        <div className={css.actions}><button type="button" autoFocus disabled={busy} onClick={() => setDeleting(undefined)}>取消</button><button type="button" disabled={busy} onClick={() => void remove()}>{busy ? '删除中…' : '确认删除'}</button></div>
+        <div className={css.actions}><button type="button" autoFocus disabled={busy} onClick={() => setDeleting(undefined)}>{WF.common.cancel}</button><button type="button" disabled={busy} onClick={() => void remove()}>{busy ? WF.models.clearing : WF.memory.deleteConfirm}</button></div>
       </div>
     </Dialog>}
   </section>
@@ -122,7 +124,7 @@ export function WorkforceMemoryDialog({ title, scope, scopeId, employees, onOpen
   readonly onClose: () => void
   readonly drawer?: boolean | undefined
 }) {
-  return <Dialog title={title} closeLabel="关闭记忆" onClose={onClose}>
+  return <Dialog title={title} closeLabel={WF.memory.closeMemory} onClose={onClose}>
     <div className={drawer ? css.drawer : css.dialogContent}><WorkforceMemoryEditor key={`${scope}:${scopeId ?? ''}`} scope={scope} scopeId={scopeId} employees={employees} onOpenSource={onOpenSource} /></div>
   </Dialog>
 }
@@ -161,8 +163,8 @@ export function RememberedMemoryCard({ memory }: { readonly memory: RememberedMe
     finally { setBusy(false) }
   }
   return <div className={css.remembered} data-memory-id={memory.id}>
-    <Tooltip content={memory.text} side="top"><span>{undone ? '已撤销记忆' : `已记入${SCOPE_LABELS[memory.scope]}记忆`}</span></Tooltip>
-    {!undone && <><span aria-hidden="true">·</span><button type="button" disabled={busy} onClick={() => void undo()}>{busy ? '撤销中…' : '撤销'}</button></>}
+    <Tooltip content={memory.text} side="top"><span>{undone ? WF.memory.memoryUndone : WF.memory.memoryRecorded(getScopeLabels()[memory.scope])}</span></Tooltip>
+    {!undone && <><span aria-hidden="true">·</span><button type="button" disabled={busy} onClick={() => void undo()}>{busy ? WF.memory.undoing : WF.memory.undo}</button></>}
     {error && <span className={css.error} role="alert">{error}</span>}
   </div>
 }
