@@ -1,9 +1,5 @@
 <div align="center">
 
-<!-- 截图占位：logo（可选，112px 宽）
-<img src="docs/images/logo.svg" width="112" alt="yolo-bot">
--->
-
 # yolo-bot
 
 ### 把 DeepSeek Harness 变成一支数字员工团队
@@ -17,13 +13,10 @@
 
 <br>
 
-<!-- 截图占位：首屏主图，900px 宽，深浅两版
-     内容：一个频道里，你发出任务 → 负责人回复拆解 → 两名员工执行中 / 已交付，右侧能看到成果
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
-  <img src="docs/images/hero-light.png" width="900" alt="频道里负责人接下任务，派给两名员工执行并汇总成果">
+  <img src="docs/images/hero-light.png" width="900" alt="频道里负责人接下竞品周报任务，右侧线程里是定稿的两份成果">
 </picture>
--->
 
 </div>
 
@@ -64,14 +57,12 @@ npx @deepseek-ai/dsh@0.2.0-rc.2 web
 
 命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
 
-**3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析员、执行员。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
+**3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析、执行。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
 
-<!-- 截图占位：员工管理 / 添加员工，760px 宽
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/employees-dark.png">
-  <img src="docs/images/employees-light.png" width="760" alt="添加员工：名字、职责、模型、skill、设为负责人">
+  <img src="docs/images/employees-light.png" width="760" alt="添加员工：头像颜色、名字、职责、模型、设为负责人">
 </picture>
--->
 
 ## 怎么运作
 
@@ -99,14 +90,12 @@ flowchart LR
 
 任何一条消息都能展开成线程继续追问，不打乱频道主线。输入 `@` 从列表里挑员工，它会直接回你。私信是你和单个员工的独立对话，历史单独保存。
 
-<!-- 截图占位：两栏对比，左线程追问，右私信
 <table>
 <tr>
-<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/thread-dark.png"><img src="docs/images/thread-light.png" alt="在线程里追问某一步的结果"></picture></td>
-<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/dm-dark.png"><img src="docs/images/dm-light.png" alt="和单个员工私信"></picture></td>
+<td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/thread-dark.png"><img src="docs/images/thread-light.png" alt="任务线程：负责人汇报进度和产出"></picture></td>
+<td width="50%" valign="top"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/dm-dark.png"><img src="docs/images/dm-light.png" alt="和单个员工私信"></picture></td>
 </tr>
 </table>
--->
 
 ### 员工：模型、skill、记忆
 
@@ -114,23 +103,19 @@ flowchart LR
 
 记忆分三层：全局、频道、员工。你可以写下长期交代（比如「文案用短句，不用夸张承诺」），员工在之后的任务里照做；记忆也能随时查看、修改和删除。
 
-<!-- 截图占位：员工详情页（模型、skill、记忆），760px 宽
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/profile-dark.png">
   <img src="docs/images/profile-light.png" width="760" alt="员工详情：模型、skill 与记忆">
 </picture>
--->
 
 ### 材料与成果
 
 你上传的文件是材料，员工交出的文件是成果。成果保留全部版本，可以标为最终版、在线打开或下载。工具写出的文件、对话里的附件和成果在同一个文件视图里按来源区分。
 
-<!-- 截图占位：成果面板（版本列表 + 最终版标记），760px 宽
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/deliverables-dark.png">
-  <img src="docs/images/deliverables-light.png" width="760" alt="成果版本：草稿、最终版、打开与下载">
+  <img src="docs/images/deliverables-light.png" width="760" alt="成果卡片展开版本列表：v1、v2 与最终版标记">
 </picture>
--->
 
 ### 把做过的流程沉淀成技能
 
@@ -140,24 +125,18 @@ flowchart LR
 
 用画布查看当前有哪些员工在干活、各自在哪一步、哪些已完成或失败，点开节点能看到对应的会话和任务。
 
-<!-- 截图占位：作业画布，900px 宽
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/canvas-dark.png">
-  <img src="docs/images/canvas-light.png" width="900" alt="作业画布：员工节点与任务状态">
+  <img src="docs/images/canvas-light.png" width="900" alt="作业画布：每轮任务一个节点，显示频道、状态和负责人回复">
 </picture>
--->
 
 ### 界面与主题
 
-两种布局：Discord 风格（频道分区，消息靠左）和微信风格（会话列表，消息左右排列）。配色可以跟随宿主，也可以选 Catppuccin Mocha / Latte、Dracula、Rosé Pine Main / Dawn，色表在官方调色板基础上做了可访问性适配。员工头像有复古终端屏和圆形眼睛两种风格，执行时可以显示哈希代码、二进制流或命令行滚屏特效。
+两种布局：Discord 风格（频道分区，消息靠左）和微信风格（会话列表，消息左右排列）。明暗可以跟随系统，也可以固定浅色或深色。界面支持中文和英文，默认跟随浏览器语言，可以在设置里切换。
 
-<!-- 截图占位：主题拼图，3 × 2 宫格，同一画面的 6 套配色，900px 宽
-<img src="docs/images/themes.png" width="900" alt="六套配色：跟随宿主、Catppuccin Mocha、Catppuccin Latte、Dracula、Rosé Pine Main、Rosé Pine Dawn">
--->
+员工头像默认是圆形眼睛，也可以换成复古终端屏；终端屏风格下，员工执行时可以显示哈希代码、二进制流或命令行滚屏特效。
 
-<!-- 截图占位（可选）：员工执行中的终端头像特效 GIF，480px 宽
-<img src="docs/images/avatar.gif" width="480" alt="员工执行时的终端头像特效">
--->
+<img src="docs/images/layouts.png" width="900" alt="Discord 与微信两种布局，各有浅色和深色">
 
 ### 备份
 
@@ -198,7 +177,6 @@ pnpm -r build
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)：yolo-bot 构建在 DSH 插件系统之上，`build-support/` 来自 DSH 上游。
 - [Hermes Agent](https://github.com/NousResearch/hermes-agent)：内置 skill `document-to-action-items` 改编自其中的实现。
 - [React Flow](https://reactflow.dev)：作业画布。
-- [Catppuccin](https://github.com/catppuccin/catppuccin)、[Dracula](https://draculatheme.com)、[Rosé Pine](https://rosepinetheme.com)：配色方案。
 
 ## 许可证
 
