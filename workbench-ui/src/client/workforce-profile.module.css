@@ -1,0 +1,365 @@
+/* 用户资料侧栏底栏与资料设置模态框 */
+
+/* 侧栏底部用户资料卡片（参考 Discord / Slack） */
+.userBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 6px 8px;
+  border-radius: 8px;
+  background: var(--wb-rail, rgba(0, 0, 0, 0.15));
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.06));
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s ease, border-color 0.1s ease;
+  box-sizing: border-box;
+}
+
+.userBar:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--wb-line-strong, rgba(255, 255, 255, 0.12));
+}
+
+.userBarAvatarWrap {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.userBarInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userBarName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-fg, #f2f3f5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userBarStatus {
+  font-size: 11px;
+  color: var(--wb-fg-placeholder, #949ba4);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wb-success, #23a55a);
+}
+
+.userBarActions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  color: var(--wb-fg-muted, #b5bac1);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.userBar:hover .userBarActions {
+  color: var(--wb-fg, #f2f3f5);
+}
+
+/* 用户圆形头像通用容器：显式 aspect-ratio:1，避免图片非正方形时容器被内容撑开、
+   50% 圆角画成椭圆（第九轮第 8 条）。 */
+.avatarContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--wb-surface-raised, #2b2d31);
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.1));
+  box-sizing: border-box;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #5865f2, #7983f5);
+}
+
+/* 资料设置模态弹窗 */
+.modalOverlay {
+  position: fixed;
+  /* 从 Windows 标题栏下方开始，避免标题栏变灰而原生窗口按钮仍是原色 */
+  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom, 1)) 0 0;
+  z-index: 10050;
+  background: var(--wb-overlay, rgba(0, 0, 0, 0.45));
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.profileDialog {
+  width: 100%;
+  max-width: 460px;
+  background: var(--wb-surface-raised, #2b2d31);
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  padding: 24px;
+  color: var(--wb-fg, #f2f3f5);
+  box-sizing: border-box;
+  animation: modalScaleIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wb-fg-muted, #b5bac1);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  color: var(--wb-fg, #f2f3f5);
+}
+
+.avatarSection {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--wb-line, rgba(255, 255, 255, 0.08));
+}
+
+.avatarPreview {
+  width: 72px;
+  height: 72px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--wb-accent, #5865f2);
+}
+
+.avatarControls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avatarBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.uploadBtn {
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--wb-accent, #5865f2);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+
+.uploadBtn:hover {
+  opacity: 0.9;
+}
+
+.resetBtn {
+  padding: 6px 12px;
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wb-fg, #dbdee1);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+}
+
+.avatarHint {
+  font-size: 12px;
+  color: var(--wb-fg-placeholder, #949ba4);
+}
+
+/* 预设候选头像选择 */
+.presetSection {
+  margin-bottom: 20px;
+}
+
+.presetTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wb-fg-placeholder, #949ba4);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.presetGrid {
+  display: flex;
+  gap: 10px;
+}
+
+.presetItem {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.presetItem:hover {
+  transform: scale(1.06);
+}
+
+.presetItemActive {
+  border-color: var(--wb-accent, #5865f2);
+}
+
+/* 文本表单区 */
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wb-fg-muted, #b5bac1);
+  text-transform: uppercase;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
+  background: var(--wb-surface, #1e1f22);
+  color: var(--wb-fg, #f2f3f5);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.1s ease;
+}
+
+.input:focus {
+  border-color: var(--wb-accent, #5865f2);
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wb-fg, #f2f3f5);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+}
+
+.saveBtn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: var(--wb-accent, #5865f2);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.1s ease;
+}
+
+.saveBtn:hover {
+  opacity: 0.9;
+}

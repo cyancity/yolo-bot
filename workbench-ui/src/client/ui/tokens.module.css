@@ -1,0 +1,426 @@
+/**
+ * tokens.module.css — D2 设计 token 根。
+ * 四套语义色表按 data-wb-style × data-wb-scheme 收口到 .root 子树；
+ * 布局/尺寸 token 按 data-wb-style；字体/间距/动效共用。
+ * 不写 html/body/--dsw-*；color-scheme 由根 inline style 设置。
+ */
+
+/* token 承载层：.root 是插件根（带布局 reset），.scope 只声明变量、供 portal 到
+   body 的浮层重建 token 环境。scheme 色块同时挂 html[data-wb-*]（全局偏好镜像，
+   供 body 下 portal 继承）与 .root/.scope[data-wb-*]（本根权威值，优先级更高）。 */
+.root,
+.scope {
+  /* 字体 */
+  --wb-font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  --wb-font-mono: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  --wb-weight-regular: 400;
+  --wb-weight-medium: 500;
+  --wb-weight-semibold: 600;
+
+  /* 字阶：size/weight/leading */
+  --wb-type-caption-size: .75rem;
+  --wb-type-caption-weight: 400;
+  --wb-type-caption-leading: 1.5;
+  --wb-type-compact-size: .8125rem;
+  --wb-type-compact-weight: 400;
+  --wb-type-compact-leading: 1.5385;
+  --wb-type-label-size: .875rem;
+  --wb-type-label-weight: 500;
+  --wb-type-label-leading: 1.4286;
+  --wb-type-body-size: .9375rem;
+  --wb-type-body-weight: 400;
+  --wb-type-body-leading: 1.6;
+  --wb-type-strong-size: .9375rem;
+  --wb-type-strong-weight: 600;
+  --wb-type-strong-leading: 1.6;
+  --wb-type-section-size: 1rem;
+  --wb-type-section-weight: 600;
+  --wb-type-section-leading: 1.5;
+  --wb-type-title-size: 1.25rem;
+  --wb-type-title-weight: 600;
+  --wb-type-title-leading: 1.4;
+  --wb-type-code-size: .8125rem;
+  --wb-type-code-weight: 400;
+  --wb-type-code-leading: 1.5385;
+
+  /* 间距 */
+  --wb-space-0: 0;
+  --wb-space-2: 2px;
+  --wb-space-3: 4px;
+  --wb-space-4: 8px;
+  --wb-space-5: 12px;
+  --wb-space-6: 16px;
+  --wb-space-7: 24px;
+  --wb-space-8: 32px;
+  --wb-space-9: 48px;
+
+  /* 页面/卡片布局常量（旧 tokens 迁移沿用值） */
+  --wb-page-max: 1280px;
+  --wb-card-min: 260px;
+  --wb-font-xs: .75rem;
+  /* 运行时偏好覆写：气泡圆角（workforce.tsx 内联写入）。 */
+  --wb-bubble-radius: 12px;
+  /* 组件局部小色阶别名 */
+  --wb-accent-fg-sm: var(--wb-accent-fg);
+  --wb-danger-soft: var(--wb-danger-bg);
+  --wb-line-strong: var(--wb-line-control);
+  --wb-sub-fg-sm: var(--wb-fg-muted);
+  --wb-surface-soft: color-mix(in srgb, var(--wb-fg) 6%, transparent);
+
+  /* 控件共享 */
+  --wb-icon-sm: 16px;
+  --wb-icon-md: 20px;
+  --wb-icon-lg: 24px;
+  --wb-icon-stroke: 1.75;
+  --wb-border-width: 1px;
+  --wb-focus-width: 2px;
+  --wb-focus-offset: 2px;
+  --wb-radius-dot: 50%;
+  --wb-radius-badge: 4px;
+  --wb-control-height-sm: 32px;
+  --wb-control-height-md: 36px;
+  --wb-control-height-lg: 44px;
+  --wb-control-pad-x: 12px;
+  --wb-card-pad: 12px;
+  --wb-bubble-pad-x: 12px;
+  --wb-avatar-message-size: 36px;
+  --wb-rail-width: 56px;
+  --wb-thread-width: 360px;
+  --wb-zoom: 1;
+
+  /* 图层（插件局部） */
+  --wb-layer-base: 0;
+  --wb-layer-sticky: 10;
+  --wb-layer-panel: 20;
+  --wb-layer-menu: 30;
+  --wb-layer-overlay: 40;
+  --wb-layer-dialog: 50;
+  --wb-layer-toast: 60;
+  --wb-layer-tooltip: 70;
+
+  /* 动效 */
+  --wb-motion-fast: 150ms;
+  --wb-motion-normal: 200ms;
+  --wb-motion-slow: 250ms;
+  --wb-motion-ease: cubic-bezier(.2, 0, 0, 1);
+}
+
+/* 局部 reset：只作用于 .root 子树 */
+.root {
+  font-family: var(--wb-font-family);
+  font-size: var(--wb-type-body-size);
+  line-height: var(--wb-type-body-leading);
+  font-weight: var(--wb-weight-regular);
+  color: var(--wb-fg);
+  background: var(--wb-bg);
+  isolation: isolate;
+  position: relative;
+  /* 只声明流容器本底；方向由各挂载点的自有类（workbench.css .root / .sidebar /
+     .region / .page）决定：侧栏是 rail + 频道列横向排列，页面是列纵向。共写一个
+     column 会覆盖 .sidebar 的横向，旧版 tokens 不含这条声明。 */
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
+}
+
+.root *,
+.root *::before,
+.root *::after {
+  box-sizing: border-box;
+}
+
+/* ---- Discord 布局 token ---- */
+html[data-wb-style='discord'],
+.scope[data-wb-style='discord'],
+.root[data-wb-style='discord'] {
+  --wb-radius-panel: 6px;
+  --wb-radius-control: 8px;
+  --wb-radius-bubble: 6px;
+  --wb-radius-overlay: 6px;
+  --wb-radius-avatar: 50%;
+  --wb-nav-row-height: 32px;
+  --wb-header-height: 48px;
+  --wb-message-gap: 12px;
+  --wb-message-continuation-gap: 2px;
+  --wb-message-pad-x: 20px;
+  --wb-bubble-pad-y: 8px;
+  --wb-composer-min-height: 88px;
+  --wb-avatar-nav-size: 24px;
+  --wb-nav-width: 240px;
+}
+
+/* ---- WeChat 布局 token ---- */
+html[data-wb-style='wechat'],
+.scope[data-wb-style='wechat'],
+.root[data-wb-style='wechat'] {
+  --wb-radius-panel: 4px;
+  --wb-radius-control: 6px;
+  --wb-radius-bubble: 4px;
+  --wb-radius-overlay: 6px;
+  --wb-radius-avatar: 4px;
+  --wb-nav-row-height: 64px;
+  --wb-header-height: 56px;
+  --wb-message-gap: 20px;
+  --wb-message-continuation-gap: 8px;
+  --wb-message-pad-x: 24px;
+  --wb-bubble-pad-y: 10px;
+  --wb-composer-min-height: 112px;
+  --wb-avatar-nav-size: 40px;
+  --wb-nav-width: 280px;
+}
+
+/* ---- Discord dark ---- */
+html[data-wb-style='discord'][data-wb-scheme='dark'],
+.scope[data-wb-style='discord'][data-wb-scheme='dark'],
+.root[data-wb-style='discord'][data-wb-scheme='dark'] {
+  --wb-bg: #1e1f22;
+  --wb-rail: #1e1f22;
+  --wb-nav: #2b2d31;
+  --wb-surface: #313338;
+  --wb-surface-sub: #2b2d31;
+  --wb-surface-raised: #383a40;
+  --wb-fg: #f2f3f5;
+  --wb-fg-muted: #b5bac1;
+  --wb-fg-placeholder: #a0a6b0;
+  --wb-line: #44474f;
+  --wb-line-soft: #35373d;
+  --wb-line-control: #737985;
+  --wb-hover: #383a40;
+  --wb-pressed: #40434a;
+  --wb-selected-bg: #3b3f5c;
+  --wb-selected-fg: #f2f3f5;
+  --wb-accent: #5865f2;
+  --wb-accent-hover: #4752c4;
+  --wb-accent-pressed: #3c45a5;
+  --wb-on-accent: #ffffff;
+  --wb-accent-soft: #303454;
+  --wb-accent-fg: #b8c0ff;
+  --wb-link: #a9bdff;
+  --wb-focus: #b8c0ff;
+  --wb-disabled-bg: #2b2d31;
+  --wb-disabled-fg: #888e99;
+  --wb-disabled-line: #44474f;
+  --wb-success: #8edaa4;
+  --wb-success-bg: #233b2b;
+  --wb-warning: #edcc85;
+  --wb-warning-bg: #40351e;
+  --wb-danger: #ffb0ac;
+  --wb-danger-bg: #432b2e;
+  --wb-danger-solid: #a12e2e;
+  --wb-on-danger: #ffffff;
+  --wb-info: #9dc9f5;
+  --wb-info-bg: #24364b;
+  --wb-quote-bg: #2b2d31;
+  --wb-quote-line: #737985;
+  --wb-bubble-peer: #313338;
+  --wb-bubble-self: #303454;
+  --wb-bubble-self-fg: #f2f3f5;
+  --wb-bubble-line: #44474f;
+  --wb-unread-bg: #5865f2;
+  --wb-on-unread: #ffffff;
+  --wb-skeleton-base: #383a40;
+  --wb-skeleton-highlight: #44474f;
+  --wb-overlay: rgba(0, 0, 0, .56);
+  --wb-tooltip-bg: #111214;
+  --wb-tooltip-fg: #f2f3f5;
+  --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .32);
+  --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .40);
+}
+
+/* ---- Discord light ---- */
+html[data-wb-style='discord'][data-wb-scheme='light'],
+.scope[data-wb-style='discord'][data-wb-scheme='light'],
+.root[data-wb-style='discord'][data-wb-scheme='light'] {
+  --wb-bg: #ffffff;
+  --wb-rail: #e6e8ec;
+  --wb-nav: #f2f3f5;
+  --wb-surface: #ffffff;
+  --wb-surface-sub: #f2f3f5;
+  --wb-surface-raised: #ffffff;
+  --wb-fg: #232428;
+  --wb-fg-muted: #5c616c;
+  --wb-fg-placeholder: #6b707b;
+  --wb-line: #dedede;
+  --wb-line-soft: #dedede;
+  --wb-line-control: #7a808c;
+  --wb-hover: #e7e9ee;
+  --wb-pressed: #dce0e7;
+  --wb-selected-bg: #e6e9ff;
+  --wb-selected-fg: #232428;
+  --wb-accent: #4752c4;
+  --wb-accent-hover: #3944ad;
+  --wb-accent-pressed: #303a96;
+  --wb-on-accent: #ffffff;
+  --wb-accent-soft: #eceeff;
+  --wb-accent-fg: #3944ad;
+  --wb-link: #3545ad;
+  --wb-focus: #4752c4;
+  --wb-disabled-bg: #eceef1;
+  --wb-disabled-fg: #7a7f89;
+  --wb-disabled-line: #d9dce2;
+  --wb-success: #236e3c;
+  --wb-success-bg: #e8f4ec;
+  --wb-warning: #805b13;
+  --wb-warning-bg: #fff3d8;
+  --wb-danger: #a12e2e;
+  --wb-danger-bg: #fdecec;
+  --wb-danger-solid: #a12e2e;
+  --wb-on-danger: #ffffff;
+  --wb-info: #215f97;
+  --wb-info-bg: #e9f2fc;
+  --wb-quote-bg: #f2f3f5;
+  --wb-quote-line: #7a808c;
+  --wb-bubble-peer: #ffffff;
+  --wb-bubble-self: #eceeff;
+  --wb-bubble-self-fg: #232428;
+  --wb-bubble-line: #d9dce2;
+  --wb-unread-bg: #4752c4;
+  --wb-on-unread: #ffffff;
+  --wb-skeleton-base: #e7e9ee;
+  --wb-skeleton-highlight: #f2f3f5;
+  --wb-overlay: rgba(0, 0, 0, .32);
+  --wb-tooltip-bg: #232428;
+  --wb-tooltip-fg: #ffffff;
+  --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .12);
+  --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .18);
+}
+
+/* ---- WeChat light ---- */
+html[data-wb-style='wechat'][data-wb-scheme='light'],
+.scope[data-wb-style='wechat'][data-wb-scheme='light'],
+.root[data-wb-style='wechat'][data-wb-scheme='light'] {
+  --wb-bg: #fafafa;
+  --wb-rail: #e1e1e6;
+  --wb-nav: #eeeef0;
+  --wb-surface: #fafafa;
+  --wb-surface-sub: #f0f0f2;
+  --wb-surface-raised: #fafafa;
+  --wb-fg: #19191a;
+  --wb-fg-muted: #9f9fa6;
+  --wb-fg-placeholder: #9f9fa6;
+  --wb-line: #dedede;
+  --wb-line-soft: #dedede;
+  --wb-line-control: #9f9fa6;
+  --wb-hover: #e5e5e8;
+  --wb-pressed: #dcdce0;
+  --wb-selected-bg: #00c375;
+  --wb-selected-fg: #ffffff;
+  --wb-accent: #00c375;
+  --wb-accent-hover: #00b069;
+  --wb-accent-pressed: #009e5e;
+  --wb-on-accent: #ffffff;
+  --wb-accent-soft: #e6f9f1;
+  --wb-accent-fg: #00c375;
+  --wb-link: #00c375;
+  --wb-focus: #00c375;
+  --wb-disabled-bg: #e8e8e8;
+  --wb-disabled-fg: #9f9fa6;
+  --wb-disabled-line: #d0d0d0;
+  --wb-success: #00c375;
+  --wb-success-bg: #e8f4ec;
+  --wb-warning: #fa9d3b;
+  --wb-warning-bg: #fdf5e8;
+  --wb-danger: #fa5151;
+  --wb-danger-bg: #feebeb;
+  --wb-danger-solid: #fa5151;
+  --wb-on-danger: #ffffff;
+  --wb-info: #10aeff;
+  --wb-info-bg: #eaf6fe;
+  --wb-quote-bg: #f2f2f4;
+  --wb-quote-line: #c4c4c8;
+  --wb-bubble-peer: #ffffff;
+  --wb-bubble-self: #9df29f;
+  --wb-bubble-self-fg: #19191a;
+  --wb-bubble-line: #e0e0e0;
+  --wb-unread-bg: #fa5151;
+  --wb-on-unread: #ffffff;
+  --wb-skeleton-base: #e4e4e6;
+  --wb-skeleton-highlight: #eeeef0;
+  --wb-overlay: rgba(0, 0, 0, .28);
+  --wb-tooltip-bg: #19191a;
+  --wb-tooltip-fg: #ffffff;
+  --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .08);
+  --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .14);
+}
+
+/* ---- WeChat dark ---- */
+html[data-wb-style='wechat'][data-wb-scheme='dark'],
+.scope[data-wb-style='wechat'][data-wb-scheme='dark'],
+.root[data-wb-style='wechat'][data-wb-scheme='dark'] {
+  --wb-bg: #111111;
+  --wb-rail: #141414;
+  --wb-nav: #191919;
+  --wb-surface: #222222;
+  --wb-surface-sub: #191919;
+  --wb-surface-raised: #292929;
+  --wb-fg: #ededed;
+  --wb-fg-muted: #a9a9a9;
+  --wb-fg-placeholder: #929292;
+  --wb-line: #3b3b3b;
+  --wb-line-soft: #2c2c2c;
+  --wb-line-control: #858585;
+  --wb-hover: #2b2b2b;
+  --wb-pressed: #343434;
+  --wb-selected-bg: #233b2b;
+  --wb-selected-fg: #ededed;
+  --wb-accent: #62c985;
+  --wb-accent-hover: #78d797;
+  --wb-accent-pressed: #4db873;
+  --wb-on-accent: #102619;
+  --wb-accent-soft: #1c3324;
+  --wb-accent-fg: #80dda0;
+  --wb-link: #8adea6;
+  --wb-focus: #80dda0;
+  --wb-disabled-bg: #242424;
+  --wb-disabled-fg: #777777;
+  --wb-disabled-line: #3b3b3b;
+  --wb-success: #8ed7a5;
+  --wb-success-bg: #203729;
+  --wb-warning: #e5c27b;
+  --wb-warning-bg: #3c321d;
+  --wb-danger: #f2a5a0;
+  --wb-danger-bg: #402828;
+  --wb-danger-solid: #a12e2e;
+  --wb-on-danger: #ffffff;
+  --wb-info: #9cc8ee;
+  --wb-info-bg: #223448;
+  --wb-quote-bg: #292929;
+  --wb-quote-line: #858585;
+  --wb-bubble-peer: #222222;
+  --wb-bubble-self: #255b36;
+  --wb-bubble-self-fg: #ededed;
+  --wb-bubble-line: #3b3b3b;
+  --wb-unread-bg: #62c985;
+  --wb-on-unread: #102619;
+  --wb-skeleton-base: #2b2b2b;
+  --wb-skeleton-highlight: #383838;
+  --wb-overlay: rgba(0, 0, 0, .60);
+  --wb-tooltip-bg: #ededed;
+  --wb-tooltip-fg: #202020;
+  --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .36);
+  --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .44);
+}
+
+/* reduced-motion：时长归零、不做编排动画；loading 仍保留静态标记 */
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    --wb-motion-fast: 0ms;
+    --wb-motion-normal: 0ms;
+    --wb-motion-slow: 0ms;
+  }
+}
+
+/** overlay 容器挂在每个根内部：浮层 portal 到这里继承同一 style/scheme 快照。 */
+.overlayRoot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--wb-layer-overlay);
+}
+
+.overlayRoot > * {
+  pointer-events: auto;
+}

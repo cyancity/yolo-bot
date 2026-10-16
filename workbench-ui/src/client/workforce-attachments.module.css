@@ -1,0 +1,610 @@
+.attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  margin: 8px 0;
+  white-space: normal;
+}
+
+.fileCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: min(100%, 440px);
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--wb-line);
+  border-radius: 10px;
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  font-size: 13px;
+  line-height: 20px;
+}
+:global([data-wb-style='wechat']) .fileCard {
+  width: 100%;
+  max-width: 520px;
+}
+
+.fileIcon { display: flex; flex: none; color: var(--wb-fg-muted); }
+.fileIcon[data-extension='docx'], .fileIcon[data-extension='doc'] { color: var(--wb-accent); }
+.fileIcon[data-extension='xlsx'], .fileIcon[data-extension='csv'] { color: var(--wb-success); }
+.fileIcon[data-extension='pdf'], .fileIcon[data-extension='pptx'] { color: var(--wb-danger); }
+.fileDetails { display: flex; flex: 1; min-width: 0; flex-direction: column; }
+.fileName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.fileMeta { color: var(--wb-fg-muted); font-size: 11px; line-height: 17px; }
+.fileCard > a, .fileCard > button {
+  border: 0;
+  background: transparent;
+  padding: 4px 2px;
+  color: var(--wb-accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  flex: none;
+}
+.fileCard > a:hover, .fileCard > button:hover { text-decoration: underline; }
+.fileCard :focus-visible, .thumbnail:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
+.thumbnail { display: block; align-self: flex-start; max-width: 100%; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: zoom-in; background: var(--wb-hover); }
+.thumbnail img { display: block; max-width: 100%; max-height: 240px; width: auto; height: auto; object-fit: contain; }
+.video { display: block; max-width: 100%; max-height: 280px; width: min(100%, 480px); border: 1px solid var(--wb-line); border-radius: 10px; background: #111; }
+.audio { display: block; max-width: 100%; width: min(100%, 420px); }
+.galleryControls { position: fixed; z-index: 1001; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; align-items: center; padding: 6px 12px; color: var(--wb-fg); background: var(--wb-surface); border: 1px solid var(--wb-line); border-radius: 999px; font-family: inherit; font-size: 13px; line-height: 20px; }
+.galleryControls button { border: 0; background: transparent; color: inherit; font-family: inherit; font-size: 26px; line-height: 28px; cursor: pointer; padding: 0 8px; }
+.galleryControls button:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; border-radius: 4px; }
+.previewDialog {
+  box-sizing: border-box;
+  width: min(90vw, 880px) !important;
+  max-width: 90vw !important;
+  max-height: 85vh !important;
+  height: min(85vh, 840px);
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0;
+  padding: 0 !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  background: var(--wb-surface) !important;
+  color: var(--wb-fg) !important;
+  border: 1px solid var(--wb-line) !important;
+  border-radius: var(--wb-radius-overlay, 14px) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28) !important;
+}
+
+.previewContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--wb-line);
+  background: var(--wb-surface);
+  flex: none;
+}
+
+.previewTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.previewIcon {
+  display: flex;
+  flex: none;
+  color: var(--wb-fg-muted);
+}
+.previewIcon[data-extension='docx'], .previewIcon[data-extension='doc'] { color: var(--wb-accent); }
+.previewIcon[data-extension='xlsx'], .previewIcon[data-extension='csv'] { color: var(--wb-success); }
+.previewIcon[data-extension='pdf'], .previewIcon[data-extension='pptx'] { color: var(--wb-danger); }
+.previewIcon[data-extension='md'], .previewIcon[data-extension='markdown'] { color: var(--wb-accent); }
+
+.previewTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--wb-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  background: var(--wb-accent-soft, rgba(47, 111, 237, 0.1));
+  color: var(--wb-accent);
+  flex: none;
+}
+
+.previewCloseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--wb-radius-control, 6px);
+  background: transparent;
+  color: var(--wb-fg-muted);
+  cursor: pointer;
+  flex: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.previewCloseBtn:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+  border-color: var(--wb-line);
+}
+
+.previewCloseBtn:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 1px;
+}
+
+.previewBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  overscroll-behavior: contain;
+}
+
+.previewBody :global([class*='readBlock']),
+.previewBody :global([class*='ReadBlock']),
+.previewBody :global([class*='code']),
+.previewBody :global(pre),
+.previewBody :global(code) {
+  background: var(--wb-surface-raised, var(--wb-surface)) !important;
+  color: var(--wb-fg) !important;
+  border-color: var(--wb-line) !important;
+}
+
+.previewBody :global([class*='line']),
+.previewBody :global([class*='gutter']),
+.previewBody :global([class*='lineNumber']) {
+  background: transparent !important;
+  color: var(--wb-fg-placeholder, var(--wb-fg-muted)) !important;
+}
+
+
+.previewBody[data-kind='pdf'] {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pdfFrame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: min(70vh, 680px);
+  border: 0;
+}
+
+.markdownBody {
+  width: 100%;
+  color: var(--wb-fg);
+}
+.markdownBody :global(.messageText) {
+  max-width: 100%;
+}
+
+.previewFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--wb-line);
+  background: var(--wb-surface);
+  flex: none;
+}
+
+.previewFooterInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--wb-fg-muted);
+}
+
+.previewDownloadLink {
+  color: var(--wb-accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+.previewDownloadLink:hover {
+  text-decoration: underline;
+}
+
+.previewFooterCloseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.previewFooterCloseBtn:hover {
+  background: var(--wb-hover);
+  border-color: var(--wb-fg-muted);
+}
+
+.previewFooterCloseBtn:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 1px;
+}
+
+.pdfDialog { width: min(90vw, 880px); max-width: 90vw; }
+.textDialog { width: min(90vw, 880px); max-width: 90vw; }
+.textStatus { margin: 12px 0; color: var(--wb-fg-muted); font-size: var(--wb-type-compact-size); }
+.infoIcon {
+  border: 0;
+  background: transparent;
+  padding: 4px 2px;
+  color: var(--wb-fg-muted);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  flex: none;
+}
+.infoIcon:hover, .infoIcon[aria-describedby] { color: var(--wb-accent); }
+.infoIcon:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .fileCard { gap: 8px; padding: 8px; }
+  .fileIcon { display: none; }
+}
+
+.nativeActions { display: inline-flex; align-items: center; flex: none; }
+.nativeActionGroup {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-surface);
+  overflow: hidden;
+  flex: none;
+}
+.nativeMenu { --dsw-menu-surface-fill: var(--wb-surface); --dsw-menu-backdrop-filter: none; --dsw-alias-label-primary: var(--wb-fg); --dsw-alias-interactive-bg-hover: var(--wb-hover); --dsw-alias-border-l1: var(--wb-line); }
+.nativeFolderBtn, .nativeTrigger {
+  border: 0;
+  background: transparent;
+  color: var(--wb-fg-muted);
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}
+.nativeFolderBtn { min-width: 24px; }
+.nativeActionGroup .nativeFolderBtn + .nativeActions .nativeTrigger,
+.nativeActionGroup .nativeFolderBtn + .nativeTrigger {
+  border-left: 1px solid var(--wb-line-soft);
+}
+.nativeFolderBtn:hover:not(:disabled), .nativeTrigger:hover:not(:disabled) {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+.nativeFolderBtn:focus-visible, .nativeTrigger:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -1px;
+}
+.nativeFolderBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.nativeTrigger:disabled { opacity: 0.6; cursor: wait; }
+.nativeError { flex-basis: 100%; min-width: 0; color: var(--wb-danger); font-size: var(--wb-type-caption-size); line-height: 18px; overflow-wrap: anywhere; }
+
+.cardActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.mainActionBtn {
+  color: var(--wb-accent);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--wb-type-compact-size);
+  cursor: pointer;
+  text-decoration: none;
+  flex: none;
+}
+
+.mainActionBtn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.mainActionBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: var(--wb-fg-muted);
+}
+
+.videoPreviewWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.previewVideo {
+  max-width: 100%;
+  max-height: min(65vh, 520px);
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  background: #000;
+  outline: none;
+}
+
+.audioPreviewWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 36px 16px;
+  box-sizing: border-box;
+}
+
+.previewAudio {
+  width: min(100%, 460px);
+  outline: none;
+}
+
+.mediaErrorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  gap: 12px;
+}
+
+.attachmentBarWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* 与 msgBubble 同宽上限：宽度钉到 50% 内容区（上限 780px），让内部 grid
+     按这个容器宽排多列；fit-content 会让 container 收缩到内容宽、把 grid
+     误判成 <440px 单列塌缩，故不用。wechat 用户行 align-items:flex-end 推到右缘。 */
+  width: min(50%, 780px);
+  margin-top: 6px;
+  container-type: inline-size;
+}
+/* wechat 下附件条与气泡上限统一为 50%，与 .msgBubble 一致。 */
+:global([data-wb-style='wechat']) .attachmentBarWrapper {
+  width: min(50%, 780px);
+}
+
+.attachmentBarToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--wb-line);
+  border-radius: 8px;
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.attachmentBarToggle:hover {
+  background: var(--wb-hover);
+}
+
+.attachmentBarToggle:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+}
+
+.attachmentBarTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.attachmentBarAction {
+  flex: none;
+  font-size: 12px;
+  color: var(--wb-accent);
+}
+
+.attachmentGrid {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+}
+
+.attachmentGrid[data-count='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.attachmentGrid[data-count='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachmentGrid[data-count='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@container (max-width: 680px) {
+  .attachmentGrid,
+  .attachmentGrid[data-count='3'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 半宽气泡容器较窄（~340-450px）：440→340 才落单列，否则半宽下 MD 卡全被拉成
+   高瘦单列，浪费横向空间。 */
+@container (max-width: 340px) {
+  .attachmentGrid,
+  .attachmentGrid[data-count='2'],
+  .attachmentGrid[data-count='3'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .attachmentGrid,
+  .attachmentGrid[data-count='3'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 440px) {
+  .attachmentGrid,
+  .attachmentGrid[data-count='2'],
+  .attachmentGrid[data-count='3'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.attachmentGrid > .attachment {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.attachmentGrid .fileCard {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  gap: 6px;
+}
+
+.attachmentGrid .fileIcon {
+  flex: none;
+}
+
+.attachmentGrid .cardActions {
+  gap: 4px;
+  flex: none;
+}
+
+.attachmentGrid .mainActionBtn {
+  padding: 3px 6px;
+}
+
+.attachmentGrid .video {
+  max-height: 120px;
+  height: 110px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.attachmentGrid .audio {
+  width: 100%;
+  height: 36px;
+}
+
+.fileLinkWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.fileLinkError {
+  font-size: 11px;
+  color: var(--wb-danger, #e06c75);
+  margin-inline-start: 4px;
+  white-space: nowrap;
+}
+.fileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 6px;
+  margin: 1px 2px;
+  border: 1px solid var(--wb-line, rgba(127, 127, 127, 0.2));
+  border-radius: 6px;
+  background: var(--wb-surface-soft, rgba(127, 127, 127, 0.06));
+  color: var(--wb-fg);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  cursor: pointer;
+  text-decoration: none;
+  vertical-align: middle;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.fileLink:hover {
+  background: var(--wb-hover);
+  border-color: var(--wb-line);
+}
+
+.fileLink:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 1px;
+}
+
+.fileLinkIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--wb-fg-muted);
+}
+.fileLinkIcon[data-extension='docx'], .fileLinkIcon[data-extension='doc'] { color: var(--wb-accent); }
+.fileLinkIcon[data-extension='xlsx'], .fileLinkIcon[data-extension='csv'] { color: var(--wb-success); }
+.fileLinkIcon[data-extension='pdf'], .fileLinkIcon[data-extension='pptx'] { color: var(--wb-danger); }
+
+.fileLinkText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+  font-weight: 500;
+}

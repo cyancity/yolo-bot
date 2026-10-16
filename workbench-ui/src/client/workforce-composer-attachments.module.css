@@ -1,0 +1,96 @@
+.dropActive {
+  outline: 2px dashed var(--wb-accent);
+  outline-offset: 3px;
+  border-radius: var(--wb-radius-panel);
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px 0;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control);
+  background: var(--wb-surface);
+}
+
+.preview {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--wb-hover);
+}
+
+.kind {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--wb-hover);
+  color: var(--wb-fg-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.details {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wb-fg);
+  font-size: 12px;
+}
+
+.meta {
+  display: block;
+  color: var(--wb-fg-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.error {
+  display: block;
+  color: var(--wb-danger);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.remove {
+  flex: none;
+  align-self: flex-start;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  color: var(--wb-fg-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.remove:hover {
+  color: var(--wb-danger);
+  background: var(--wb-hover);
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--wb-accent);
+}

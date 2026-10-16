@@ -1,0 +1,485 @@
+/* Discord 风格频道与分组列表样式 */
+
+.channelsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 分组块 */
+.groupBlock {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+}
+
+/* 分组标题行（参考 Discord） */
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 4px 6px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: color 0.1s ease;
+}
+
+.groupHeader:hover {
+  color: var(--wb-fg, #f2f3f5);
+}
+
+.groupHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--wb-fg-muted, #949ba4);
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.groupTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wb-fg-muted, #949ba4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupHeader:hover .groupTitle {
+  color: var(--wb-fg, #dbdee1);
+}
+
+.groupAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--wb-fg-muted, #949ba4);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s ease, color 0.1s ease, background 0.1s ease;
+}
+
+.groupHeader:hover .groupAddBtn {
+  opacity: 1;
+}
+
+.groupAddBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  color: var(--wb-fg, #f2f3f5);
+}
+
+/* 频道列表容器 */
+.channelList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 2px;
+}
+
+/* 频道按钮行 */
+.channelItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  /* 小字前景：token 在 .sidebar 上定义，fallback --wb-fg-muted 保护独立挂载 */
+  color: var(--wb-sub-fg-sm, var(--wb-fg-muted, #949ba4));
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.08s ease, color 0.08s ease;
+  box-sizing: border-box;
+}
+
+.channelItem:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.05));
+  color: var(--wb-fg, #dbdee1);
+}
+
+.channelItemActive {
+  background: var(--wb-accent-soft, rgba(88, 101, 242, 0.15));
+  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+  font-weight: 600;
+}
+
+.channelItemActive:hover {
+  background: var(--wb-accent-soft, rgba(88, 101, 242, 0.22));
+  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+}
+
+.hashIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: inherit;
+  opacity: 0.7;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.channelItemActive .hashIcon {
+  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+  opacity: 1;
+}
+
+.channelName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinBadge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--wb-fg-muted, #949ba4);
+  opacity: 0.8;
+}
+
+.unreadDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #459ffe;
+}
+
+/* 顶部总分组/新建操作栏 */
+.topActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+}
+
+/* 侧栏区标题（「频道」「私信」共用同一套字重与字号） */
+.topTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--wb-fg-muted);
+  letter-spacing: 0.03em;
+}
+
+.sectionToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--wb-fg-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sectionToggleBtn:hover .topTitle {
+  color: var(--wb-fg, #f2f3f5);
+}
+
+.sectionToggleBtn:focus-visible {
+  outline: 2px solid var(--wb-accent, #5865f2);
+  outline-offset: 1px;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--wb-fg-muted, #949ba4);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.iconBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  color: var(--wb-fg, #f2f3f5);
+}
+
+/* 本地旧数据同步提示横幅 */
+.migrationBanner {
+  margin: 6px 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--wb-accent, #5865f2) 12%, var(--wb-surface, #2b2d31));
+  border: 1px solid color-mix(in srgb, var(--wb-accent, #5865f2) 30%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--wb-fg, #f2f3f5);
+}
+
+.migrationText {
+  line-height: 1.4;
+}
+
+.migrationActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.syncBtn {
+  border: none;
+  background: var(--wb-accent, #5865f2);
+  color: var(--wb-on-accent, #ffffff);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.syncBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.syncBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.dismissBtn {
+  border: 1px solid var(--wb-line, #3f4147);
+  background: transparent;
+  color: var(--wb-fg-muted, #949ba4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dismissBtn:hover:not(:disabled) {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  color: var(--wb-fg, #f2f3f5);
+}
+
+/* 错误提示横幅 */
+.errorBanner {
+  margin: 6px 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--wb-danger-bg, rgba(237, 66, 69, 0.1));
+  border: 1px solid var(--wb-danger, #ed4245);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--wb-danger, #ed4245);
+}
+
+.errorMessage {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.errorActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: none;
+}
+
+.errorRetryBtn {
+  border: none;
+  background: transparent;
+  color: var(--wb-accent, #5865f2);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  font-size: 11px;
+}
+
+.errorDismissBtn {
+  border: none;
+  background: transparent;
+  color: var(--wb-fg-muted, #949ba4);
+  cursor: pointer;
+  padding: 0;
+  font-size: 11px;
+}
+
+.formError {
+  color: var(--wb-danger, #ed4245);
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* 交互模态框通用表单样式 */
+.dialogBackdrop {
+  position: fixed;
+  /* 从 Windows 标题栏下方开始，避免标题栏变灰而原生窗口按钮仍是原色 */
+  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom, 1)) 0 0;
+  z-index: 10050;
+  background: var(--wb-overlay, rgba(0, 0, 0, 0.45));
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dialogCard {
+  width: 100%;
+  max-width: 420px;
+  background: var(--wb-surface-raised, #2b2d31);
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  padding: 22px 24px;
+  color: var(--wb-fg, #f2f3f5);
+  box-sizing: border-box;
+}
+
+.dialogTitle {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.dialogForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wb-fg-muted, #b5bac1);
+  text-transform: uppercase;
+}
+
+.inputField {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
+  background: var(--wb-surface, #1e1f22);
+  color: var(--wb-fg, #f2f3f5);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.inputField:focus {
+  border-color: var(--wb-accent, #5865f2);
+}
+
+.selectField {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
+  background: var(--wb-surface, #1e1f22);
+  color: var(--wb-fg, #f2f3f5);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.selectField:focus {
+  border-color: var(--wb-accent, #5865f2);
+}
+
+.dialogFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wb-fg, #f2f3f5);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+}
+
+.submitBtn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  background: var(--wb-accent, #5865f2);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn:hover {
+  opacity: 0.9;
+}

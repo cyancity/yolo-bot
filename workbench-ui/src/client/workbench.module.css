@@ -1,0 +1,176 @@
+/* Workbench panel styles — a self-contained light surface for the main
+   column. Class names are kebab-free camelCase (CSS Modules camelize). */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--wb-bg, #ffffff);
+  color: var(--wb-fg, #23231f);
+  font-size: 13px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* ---------- sidebar column (workbench-owned 'sidebar' slot) ---------- */
+
+.side {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--wb-surface-raised, #ffffff);
+  border-right: 1px solid var(--wb-line, #e4e4df);
+  color: var(--wb-fg, #23231f);
+  font-size: 13px;
+}
+
+.sideBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px;
+  flex: none;
+}
+
+/* Collapse/expand icon at the brand row's right edge. */
+.sideToggle {
+  margin-left: auto;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--wb-fg-muted, #6f6f66);
+  cursor: pointer;
+}
+
+.sideToggle:hover { background: var(--wb-hover, #efefea); color: var(--wb-fg, #23231f); }
+.sideToggle:focus-visible { outline: 2px solid var(--wb-accent, #2f6fed); outline-offset: 2px; }
+
+.sideMark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wb-accent, #2f6fed);
+  color: var(--wb-on-accent, #fff);
+  font-size: 14px;
+  font-weight: 700;
+  flex: none;
+  overflow: hidden;
+}
+
+.sideLogoFallback { display: inline-block; }
+
+.sideName {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sideNav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sideItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--wb-fg, #23231f);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sideItem:hover { background: var(--wb-hover, #efefea); }
+
+.sideItemActive {
+  background: color-mix(in srgb, var(--wb-accent, #2f6fed) 10%, transparent);
+  color: var(--wb-accent, #2f6fed);
+  font-weight: 600;
+}
+
+.sideItemDisabled, .sideItem[disabled] { cursor: default; color: var(--wb-fg-muted, #a8a89e); }
+
+.sideGlyph {
+  width: 20px;
+  text-align: center;
+  flex: none;
+  font-size: 13px;
+}
+
+.sideLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sideSoon {
+  font-size: 10.5px;
+  color: var(--wb-fg-muted, #a8a89e);
+  border: 1px solid var(--wb-line, #e4e4df);
+  border-radius: 99px;
+  padding: 1px 7px;
+  flex: none;
+}
+
+.sideFoot { flex: none; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+
+.sideSettings { display: flex; align-items: center; }
+
+/* Collapsed 56px rail: centered icon buttons stacked vertically. */
+.sideCollapsed .sideBrand { padding: 12px 0 6px; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.sideCollapsed .sideToggle { margin-left: 0; }
+.sideCollapsed .sideNav { padding: 4px 6px; align-items: center; }
+.sideCollapsed .sideItem { justify-content: center; padding: 9px 0; width: 40px; }
+.sideCollapsed .sideFoot { align-items: center; padding: 6px 6px 10px; }
+.sideCollapsed .sideSettings { justify-content: center; }
+
+.muted { color: var(--wb-fg-muted, #8a8a80); font-size: 12.5px; }
+
+.errorText { color: #b34434; font-size: 12.5px; margin-top: 8px; }
+
+
+.secondary {
+  background: var(--wb-surface-raised, #fff);
+  color: var(--wb-fg, #23231f);
+  border: 1px solid var(--wb-line, #d8d8d0);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.secondary:disabled { opacity: 0.5; cursor: default; }
+

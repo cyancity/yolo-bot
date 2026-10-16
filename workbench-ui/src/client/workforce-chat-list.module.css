@@ -1,0 +1,399 @@
+/* 微信桌面式会话列表：channel（群聊）与 DM 混排一列。
+   行 = 圆角方形头像 + 两行文字（名称+时间 / 预览+角标），沿用 --wb-* token。 */
+
+.chatRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chatHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+}
+
+.chatTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--wb-fg-muted);
+}
+
+.chatAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--wb-fg-muted);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.chatAddBtn:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+
+.chatAddBtn:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 1px;
+}
+
+.chatList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 4px;
+}
+
+.chatEmpty {
+  padding: 10px 12px;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-placeholder);
+  line-height: 1.5;
+}
+
+/* 会话行：两行微信式层级结构（名称+角色标签/时间、预览/置顶图钉） */
+.chatItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wb-fg);
+  font: inherit;
+  font-size: var(--wb-type-compact-size);
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 0.15s ease;
+}
+
+.chatItem:hover {
+  background: var(--wb-hover);
+}
+
+.chatItem:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+/* 置顶会话底色微沉（微信置顶灰底语义），让位于选中态 */
+.chatItemPinned {
+  background: color-mix(in srgb, var(--wb-fg-muted, #949ba4) 8%, transparent);
+}
+
+.chatItemPinned:hover {
+  background: color-mix(in srgb, var(--wb-fg-muted, #949ba4) 14%, transparent);
+}
+
+.chatItemActive,
+.chatItemActive:hover {
+  background: var(--wb-accent-soft);
+}
+
+.chatItemActive .chatName,
+.chatItemActive .chatNameText {
+  color: var(--wb-accent-fg-sm, var(--wb-accent));
+}
+
+/* 选中行的 10.5/11.5px 次信息：--wb-fg-placeholder 对 accent-soft 底用小字中性 token 保持清晰 */
+.chatItemActive .chatTime,
+.chatItemActive .chatPreview {
+  color: var(--wb-sub-fg-sm, var(--wb-fg-placeholder));
+}
+
+:global([data-wb-style='wechat']) .chatItemActive,
+.chatItemActive {
+  background: #15ac70;
+}
+
+:global([data-wb-style='wechat']) .chatItemActive:hover,
+.chatItemActive:hover {
+  background: #14a36a;
+}
+
+:global([data-wb-style='wechat']) .chatItemActive .chatName,
+:global([data-wb-style='wechat']) .chatItemActive .chatNameText {
+  color: var(--wb-selected-fg, #ffffff);
+}
+
+:global([data-wb-style='wechat']) .chatItemActive .chatTime,
+:global([data-wb-style='wechat']) .chatItemActive .chatPreview {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.chatItemDimmed {
+  opacity: 0.5;
+  filter: grayscale(40%);
+}
+
+/* 头像整体容器（36x36），承载头像本体并为右上角角标提供绝对定位 */
+.chatAvatarBox,
+.chatAvatar,
+.chatAvatarWrap {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+/* 单人头像：36x36 圆角方形裁剪外壳 */
+.chatSingleAvatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+/* 微信式群聊组合头像：36x36 浅灰托盘底 */
+.chatGroupAvatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--wb-fg-muted, #949ba4) 14%, var(--wb-hover));
+  padding: 2.5px;
+  box-sizing: border-box;
+}
+
+.chatAvatarGrid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+}
+
+.chatAvatarGrid[data-count='1'] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.chatAvatarGrid[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+}
+
+.chatAvatarGrid[data-count='3'],
+.chatAvatarGrid[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.chatAvatarGrid[data-count='3'] .chatAvatarCell:first-child {
+  grid-column: 1 / -1;
+  width: 50%;
+  justify-self: center;
+}
+
+/* 格子只负责裁剪与微圆角定位；内部 WorkforceAvatar 强制铺满格 */
+.chatAvatarCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 2.5px;
+  overflow: hidden;
+}
+
+.chatAvatarCell > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 无成员兜底：沿用原文字拼格的单格文字样式 */
+.chatAvatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--wb-accent, #2f6fed) 16%, var(--wb-surface, #fff));
+  color: var(--wb-accent, #2f6fed);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 头像右上角红色徽标（微信式）：有未读数显示数字，无数字红点 */
+.chatBadgeDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fa5151;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chatBadgeCount {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #fa5151;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 2;
+  pointer-events: none;
+}
+.chatBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.chatLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chatNameWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatName,
+.chatNameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wb-fg);
+  min-width: 0;
+}
+
+.chatTag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--wb-fg-placeholder);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chatTime {
+  flex: none;
+  font-size: 11px;
+  color: var(--wb-fg-placeholder);
+  white-space: nowrap;
+}
+
+.chatPreview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--wb-fg-placeholder);
+}
+
+.chatPin {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--wb-fg-muted);
+  opacity: 0.8;
+}
+
+.chatUnread {
+  display: none;
+}
+
+.chatHint {
+  font-size: 11px;
+  color: var(--wb-fg-placeholder);
+}
+/* 发起群聊的成员勾选列表：长名单内部滚动，弹窗不撑爆 */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--wb-fg);
+  cursor: pointer;
+}
+
+.memberRow:hover {
+  background: var(--wb-hover);
+}
+
+.memberRow:focus-within {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.memberName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatAddBtn,
+  .chatItem {
+    transition: none;
+  }
+}

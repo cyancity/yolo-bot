@@ -1,0 +1,5 @@
+# dsh bundle patch: inserts this plugin into a profile's layer stack.
+# cordis id `workbench` is a runtime identifier and must not change.
+- insert:
+    - id: workbench
+      name: '@cyancity/yolo-bot'

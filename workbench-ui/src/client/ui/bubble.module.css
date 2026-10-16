@@ -1,0 +1,21 @@
+.bubble {
+  display: inline-block;
+  max-width: min(72%, 640px);
+  padding: var(--wb-bubble-pad-y) var(--wb-bubble-pad-x);
+  border-radius: var(--wb-radius-bubble);
+  font-size: var(--wb-type-body-size);
+  line-height: var(--wb-type-body-leading);
+  text-align: start;
+  word-break: break-word;
+}
+
+.peer {
+  background: var(--wb-bubble-peer);
+  border: var(--wb-border-width) solid var(--wb-bubble-line);
+  color: var(--wb-fg);
+}
+
+.self {
+  background: var(--wb-bubble-self);
+  color: var(--wb-bubble-self-fg);
+}

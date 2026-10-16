@@ -1,0 +1,11 @@
+node_modules/
+lib/
+dist/
+/.worktree/
+tmp/
+*.tgz
+.env
+.env.*
+!.env.example
+.DS_Store
+

@@ -1,0 +1,51 @@
+.editor { display: flex; flex-direction: column; gap: 14px; min-width: 0; color: var(--wb-fg); font-size: 14px; line-height: 22px; }
+.hint, .meta { margin: 0; color: var(--wb-fg-muted); font-size: 12px; line-height: 19px; }
+.usage { color: var(--wb-fg); font-size: 13px; font-variant-numeric: tabular-nums; }
+.list { padding: 0; margin: 0; list-style: none; }
+.item { padding: 14px 0; border-bottom: 1px solid var(--wb-line); }
+.text { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.actions button, .error button, .remembered button, .continuation button { border: 1px solid var(--wb-line); border-radius: var(--wb-radius-control); background: var(--wb-surface); color: var(--wb-accent); padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+.actions button:hover, .error button:hover, .remembered button:hover, .continuation button:hover { background: var(--wb-hover); }
+.actions button:disabled, .remembered button:disabled, .continuation button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  color: var(--wb-fg-muted);
+  background: var(--wb-hover);
+  border-color: var(--wb-line);
+}
+.editor :focus-visible, .remembered :focus-visible, .continuation :focus-visible, .failedTool summary:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
+.form { display: flex; flex-direction: column; gap: 8px; }
+.form label { font-weight: 600; }
+.form textarea { box-sizing: border-box; width: 100%; min-height: 88px; resize: vertical; border: 1px solid var(--wb-line); border-radius: var(--wb-radius-control); background: var(--wb-surface); color: var(--wb-fg); font: inherit; padding: 10px 12px; }
+.form textarea::placeholder { color: var(--wb-fg-muted); }
+.error { margin: 0; color: var(--wb-danger); overflow-wrap: anywhere; font-size: 13px; line-height: 20px; }
+.error button { margin-left: 8px; }
+.loading { display: grid; gap: 10px; padding: 12px 0; }
+.loading span { height: 14px; background: var(--wb-hover); border-radius: 4px; }
+.loading span:last-child { width: 65%; }
+.dialogContent { min-width: 0; }
+:global(dialog):has(> .drawer) { box-sizing: border-box; position: fixed; inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom, 1)) 0 0 auto; margin: 0; width: min(480px, 100vw); height: auto; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -8px 0 28px color-mix(in srgb, var(--wb-fg) 14%, transparent); }
+.drawer { min-width: 0; }
+.remembered { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0 8px 48px; color: var(--wb-fg-muted); font-size: 13px; line-height: 20px; }
+.remembered button { border: 0; padding: 2px 4px; background: transparent; }
+.continuation { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 12px; color: var(--wb-fg-muted); background: var(--wb-surface-sub); font-size: 13px; line-height: 20px; }
+.failedTool { margin: 6px 0 6px 48px; color: var(--wb-fg-muted); font-size: 12px; line-height: 19px; }
+.failedTool summary { cursor: pointer; }
+.failedTool pre { max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; padding: 8px; background: var(--wb-hover); border-radius: var(--wb-radius-control); }
+.employeeMemory {
+  grid-column: 1 / -1;
+  padding: 16px;
+  margin-top: 8px;
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-panel, 10px);
+  background: var(--wb-surface-raised);
+}
+.employeeMemory h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wb-fg);
+}
+
+@media (max-width: 600px) { .remembered, .failedTool { margin-left: 12px; } }

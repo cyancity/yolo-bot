@@ -1,0 +1,184 @@
+/* 骨架屏样式：模仿真实布局，轻 shimmer，遵循 prefers-reduced-motion */
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.bone {
+  background: linear-gradient(
+    90deg,
+    var(--wb-line-soft) 25%,
+    color-mix(in srgb, var(--wb-hover) 80%, var(--wb-surface)) 45%,
+    var(--wb-line-soft) 65%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+  border-radius: var(--wb-radius-control);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none !important;
+    background: var(--wb-line-soft) !important;
+  }
+}
+
+/* ---------- 消息流骨架屏 ---------- */
+
+.streamSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.msgSkeleton {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.msgAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.msgBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  max-width: 780px;
+}
+
+.msgHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msgName {
+  height: 14px;
+  width: 72px;
+}
+
+.msgTime {
+  height: 12px;
+  width: 36px;
+}
+
+.msgBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: var(--wb-radius-panel);
+  background: var(--wb-surface-raised);
+  border: 1px solid var(--wb-line-soft);
+  box-sizing: border-box;
+}
+
+.line {
+  height: 13px;
+  border-radius: 4px;
+}
+
+/* ---------- 侧栏频道/私信骨架屏 ---------- */
+
+.sidebarSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.sidebarSectionHead {
+  height: 12px;
+  width: 48px;
+  margin: 6px 4px 2px;
+}
+
+.sidebarRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.sidebarIcon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.sidebarLabel {
+  height: 13px;
+  flex: 1;
+}
+
+/* ---------- 员工管理页骨架屏 ---------- */
+
+.empListSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.empCardSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--wb-radius-panel);
+  border: 1px solid var(--wb-line);
+  background: var(--wb-surface-raised);
+}
+
+.empAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.empBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.empName {
+  height: 15px;
+  width: 90px;
+}
+
+.empRole {
+  height: 12px;
+  width: 160px;
+}
+
+.empMeta {
+  height: 11px;
+  width: 120px;
+}
+
+.empActions {
+  height: 24px;
+  width: 56px;
+  flex: none;
+}
+

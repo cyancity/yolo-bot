@@ -1,0 +1,223 @@
+/* Employee question/approval card; self-contained so leader wiring only renders the component. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-5, 12px);
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--wb-line, #e0e0e6);
+  border-radius: var(--wb-radius-panel, 10px);
+  background: var(--wb-surface-raised, #fff);
+  max-width: 420px;
+}
+
+.title {
+  font-size: var(--wb-type-caption-size, 11px);
+  font-weight: 600;
+  color: var(--wb-fg-placeholder, #8a8f98);
+  letter-spacing: 0.02em;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.header {
+  font-size: var(--wb-type-caption-size, 11px);
+  font-weight: 600;
+  color: var(--wb-accent, #4d6bfe);
+}
+
+.questionText {
+  font-size: var(--wb-type-label-size, 13px);
+  color: var(--wb-fg, #1f2329);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.detail {
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-fg-muted, #646a73);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.detailDisclosure {
+  border: 1px solid var(--wb-line, #e0e0e6);
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-surface, #f7f8fa);
+}
+
+.detailToggle {
+  padding: 6px 10px;
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-fg-muted, #646a73);
+  cursor: pointer;
+  user-select: none;
+}
+
+.detailBody {
+  margin: 0;
+  padding: 8px 10px;
+  border-top: 1px solid var(--wb-line, #e0e0e6);
+  max-height: 180px;
+  overflow: auto;
+  font-family: var(--wb-font-mono, ui-monospace, SFMono-Regular, Consolas, monospace);
+  font-size: var(--wb-type-caption-size, 11px);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--wb-fg, #1f2329);
+}
+
+.detailMissing {
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-fg-placeholder, #8a8f98);
+  font-style: italic;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid var(--wb-line, #e0e0e6);
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-surface, #f7f8fa);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--wb-fg, #1f2329);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--wb-accent, #4d6bfe);
+}
+
+.option:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.optionSelected {
+  border-color: var(--wb-accent, #4d6bfe);
+  background: var(--wb-accent-soft, #eef2ff);
+}
+
+.optionLabel {
+  font-size: var(--wb-type-label-size, 13px);
+  font-weight: 500;
+}
+
+.optionDesc {
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-fg-muted, #646a73);
+}
+
+.customInput {
+  padding: 7px 10px;
+  border: 1px solid var(--wb-line, #e0e0e6);
+  border-radius: var(--wb-radius-control, 6px);
+  font: inherit;
+  font-size: var(--wb-type-label-size, 13px);
+  color: var(--wb-fg, #1f2329);
+  background: var(--wb-bg, #fff);
+}
+
+.customInput:focus {
+  outline: none;
+  border-color: var(--wb-accent, #4d6bfe);
+}
+
+.customInput:disabled {
+  opacity: 0.7;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submitButton {
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-accent, #4d6bfe);
+  color: var(--wb-on-accent, #fff);
+  font: inherit;
+  font-size: var(--wb-type-label-size, 13px);
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.approvalActions {
+  display: flex;
+  gap: 8px;
+}
+
+.approveButton,
+.rejectButton {
+  padding: 6px 14px;
+  border-radius: var(--wb-radius-control, 6px);
+  font: inherit;
+  font-size: var(--wb-type-label-size, 13px);
+  cursor: pointer;
+}
+
+.approveButton {
+  border: none;
+  background: var(--wb-accent, #4d6bfe);
+  color: var(--wb-on-accent, #fff);
+}
+
+.rejectButton {
+  border: 1px solid var(--wb-line, #e0e0e6);
+  background: var(--wb-surface, #f7f8fa);
+  color: var(--wb-danger, #d64541);
+}
+
+.approveButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.answeredList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.answeredTag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--wb-radius-control, 6px);
+  background: var(--wb-accent-soft, #eef2ff);
+  color: var(--wb-accent, #4d6bfe);
+  font-size: var(--wb-type-compact-size, 12px);
+}
+
+.answeredCustom {
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-fg-muted, #646a73);
+}
+
+.error {
+  font-size: var(--wb-type-compact-size, 12px);
+  color: var(--wb-danger, #d64541);
+}

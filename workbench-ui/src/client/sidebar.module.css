@@ -1,0 +1,148 @@
+/* Core sidebar theme, conversation navigation and user controls. */
+
+
+/* 侧栏（频道列表栏）背景跟随主题：--wb-nav 介于竖栏(--wb-rail)与内容区(--wb-bg)之间。
+   基础规则在 workforce.module.css，借根元素属性选择器覆盖；
+   channelColumn 自身无背景，随根透出。 */
+:global([data-workforce-sidebar]) {
+  background: var(--wb-nav);
+}
+
+/* 侧栏顶部标题行：基础规则 .workspaceBrand 在 workforce.module.css，那里没有
+   display:flex，导致 .brandNameSpan 的 flex:1 不生效。这里补上 flex 行布局，
+   并把横向内边距对齐下方「频道」行的
+   channelScroll(8px) + topActionRow(10px) = 18px。 */
+:global([data-workforce-sidebar]) :global([class*="workspaceBrand"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 18px 14px;
+}
+
+
+/* 私信区折叠标题：与「频道」区标题同一套字号字重 */
+.dmSectionHeadBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 10px 4px;
+  border: none;
+  background: transparent;
+  color: var(--wb-fg-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.dmSectionHeadBtn:hover {
+  color: var(--wb-fg, #2c2c28);
+}
+
+.dmSectionHeadBtn:focus-visible {
+  outline: 2px solid var(--wb-accent, #2f6fed);
+  outline-offset: 1px;
+}
+
+.dmChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--wb-fg-muted, #8a8a80);
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.dmChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+/* 宿主注入的 sidebar.settings 齿轮：dsh 用 --dsw-alias-label-primary 着色，
+   其值已在上游 token 桥接里按主题覆盖。这里再兜一层，让它与 rail 其余按钮同色。 */
+.railFoot :global(button) {
+  color: var(--wb-fg-muted);
+}
+
+.railFoot :global(button:hover) {
+  color: var(--wb-fg);
+  background: var(--wb-hover);
+}
+
+
+/* 「频道」与「私信」两区之间的视觉分隔线 */
+.sectionDivider {
+  height: 1px;
+  margin: 8px 10px;
+  background: var(--wb-line);
+  flex: none;
+}
+
+/* 侧栏顶部标题行：品牌名（折叠按钮已移到内容区 header，见第九轮第 7 条）。 */
+.brandNameSpan {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dmItemDimmed {
+  opacity: 0.45;
+  filter: grayscale(40%);
+}
+
+.dmAvatarWrap {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.dmPinBadge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--wb-fg-muted, #949ba4);
+  opacity: 0.8;
+}
+
+/* 侧栏底部用户资料与操作区 */
+.channelFootArea {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--wb-line, rgba(255, 255, 255, 0.08));
+  background: var(--wb-nav);
+}
+
+.railAvatarBtn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+}
+
+.railAvatarBtn:hover {
+  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+}
+
+.railAvatarBtn:focus-visible {
+  outline: 2px solid var(--wb-accent, #5865f2);
+  outline-offset: 2px;
+}
+
