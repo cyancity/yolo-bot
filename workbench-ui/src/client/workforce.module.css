@@ -1645,7 +1645,7 @@ div.msgNoticeLine { cursor: default; }
   .empPage { padding: 16px; }
   .empCard { flex-wrap: wrap; }
   .empCardActions { margin-left: auto; }
-  .streamDesc { display: none; }
+  .streamDesc, .streamHeadDivider { display: none; }
 }
 
 /* ---------- 布局切换：Discord vs WeChat ---------- */
