@@ -405,16 +405,14 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* 与 msgBubble 同宽上限：宽度钉到 50% 内容区（上限 780px），让内部 grid
-     按这个容器宽排多列；fit-content 会让 container 收缩到内容宽、把 grid
-     误判成 <440px 单列塌缩，故不用。wechat 用户行 align-items:flex-end 推到右缘。 */
-  width: min(50%, 780px);
+  width: min(100%, 780px);
+  max-width: min(100%, 780px);
   margin-top: 6px;
   container-type: inline-size;
 }
-/* wechat 下附件条与气泡上限统一为 50%，与 .msgBubble 一致。 */
+/* wechat 下附件条与气泡上限统一，与 .msgBubble 一致。 */
 :global([data-wb-style='wechat']) .attachmentBarWrapper {
-  width: min(50%, 780px);
+  width: min(72%, 640px);
 }
 
 .attachmentBarToggle {
@@ -434,6 +432,7 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.12s, border-color 0.12s;
+  overflow: hidden;
 }
 
 .attachmentBarToggle:hover {
@@ -449,14 +448,32 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+}
+
+.attachmentBarTitleRow .fileName {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachmentBarTitleRow :global(.anchor) {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 2px;
 }
 
 .attachmentBarAction {
   flex: none;
   font-size: 12px;
   color: var(--wb-accent);
+  white-space: nowrap;
+  margin-left: 8px;
 }
 
 .attachmentGrid {

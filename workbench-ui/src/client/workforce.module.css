@@ -346,11 +346,11 @@
 .sendFailure button { border: 0; background: transparent; padding: 0; font: inherit; color: var(--wb-accent); cursor: pointer; }
 .sendFailure button:hover { text-decoration: underline; }
 .sendFailure button:disabled { cursor: wait; opacity: 0.6; }
-/* 停止按钮：浅红胶囊，单行辅助状态的左侧。 */
-.taskCancel { border: 0; padding: 1px 10px; border-radius: 999px; font: inherit; font-size: var(--wb-type-caption-size); line-height: 18px; color: var(--wb-danger); background: var(--wb-danger-soft, rgba(196, 86, 74, 0.12)); cursor: pointer; }
-.taskCancel:hover { background: rgba(196, 86, 74, 0.2); }
-.taskCancel:disabled { cursor: wait; opacity: 0.6; }
-.msgFooter { display: flex; align-items: center; justify-content: flex-start; align-self: stretch; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; width: min(50%, 780px); }
+/* 停止按钮：无实底危险色文字按钮，与单行辅助状态自然对齐 */
+.taskCancel { border: 0; padding: 0; border-radius: 0; font: inherit; font-size: var(--wb-type-caption-size); line-height: 18px; color: var(--wb-danger); background: transparent; cursor: pointer; display: inline-flex; align-items: center; }
+.taskCancel:hover { background: transparent; text-decoration: underline; }
+.taskCancel:disabled { cursor: wait; opacity: 0.6; text-decoration: none; }
+.msgFooter { display: flex; align-items: center; justify-content: flex-start; align-self: stretch; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; width: max(min(50%, 780px), min(100%, 520px)); }
 .msgFooter .threadLink { margin: 0 0 0 auto; padding: 0; font-weight: 400; font-size: 12px; line-height: 18px; }
 /* 成果卡片换行占整行由 workforce-deliverables.module.css 的 .chips 负责。 */
 .msgFooter > .msgFailed { flex-basis: 100%; }
@@ -690,23 +690,25 @@ div.msgNoticeLine { cursor: default; }
   display: flex;
   align-items: center;
   gap: var(--wb-space-2, 8px);
-  padding: 5px 12px;
+  padding: 4px 0;
   margin-bottom: 6px;
   border-radius: var(--wb-radius-control, 6px);
   font-size: var(--wb-type-caption-size, 12px);
   line-height: 1.4;
-  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  color: var(--wb-fg-muted);
 }
 
 .contextRibbon {
-  background: color-mix(in srgb, var(--wb-accent) 8%, var(--wb-surface));
-  border: 1px solid color-mix(in srgb, var(--wb-accent) 30%, transparent);
-  color: var(--wb-fg);
+  background: transparent;
+  border: none;
+  color: var(--wb-fg-muted);
 }
 
 .contextRibbonNew {
-  background: var(--wb-surface-sub, #f5f5f5);
-  border: 1px solid var(--wb-line, #dedede);
+  background: transparent;
+  border: none;
   color: var(--wb-fg-muted);
 }
 
@@ -765,32 +767,36 @@ div.msgNoticeLine { cursor: default; }
   color: var(--wb-fg);
 }
 
+.taskContinue,
+.taskContinueActive {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: var(--wb-type-caption-size, 12px);
+  line-height: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .taskContinue {
-  border: 1px solid var(--wb-line, #dedede);
-  background: var(--wb-surface);
   color: var(--wb-fg-muted);
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  text-decoration: none;
 }
 
 .taskContinue:hover {
-  background: var(--wb-hover);
+  background: transparent;
   color: var(--wb-accent);
-  border-color: var(--wb-accent);
+  text-decoration: underline;
 }
 
 .taskContinueActive {
-  border: 1px solid var(--wb-accent);
-  background: color-mix(in srgb, var(--wb-accent) 10%, var(--wb-surface));
   color: var(--wb-accent);
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 4px;
   cursor: default;
   font-weight: 500;
+  text-decoration: none;
 }
 
 
@@ -991,6 +997,31 @@ div.msgNoticeLine { cursor: default; }
   margin-bottom: 4px;
 }
 
+.empHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 6px 8px 6px;
+  border-bottom: 1px solid var(--wb-line);
+  margin-bottom: 8px;
+}
+
+.empTitle {
+  margin: 0;
+  font-size: var(--wb-type-label-size);
+  font-weight: 600;
+  color: var(--wb-fg);
+  line-height: inherit;
+}
+
+.empIntro {
+  font-size: var(--wb-type-caption-size, 12px);
+  color: var(--wb-fg-muted);
+  line-height: 18px;
+  margin: 6px 0 10px;
+  padding: 0 6px;
+}
+
 .empSidebarTitle {
   font-size: var(--wb-type-label-size);
   font-weight: 600;
@@ -1157,11 +1188,11 @@ div.msgNoticeLine { cursor: default; }
 }
 
 .empBtnDelete {
-  border: none;
-  background: var(--wb-danger, #e03e3e);
-  color: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--wb-danger) 40%, transparent);
+  background: transparent;
+  color: var(--wb-danger) !important;
   border-radius: var(--wb-radius-control);
-  padding: 5px 12px;
+  padding: 6px 16px;
   font: inherit;
   font-size: var(--wb-type-compact-size);
   font-weight: 500;
@@ -1170,11 +1201,21 @@ div.msgNoticeLine { cursor: default; }
   align-items: center;
   justify-content: center;
   gap: 4px;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.empBtnDelete:hover {
-  background: #c53030;
+.empBtnDelete:hover:not(:disabled) {
+  background: var(--wb-danger-bg);
+  border-color: var(--wb-danger);
+  color: var(--wb-danger) !important;
+}
+
+.empBtnDelete:disabled {
+  border-color: var(--wb-disabled-line);
+  color: var(--wb-disabled-fg) !important;
+  cursor: not-allowed;
+  background: transparent;
+  opacity: 1;
 }
 
 .empAction {
@@ -1201,22 +1242,22 @@ div.msgNoticeLine { cursor: default; }
 }
 
 .empCardSection {
-  border: 1px solid #dedede;
+  border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-panel);
   background: var(--wb-surface);
-  padding: var(--wb-space-5);
+  padding: var(--wb-space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  gap: var(--wb-space-6);
 }
 
 .empCardSectionTitle {
   font-size: 14px;
   font-weight: 700;
-  color: var(--wb-fg, #111827);
-  margin: 0 0 2px 0;
-  padding-bottom: 8px;
+  color: var(--wb-fg);
+  margin: 0;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
   border-bottom: 1px solid var(--wb-line);
   display: flex;
   align-items: center;
@@ -1224,9 +1265,9 @@ div.msgNoticeLine { cursor: default; }
 }
 
 .empBtnAdd {
-  border: none;
-  background: #07c160; /* 微信主题绿 */
-  color: #ffffff !important;
+  border: 1px solid transparent;
+  background: var(--wb-accent);
+  color: var(--wb-on-accent) !important;
   border-radius: var(--wb-radius-control);
   padding: 6px 14px;
   font: inherit;
@@ -1237,30 +1278,37 @@ div.msgNoticeLine { cursor: default; }
   align-items: center;
   justify-content: center;
   gap: 4px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.empBtnAdd:hover {
-  background: #06ad56;
+.empBtnAdd:hover:not(:disabled) {
+  background: var(--wb-accent-hover);
+}
+
+.empBtnAdd:active:not(:disabled) {
+  background: var(--wb-accent-pressed);
 }
 
 .empBtnAdd:disabled {
-  opacity: 0.5;
+  background: var(--wb-disabled-bg);
+  border-color: var(--wb-disabled-line);
+  color: var(--wb-disabled-fg) !important;
   cursor: not-allowed;
+  opacity: 1;
 }
 
 .empFormGrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--wb-space-4); }
 
-.empField { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.empField { display: flex; flex-direction: column; gap: var(--wb-space-4); min-width: 0; }
 
 .empField label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--wb-fg, #111827);
+  color: var(--wb-fg);
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .empCheckboxLabel {
@@ -1284,8 +1332,8 @@ div.msgNoticeLine { cursor: default; }
 }
 
 .empBtnCancel {
-  border: 1px solid var(--wb-line-control, #d0d0d5);
-  background: transparent;
+  border: 1px solid var(--wb-line-control);
+  background: var(--wb-surface);
   color: var(--wb-fg);
   border-radius: var(--wb-radius-control);
   padding: 6px 16px;
@@ -1296,15 +1344,15 @@ div.msgNoticeLine { cursor: default; }
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.empBtnCancel:hover {
+.empBtnCancel:hover:not(:disabled) {
   background: var(--wb-hover);
   border-color: var(--wb-fg-muted);
 }
 
 .empBtnSave {
-  border: none;
-  background: #2b7fff;
-  color: #ffffff !important;
+  border: 1px solid transparent;
+  background: var(--wb-accent);
+  color: var(--wb-on-accent) !important;
   border-radius: var(--wb-radius-control);
   padding: 6px 20px;
   font: inherit;
@@ -1317,13 +1365,20 @@ div.msgNoticeLine { cursor: default; }
   transition: background 0.15s ease;
 }
 
-.empBtnSave:hover {
-  background: #1a6fe6;
+.empBtnSave:hover:not(:disabled) {
+  background: var(--wb-accent-hover);
+}
+
+.empBtnSave:active:not(:disabled) {
+  background: var(--wb-accent-pressed);
 }
 
 .empBtnSave:disabled {
-  opacity: 0.5;
+  background: var(--wb-disabled-bg);
+  border-color: var(--wb-disabled-line);
+  color: var(--wb-disabled-fg) !important;
   cursor: not-allowed;
+  opacity: 1;
 }
 
 .skillChipsContainer {
@@ -1483,24 +1538,25 @@ div.msgNoticeLine { cursor: default; }
 
 .railActive,
 .railButton[aria-current='page'] {
-  background: transparent !important;
-  color: #00c375 !important;
+  background: color-mix(in srgb, var(--wb-accent) 12%, transparent) !important;
+  color: var(--wb-accent) !important;
 }
 
 .railActive:hover,
 .railButton[aria-current='page']:hover {
-  background: #d1d1d6 !important;
+  background: color-mix(in srgb, var(--wb-accent) 18%, transparent) !important;
 }
 
-:global([data-wb-scheme='dark']) .railActive:hover,
-:global([data-wb-scheme='dark']) .railButton[aria-current='page']:hover {
-  background: var(--wb-hover) !important;
+:global([data-wb-scheme='dark']) .railActive,
+:global([data-wb-scheme='dark']) .railButton[aria-current='page'] {
+  background: color-mix(in srgb, var(--wb-accent) 16%, transparent) !important;
+  color: var(--wb-accent) !important;
 }
 
 .railActive svg,
 .railButton[aria-current='page'] svg {
-  color: #00c375 !important;
-  fill: #00c375;
+  color: var(--wb-accent) !important;
+  fill: currentColor;
 }
 
 .railButton:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
@@ -1611,19 +1667,26 @@ div.msgNoticeLine { cursor: default; }
   display: block;
   width: fit-content;
   max-width: min(50%, 780px);
-  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-break: normal;
   box-sizing: border-box;
 }
 
 :global([data-wb-style='discord']) .msg .msgBubble {
   display: block;
-  max-width: none;
+  max-width: min(100%, 780px);
   padding: 0;
   border: 0;
   background: transparent;
   border-radius: 0;
 }
-
+/* WeChat：对话区用浅灰底（深色主题用对应深灰），对方气泡白色、自己气泡主题绿，保持清晰层次 */
+:global([data-wb-style='wechat']) .stream {
+  background: var(--wb-surface-sub);
+}
+:global([data-wb-style='wechat']) .streamHead {
+  background: var(--wb-surface);
+}
 /* WeChat：双方气泡。员工对方白/暗底、自己绿色实底；签名/头像在气泡外。 */
 :global([data-wb-style='wechat']) .msg[data-msg-role='agent'] .msgBubble {
   max-width: min(72%, 640px);
@@ -1935,19 +1998,21 @@ button.replyQuote:focus-visible {
    若只写 [data-skeleton]，会被 agent 卡片规则压掉 display/padding，
    内容顶在 min-height 卡片上部。 */
 .msg[data-skeleton='true'] .msgBubble {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  width: min(50%, 780px);
-  min-height: 62px;
-  padding: 20px 14px;
-  margin-top: 2px;
+  width: fit-content;
+  max-width: min(100%, 780px);
+  min-height: 32px;
+  padding: 6px 12px;
+  margin-top: 4px;
   box-sizing: border-box;
+  border-radius: var(--wb-radius-control);
 }
 
 :global([data-wb-style='discord']) .msg[data-skeleton='true'] .msgBubble {
   background: var(--wb-surface);
   border: 1px solid var(--wb-line-soft);
-  border-radius: var(--wb-radius-panel);
+  border-radius: var(--wb-radius-control);
 }
 
 :global([data-wb-style='wechat']) .msg[data-skeleton='true'] .msgBubble {
@@ -2067,8 +2132,9 @@ button.replyQuote:focus-visible {
 }
 
 .tokenHitBadge {
-  color: var(--wb-success, #23a55a);
-  font-weight: 600;
+  color: var(--wb-fg-muted);
+  font-weight: 400;
+  font-size: var(--wb-type-caption-size);
 }
 
 .tokenStatsDetail {
@@ -2078,14 +2144,14 @@ button.replyQuote:focus-visible {
 .threadTokenStats {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: 11px;
+  font-weight: 400;
   color: var(--wb-fg-muted);
-  background: var(--wb-surface);
-  border: 1px solid var(--wb-line);
-  border-radius: 4px;
-  padding: 2px 6px;
-  margin-top: 4px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
   width: fit-content;
 }
 
@@ -2170,7 +2236,7 @@ button.replyQuote:focus-visible {
   top: calc(100% + 6px);
   right: 0;
   width: 260px;
-  max-height: min(85vh, 600px);
+  max-height: calc(100vh - 70px);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--wb-fg-placeholder) 35%, transparent) transparent;
@@ -2178,11 +2244,11 @@ button.replyQuote:focus-visible {
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-panel);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--wb-fg) 14%, transparent);
-  padding: 10px 12px;
+  padding: 8px 10px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .settingsMenu::-webkit-scrollbar { width: 6px; }
 .settingsMenu::-webkit-scrollbar-thumb { border-radius: 3px; background: color-mix(in srgb, var(--wb-fg-placeholder) 35%, transparent); }
@@ -2190,23 +2256,24 @@ button.replyQuote:focus-visible {
 .settingsSection {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .settingsSectionTitle {
-  font-size: var(--wb-type-caption-size);
+  font-size: 11px;
   font-weight: 700;
   color: var(--wb-fg-muted);
-  margin-bottom: 2px;
+  margin: 2px 0 1px;
 }
 
 .streamHeadActionBtn {
-  border: 1px solid var(--wb-line);
-  background: var(--wb-surface);
-  color: var(--wb-fg);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--wb-fg-muted);
   height: 28px;
+  width: 28px;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 0;
   border-radius: var(--wb-radius-control);
   font-size: var(--wb-type-caption-size);
   display: inline-flex;
@@ -2215,12 +2282,13 @@ button.replyQuote:focus-visible {
   align-self: center;
   gap: 4px;
   cursor: pointer;
-  transition: background 120ms, border-color 120ms;
+  transition: background 120ms, border-color 120ms, color 120ms;
 }
 
 .streamHeadActionBtn:hover {
   background: var(--wb-hover);
-  border-color: var(--wb-accent);
+  color: var(--wb-fg);
+  border-color: transparent;
 }
 
 .settingsMenuAction {
@@ -2280,7 +2348,8 @@ button.replyQuote:focus-visible {
   gap: 8px;
   font-size: var(--wb-type-caption-size);
   color: var(--wb-fg);
-  padding: 4px 0;
+  padding: 2px 0;
+  line-height: 1.35;
   cursor: pointer;
 }
 
@@ -2295,7 +2364,8 @@ button.replyQuote:focus-visible {
   font-size: var(--wb-type-caption-size);
   font-weight: 600;
   color: var(--wb-fg);
-  padding: 4px 0;
+  padding: 2px 0;
+  line-height: 1.35;
   cursor: pointer;
 }
 

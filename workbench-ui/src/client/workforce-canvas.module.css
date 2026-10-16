@@ -54,7 +54,7 @@
   box-sizing: border-box;
   background: var(--wb-surface, #ffffff);
   border: 1px solid var(--wb-line);
-  border-radius: 10px;
+  border-radius: var(--wb-radius-panel, 10px);
   padding: 10px 12px;
   box-shadow: 0 4px 14px color-mix(in srgb, var(--wb-fg) 8%, transparent);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -63,15 +63,14 @@
 }
 
 .turnCard:hover {
-  border-color: var(--wb-accent, #00c375);
+  border-color: var(--wb-accent);
   box-shadow: 0 6px 20px color-mix(in srgb, var(--wb-fg) 12%, transparent);
 }
 
 .turnCardSelected {
-  border: 2px solid var(--wb-accent, #00c375);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wb-accent, #00c375) 25%, transparent);
+  border: 2px solid var(--wb-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wb-accent) 25%, transparent);
 }
-
 .handle {
   width: 9px !important;
   height: 9px !important;
@@ -129,8 +128,8 @@
 }
 
 .userBubble {
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--wb-fg);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -145,18 +144,19 @@
 }
 
 .promptContent {
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .replyRow {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--wb-surface-sub);
-  border: 1px solid var(--wb-line-soft, var(--wb-line));
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
+  background: color-mix(in srgb, var(--wb-surface-sub) 70%, var(--wb-hover));
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control, 8px);
+  padding: 10px 12px;
+  margin-top: 10px;
 }
 
 .agentAvatarWrap {
@@ -177,7 +177,7 @@
 }
 
 .agentName {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--wb-fg);
   display: block;
@@ -185,14 +185,15 @@
 
 .replyContent {
   margin: 2px 0 0;
-  font-size: 11.5px;
-  line-height: 1.4;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--wb-fg-muted);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .turnFooter {
@@ -215,9 +216,9 @@
 
 .cacheBadge {
   font-size: 10px;
-  font-weight: 600;
-  color: var(--wb-success, #00c375);
-  background: color-mix(in srgb, var(--wb-success, #00c375) 12%, transparent);
+  font-weight: 400;
+  color: var(--wb-fg-muted);
+  background: var(--wb-surface-sub);
   padding: 1px 5px;
   border-radius: 3px;
 }
@@ -354,4 +355,54 @@
   pointer-events: none;
   white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* React Flow MiniMap: 原生尺寸，边框、底色与节点色弱化融入主题 */
+:global(.react-flow__minimap) {
+  background: var(--wb-surface) !important;
+  border: 1px solid var(--wb-line-soft) !important;
+  border-radius: var(--wb-radius-control, 8px) !important;
+}
+
+:global(.react-flow__minimap-node) {
+  fill: color-mix(in srgb, var(--wb-accent) 60%, var(--wb-line-control)) !important;
+  stroke: transparent !important;
+}
+
+:global([data-wb-scheme='dark']) .react-flow__minimap-node,
+:global([data-theme='dark']) .react-flow__minimap-node {
+  fill: color-mix(in srgb, var(--wb-accent) 45%, var(--wb-surface-raised)) !important;
+  stroke: transparent !important;
+}
+
+/* React Flow Controls: 缩放控件主题化 */
+:global(.react-flow__controls) {
+  border: 1px solid var(--wb-line) !important;
+  border-radius: var(--wb-radius-control, 6px) !important;
+  background: var(--wb-surface) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--wb-fg) 10%, transparent) !important;
+  overflow: hidden;
+}
+
+:global(.react-flow__controls-button) {
+  background: var(--wb-surface) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--wb-line) !important;
+  color: var(--wb-fg-muted) !important;
+  fill: var(--wb-fg-muted) !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+:global(.react-flow__controls-button:last-child) {
+  border-bottom: none !important;
+}
+
+:global(.react-flow__controls-button:hover) {
+  background: var(--wb-hover) !important;
+  color: var(--wb-fg) !important;
+  fill: var(--wb-fg) !important;
+}
+
+:global(.react-flow__controls-button svg) {
+  fill: currentColor !important;
 }

@@ -24,11 +24,11 @@
 
 .head { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; padding: 8px 10px; min-width: 0; }
 
-.headMain { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+.headMain { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px; flex: 1 1 auto; min-width: 0; overflow: hidden; }
 
 .fileName {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 50px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -39,24 +39,25 @@
   font: inherit;
   font-weight: 550;
   cursor: pointer;
+  text-align: left;
 }
-
 .fileName:hover { text-decoration: underline; text-underline-offset: 2px; }
 .fileName:focus-visible, .versionTag:focus-visible, .versionAction:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
 
 .fileIcon { display: flex; flex: none; color: var(--wb-fg-muted); }
 .versionTag {
-  flex: none;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 6px;
   height: 20px;
-  border-radius: 999px;
+  box-sizing: border-box;
+  border-radius: var(--wb-radius-badge, 4px);
   background: var(--wb-hover);
   color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   border: 1px solid transparent;
 }
@@ -94,16 +95,21 @@ button.versionTag[data-published='true']:hover {
 }
 .hamburgerIcon { flex: none; display: inline-flex; }
 .authorTag {
-  flex: none;
-  padding: 0 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 6px;
   height: 20px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--wb-radius-badge, 4px);
   background: var(--wb-hover);
-  color: color-mix(in srgb, var(--wb-fg) 30%, var(--wb-fg-muted));
+  color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 :global([data-wb-scheme='dark']) .authorTag,
 :global([data-theme='dark']) .authorTag {

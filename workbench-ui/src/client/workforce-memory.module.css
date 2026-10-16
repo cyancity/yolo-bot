@@ -2,7 +2,7 @@
 .hint, .meta { margin: 0; color: var(--wb-fg-muted); font-size: 12px; line-height: 19px; }
 .usage { color: var(--wb-fg); font-size: 13px; font-variant-numeric: tabular-nums; }
 .list { padding: 0; margin: 0; list-style: none; }
-.item { padding: 14px 0; border-bottom: 1px solid var(--wb-line); }
+.item { padding: 10px 0; border-bottom: 1px solid var(--wb-line); }
 .text { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .actions button, .error button, .remembered button, .continuation button { border: 1px solid var(--wb-line); border-radius: var(--wb-radius-control); background: var(--wb-surface); color: var(--wb-accent); padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer; }
@@ -13,6 +13,35 @@
   color: var(--wb-fg-muted);
   background: var(--wb-hover);
   border-color: var(--wb-line);
+}
+
+.item .actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.item .actions button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--wb-accent);
+  cursor: pointer;
+}
+
+.item .actions button:hover:not(:disabled) {
+  background: transparent;
+  text-decoration: underline;
+}
+
+.item .actions button:disabled {
+  background: transparent;
+  border-color: transparent;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .editor :focus-visible, .remembered :focus-visible, .continuation :focus-visible, .failedTool summary:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
 .form { display: flex; flex-direction: column; gap: 8px; }

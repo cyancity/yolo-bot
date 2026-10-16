@@ -18,13 +18,13 @@
 .messageText ul, .messageText ol { margin: 8px 0; padding-inline-start: 24px; }
 .messageText li { padding-inline-start: 2px; margin: 3px 0; }
 .messageText li > p { margin: 3px 0; }
-/* 仅无序且纯文件引用条目去圆点，普通 Markdown、编号列表(ol)与嵌套祖先不受影响 */
+/* 仅无序且纯文件引用条目去圆点并左对齐，普通 Markdown、编号列表(ol)与嵌套祖先不受影响 */
 .messageText ul > li[data-file-item='true'] {
   list-style: none;
   padding-inline-start: 0;
 }
 .messageText ul:has(> li[data-file-item='true']):not(:has(> li:not([data-file-item='true']))) {
-  padding-inline-start: 4px;
+  padding-inline-start: 0;
 }
 .messageText :global(.contains-task-list) { list-style: none; padding-inline-start: 4px; }
 .messageText :global(.task-list-item) input { margin: 0 8px 0 0; accent-color: var(--wb-accent); }

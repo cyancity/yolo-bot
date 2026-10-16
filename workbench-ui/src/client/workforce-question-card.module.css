@@ -69,7 +69,8 @@
   font-size: var(--wb-type-caption-size, 11px);
   line-height: 1.5;
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-break: normal;
   color: var(--wb-fg, #1f2329);
 }
 
