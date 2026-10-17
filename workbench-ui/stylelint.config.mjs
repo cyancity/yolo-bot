@@ -1,5 +1,5 @@
 // 视觉取值只能来自 --wb-* 设计 token（刻度见 docs/design-tokens.md）。
-// 颜色、字号、圆角、阴影写字面量会报错；ui/tokens.module.css 是唯一的取值定义处。
+// 颜色、字号、圆角、阴影、间距写字面量会报错；ui/tokens.module.css 是唯一的取值定义处。
 // 例外写在这里或行内 `stylelint-disable-next-line ... -- 原因`，不要放宽规则本身。
 
 // 插件按空格把值拆成若干段逐段检查（括号内不拆），所以下面的正则都针对单段。
@@ -17,6 +17,15 @@ const FONT_SIZE = [
 // 圆角每段：token、0 或基于 token 的 calc。
 const RADIUS = [String.raw`/^(0|var\(--[\w-]+\)|calc\([\s\S]*var\(--[\s\S]*\))$/`]
 
+// 间距（padding / margin / gap 及其分方向属性）每段：0、auto、token，或引用 token 且不含长度字面量的
+// calc/clamp/min/max，例如 calc(-1 * var(--wb-space-4))、calc(var(--wb-space-5) + var(--wb-avatar-message-size))。
+const SPACING_PROPS = '/^(padding|margin)(-(top|right|bottom|left|inline|block)(-(start|end))?)?$|^(row-|column-)?gap$/'
+const SPACING = [
+  String.raw`/^(0|auto)$/`,
+  String.raw`/^var\(--[\w-]+\)$/`,
+  String.raw`/^(calc|clamp|min|max)\((?![\s\S]*\d(px|rem|em)\b)[\s\S]*var\(--[\s\S]*\)$/`,
+]
+
 // 阴影每段：偏移/模糊/扩散长度、inset，颜色段同 TOKEN_EXPRESSION；整条阴影优先用 --wb-shadow-*。
 const SHADOW = [String.raw`/^-?\d*\.?\d+(px)?$/`, 'inset', TOKEN_EXPRESSION]
 
@@ -31,9 +40,9 @@ export default {
   plugins: ['stylelint-declaration-strict-value'],
   rules: {
     'scale-unlimited/declaration-strict-value': [
-      ['/color$/', 'background', 'fill', 'stroke', 'box-shadow', 'font-size', '/radius$/', '/^(border(-(top|right|bottom|left))?|outline)$/'],
+      ['/color$/', 'background', 'fill', 'stroke', 'box-shadow', 'font-size', '/radius$/', '/^(border(-(top|right|bottom|left))?|outline)$/', SPACING_PROPS],
       {
-        ignoreVariables: true,
+        ignoreVariables: false,
         ignoreFunctions: false,
         ignoreKeywords: ['transparent', 'currentColor', 'currentcolor', 'inherit', 'initial', 'unset', 'none'],
         ignoreValues: {
@@ -42,6 +51,7 @@ export default {
           '/radius$/': RADIUS,
           'box-shadow': SHADOW,
           '/^(border(-(top|right|bottom|left))?|outline)$/': STROKE_SHORTHAND,
+          [SPACING_PROPS]: SPACING,
         },
         message: 'Use a --wb-* design token for "${property}" instead of "${value}" (see docs/design-tokens.md).',
       },

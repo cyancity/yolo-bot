@@ -1,6 +1,6 @@
 # 设计 token 刻度
 
-workbench-ui 的颜色、字号、圆角、阴影只从 `--wb-*` token 取值。token 唯一定义在 `workbench-ui/src/client/ui/tokens.module.css`，组件样式里不写字面量，也不写 `var(--wb-x, 兜底值)` 形式的兜底：基础刻度同时挂在 `html[data-wb-style]`、`.root`、`.scope` 上，portal 到 `document.body` 的弹窗也能取到。
+workbench-ui 的颜色、字号、圆角、阴影、间距只从 `--wb-*` token 取值。token 唯一定义在 `workbench-ui/src/client/ui/tokens.module.css`，组件样式里不写字面量，也不写 `var(--wb-x, 兜底值)` 形式的兜底：基础刻度同时挂在 `html[data-wb-style]`、`.root`、`.scope` 上，portal 到 `document.body` 的弹窗也能取到。
 
 `pnpm lint`（stylelint + `stylelint-declaration-strict-value`，配置在 `workbench-ui/stylelint.config.mjs`）会拦下新写进来的字面量。
 
@@ -17,7 +17,11 @@ workbench-ui 的颜色、字号、圆角、阴影只从 `--wb-*` token 取值。
 | `--wb-space-8` | 32px | 大区块分隔 |
 | `--wb-space-9` | 48px | 空态留白 |
 
-token 名里的数字是档位，不是像素。新写的 padding、margin、gap 只用这些档。现有样式里还留着刻度外的值（6px 约 140 处、10px 约 100 处，另有 3/5/7/14/18/20px），这次没有并档，避免整体布局位移；lint 目前不检查间距。
+token 名里的数字是档位，不是像素。padding、margin、gap 只用这些档；负外边距写成 `calc(-1 * var(--wb-space-4))`，和其他尺寸叠加写成 `calc(var(--wb-space-5) + var(--wb-avatar-message-size))`，calc 里不出现长度字面量。
+
+按钮、输入框、菜单项这类控件的高度不靠内边距凑：内边距取刻度值，总高度用 `min-height` 对齐 `--wb-control-height-sm/md/lg`（32/36/44px）。徽标类小元素需要 1px 级微调时改 `line-height`，内边距仍取刻度。
+
+布局风格相关的间距（`--wb-message-pad-x`、`--wb-bubble-pad-y`、`--wb-message-gap` 等）定义在 `tokens.module.css` 的风格块里，按 Discord / WeChat 各自取值，不受这张刻度限制。
 
 ## 圆角
 
@@ -82,7 +86,7 @@ token 名里的数字是档位，不是像素。新写的 padding、margin、gap
 
 ## lint 规则与例外
 
-检查的属性：所有 `*color`、`background`、`fill`、`stroke`、`box-shadow`、`font-size`、`*radius`，以及 `border`、`border-*`、`outline` 简写。值按空格拆段逐段检查：颜色段必须引用变量且不含颜色字面量，字号必须是 token / 基于 token 的 calc / em，圆角每段是 token 或 0，阴影和描边的长度段照常写。
+检查的属性：所有 `*color`、`background`、`fill`、`stroke`、`box-shadow`、`font-size`、`*radius`，`border`、`border-*`、`outline` 简写，以及 `padding`、`margin`（含分方向和 `-inline` / `-block`）、`gap`、`row-gap`、`column-gap`。值按空格拆段逐段检查：颜色段必须引用变量且不含颜色字面量，字号必须是 token / 基于 token 的 calc / em，圆角每段是 token 或 0，间距每段是 token、`0`、`auto` 或引用 token 且不含长度字面量的 calc / clamp / min / max，阴影和描边的长度段照常写。`var(--x, 兜底值)` 不算合规取值。
 
 允许的例外：
 
