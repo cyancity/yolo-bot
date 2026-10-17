@@ -1796,8 +1796,8 @@ export function WorkforceComposer(props: ComposerProps) {
         continuationMode === 'continue' ? (
           <div className={css.contextRibbon}>
             <div className={css.contextRibbonPill}>
-              <span className={css.contextRibbonIcon}>↩</span>
               <span className={css.contextRibbonLabel}>{WF.taskStatus.continueLabel}</span>
+              <span className={css.contextRibbonIcon}>↩</span>
               <span className={css.contextRibbonTitle} title={continuationPrompt}>
                 {continuationFirstLine}
               </span>
@@ -1817,7 +1817,9 @@ export function WorkforceComposer(props: ComposerProps) {
         ) : (
           <div className={css.contextRibbonNew}>
             <div className={css.contextRibbonPillNew}>
-              <span className={css.contextRibbonIcon}>✨</span>
+              <span className={css.contextRibbonIcon}>
+                <Icon name="plus" width={13} height={13} />
+              </span>
               <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
             </div>
             <button
@@ -2333,7 +2335,6 @@ function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: 
       </div>
       <div className={css.emptyCardMeta}>
         <h3 className={css.emptyCardName}>{employee?.name ?? (channelTitle ? `# ${channelTitle}` : WF.brand)}</h3>
-        {employee?.title && <span className={css.emptyCardTitle}>{employee.title}</span>}
         {employee?.persona && <p className={css.emptyCardPersona}>{employee.persona}</p>}
       </div>
       {starters.length > 0 && (
@@ -2578,67 +2579,18 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
   const targetEmployee = dmEmployee ?? (surface.kind === 'channel'
     ? (employees.find(e => (snapshot.channels.find(c => c.id === surface.id) as HostChannel | undefined)?.memberIds?.includes(e.id)) ?? employees[0])
     : undefined)
-  const hasMessages = displayItems.length > 0 || skeletons.length > 0 || showStreamSkeleton
+  const isThreadLoading = snapshot.phase === 'loading'
+    || (surface.kind === 'dm' && snapshot.messages[surface.threadId] === undefined)
+    || (surface.kind === 'channel' && visibleThreads.some(t => snapshot.messages[t.id] === undefined))
 
-  const composerSlotRef = useRef<HTMLDivElement>(null)
-  const prevHasMessagesRef = useRef<boolean | undefined>(undefined)
-  const prevThreadIdRef = useRef<string | undefined>(undefined)
-  const lastRectTopRef = useRef<number | null>(null)
-  const lastRectWidthRef = useRef<number | null>(null)
+  const threadMetadataHasMessages = surface.kind === 'dm'
+    ? Boolean(snapshot.threads.find(t => t.id === surface.threadId)?.lastMessageAt)
+    : visibleThreads.some(t => Boolean(t.lastMessageAt))
 
-  useLayoutEffect(() => {
-    if (!hasMessages && composerSlotRef.current) {
-      const rect = composerSlotRef.current.getBoundingClientRect()
-      lastRectTopRef.current = rect.top
-      lastRectWidthRef.current = rect.width
-    }
-  }, [hasMessages])
-
-  useLayoutEffect(() => {
-    const wasEmpty = prevHasMessagesRef.current === false
-    const nowHas = hasMessages
-    const sameThread = prevThreadIdRef.current === activeThreadId
-
-    prevHasMessagesRef.current = hasMessages
-    prevThreadIdRef.current = activeThreadId
-
-    if (wasEmpty && nowHas && sameThread && lastRectTopRef.current !== null && composerSlotRef.current) {
-      const node = composerSlotRef.current
-      const newRect = node.getBoundingClientRect()
-      const deltaY = lastRectTopRef.current - newRect.top
-      const startWidth = lastRectWidthRef.current
-
-      if (Math.abs(deltaY) > 8) {
-        const prefersReduced = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        if (!prefersReduced) {
-          node.style.transform = `translateY(${deltaY}px)`
-          if (startWidth) {
-            node.style.maxWidth = `${startWidth}px`
-          }
-          node.style.transition = 'none'
-
-          void node.offsetHeight
-
-          requestAnimationFrame(() => {
-            node.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
-            node.style.transform = 'translateY(0)'
-            node.style.maxWidth = '100%'
-
-            const cleanup = () => {
-              node.style.transform = ''
-              node.style.maxWidth = ''
-              node.style.transition = ''
-            }
-            const timer = window.setTimeout(cleanup, 360)
-            node.addEventListener('transitionend', () => {
-              window.clearTimeout(timer)
-              cleanup()
-            }, { once: true })
-          })
-        }
-      }
-    }
-  }, [hasMessages, activeThreadId])
+  const hasMessages = displayItems.length > 0
+    || skeletons.length > 0
+    || isThreadLoading
+    || threadMetadataHasMessages
   const hasSkeleton = skeletons.length > 0
   const latestAgentMessageId = useMemo(() => {
     if (hasSkeleton) return undefined
@@ -2945,24 +2897,23 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
         </div>
         {snapshot.error && <ModelFailureBanner message={snapshot.error} onRetry={() => source.refresh()} onOpenKey={openKey} onOpenModels={openModels} />}
         {surface.kind === 'dm' && snapshot.messages[surface.threadId]?.error && <ModelFailureBanner message={snapshot.messages[surface.threadId]!.error!} onRetry={() => source.refresh()} onOpenKey={openKey} onOpenModels={openModels} />}
-        {!hasMessages && (
-          <div className={css.streamEmptyArea}>
-            <EmptyBotCard
-              employee={targetEmployee}
-              channelTitle={surface.kind === 'channel' ? title : undefined}
-              avatarStyle={prefs.avatarStyle}
-              onSelectStarter={text => {
-                window.dispatchEvent(new CustomEvent('workforce:fill-draft', { detail: { draftKey: activeThreadId, text } }))
-              }}
-            />
-          </div>
-        )}
-        <div className={css.scrollArea} style={!hasMessages ? { display: 'none' } : undefined}>
+        <div className={css.scrollArea}>
         <div className={css.streamScroll} ref={scrollRef} tabIndex={-1} data-section="main-stream">
           <div className={css.messageList} ref={contentRef}>
           <EarlierMessages loading={earlierLoading} errors={earlierErrors} onEarlier={requestEarlier} />
           {showStreamSkeleton ? (
             <MessageStreamSkeleton />
+          ) : !hasMessages ? (
+            <div className={css.streamEmptyArea}>
+              <EmptyBotCard
+                employee={targetEmployee}
+                channelTitle={surface.kind === 'channel' ? title : undefined}
+                avatarStyle={prefs.avatarStyle}
+                onSelectStarter={text => {
+                  window.dispatchEvent(new CustomEvent('workforce:fill-draft', { detail: { draftKey: activeThreadId, text } }))
+                }}
+              />
+            </div>
           ) : (
             visibleItems.map((item, index) => {
               if (item.kind === 'steps') {
@@ -3063,41 +3014,35 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
         </div>
         {deletedDm && <div className={css.taskActions}>{WF.taskStatus.deletedEmployeeNotice}</div>}
         {activeThreadId !== undefined && !deletedDm && (
-          <div
-            ref={composerSlotRef}
-            className={`${css.streamComposerSlot} ${!hasMessages ? css.streamComposerSlotEmpty : ''}`}
-          >
-            <WorkforceComposer
-              key={activeThreadId}
-              draftKey={activeThreadId}
-              hint={surface.kind === 'channel'
-                ? WF.composer.messageChannel(title)
-                : WF.composer.messageDm(dmEmployee?.name || title)}
-              employees={employees}
-              mentionable={mentionable}
-              allowedSkills={surface.kind === 'dm' ? employees.find(e => e.id === surface.employeeId)?.skills : undefined}
-              onSend={(text, employeeIds) => source.send(activeThreadId, text, employeeIds)}
-              continuationTask={surface.kind === 'channel' ? activeContinuationTask : undefined}
-              continuationHasPendingQuestion={surface.kind === 'channel' && activeContinuationTask !== undefined && (
-                (snapshot.messages[activeContinuationTask.threadId]?.list ?? messages).some(m =>
-                  m.threadId === activeContinuationTask.threadId && (
-                    (m.question !== undefined && m.question.answered === undefined && m.question.status !== 'answered' && m.question.status !== 'inactive') ||
-                    (m.approval !== undefined && m.approval.answered === undefined && m.approval.status !== 'answered' && m.approval.status !== 'inactive')
-                  )
+          <WorkforceComposer
+            key={activeThreadId}
+            draftKey={activeThreadId}
+            hint={surface.kind === 'channel'
+              ? WF.composer.messageChannel(title)
+              : WF.composer.messageDm(dmEmployee?.name || title)}
+            employees={employees}
+            mentionable={mentionable}
+            allowedSkills={surface.kind === 'dm' ? employees.find(e => e.id === surface.employeeId)?.skills : undefined}
+            onSend={(text, employeeIds) => source.send(activeThreadId, text, employeeIds)}
+            continuationTask={surface.kind === 'channel' ? activeContinuationTask : undefined}
+            continuationHasPendingQuestion={surface.kind === 'channel' && activeContinuationTask !== undefined && (
+              (snapshot.messages[activeContinuationTask.threadId]?.list ?? messages).some(m =>
+                m.threadId === activeContinuationTask.threadId && (
+                  (m.question !== undefined && m.question.answered === undefined && m.question.status !== 'answered' && m.question.status !== 'inactive') ||
+                  (m.approval !== undefined && m.approval.answered === undefined && m.approval.status !== 'answered' && m.approval.status !== 'inactive')
                 )
-              )}
-              onContinueThread={surface.kind === 'channel' && activeContinuationTask ? async (text, employeeIds) => {
-                await source.send(activeContinuationTask.threadId, text, employeeIds)
-              } : undefined}
-              onResetContinuation={() => setSelectedContinuationTaskId(null)}
-              listSkills={() => source.listSkills()}
-              onUploadMaterial={(name, content) => source.uploadMaterial(name, content)}
-              onUploadFile={file => source.uploadFile(file)}
-              autoFocus={false}
-            />
-          </div>
+              )
+            )}
+            onContinueThread={surface.kind === 'channel' && activeContinuationTask ? async (text, employeeIds) => {
+              await source.send(activeContinuationTask.threadId, text, employeeIds)
+            } : undefined}
+            onResetContinuation={() => setSelectedContinuationTaskId(null)}
+            listSkills={() => source.listSkills()}
+            onUploadMaterial={(name, content) => source.uploadMaterial(name, content)}
+            onUploadFile={file => source.uploadFile(file)}
+            autoFocus={false}
+          />
         )}
-        {!hasMessages && <div className={css.streamEmptyBottomSpacer} />}
       </section>
       {openThread !== undefined && (
         <ThreadPanel

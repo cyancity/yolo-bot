@@ -231,14 +231,14 @@
 /* ---------- 消息为 0 时的居中空态（CodeX 风格） ---------- */
 
 .streamEmptyArea {
-  flex: 1;
-  min-height: 0;
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 var(--wb-space-6) var(--wb-space-6);
+  justify-content: center;
+  padding: var(--wb-space-6);
   box-sizing: border-box;
+  width: 100%;
 }
 
 .streamEmptyCard {
@@ -284,11 +284,6 @@
   line-height: 1.3;
 }
 
-.emptyCardTitle {
-  font-size: var(--wb-type-caption-size);
-  font-weight: 500;
-  color: var(--wb-accent);
-}
 
 .emptyCardPersona {
   margin: var(--wb-space-2) 0 0;
@@ -344,22 +339,6 @@
   min-width: 0;
 }
 
-.streamComposerSlot {
-  width: 100%;
-  max-width: 100%;
-  flex: none;
-  box-sizing: border-box;
-}
-
-.streamComposerSlotEmpty {
-  max-width: min(720px, calc(100% - 2 * var(--wb-space-6)));
-  margin: 0 auto;
-}
-
-.streamEmptyBottomSpacer {
-  flex: 1;
-  min-height: 0;
-}
 
 .streamError {
   margin: 0 var(--wb-space-5) var(--wb-space-3);
