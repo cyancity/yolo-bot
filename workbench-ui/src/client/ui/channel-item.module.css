@@ -117,7 +117,7 @@
   flex-shrink: 0;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 var(--wb-space-3);
   border-radius: var(--wb-radius-lg);
   background: var(--wb-unread-bg);
   color: var(--wb-on-unread);

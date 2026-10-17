@@ -74,7 +74,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--wb-space-4);
   font-size: var(--wb-type-caption-size);
   color: var(--wb-fg-muted);
   min-width: 0;
@@ -93,7 +93,7 @@
   flex: none;
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-control);
-  padding: 0 5px;
+  padding: 0 var(--wb-space-3);
   line-height: 16px;
 }
 
@@ -105,7 +105,7 @@
 
 .loading {
   display: grid;
-  gap: 10px;
+  gap: var(--wb-space-5);
   padding: var(--wb-space-4) 0;
 }
 
@@ -125,7 +125,7 @@
 }
 
 .emptyTitle {
-  margin: 0 0 6px;
+  margin: 0 0 var(--wb-space-4);
   font-weight: 600;
   color: var(--wb-fg);
 }

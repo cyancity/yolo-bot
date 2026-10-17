@@ -76,7 +76,7 @@
   width: 14px;
   height: 14px;
   color: var(--wb-fg-muted);
-  margin-right: 6px;
+  margin-right: var(--wb-space-4);
   pointer-events: none;
 }
 
@@ -142,7 +142,7 @@
 }
 
 .noResults {
-  padding: var(--wb-space-5) 10px;
+  padding: var(--wb-space-5);
   font-size: var(--wb-type-caption-size);
   color: var(--wb-fg-muted);
   text-align: center;
@@ -186,7 +186,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: var(--wb-space-3);
   font-size: var(--wb-type-micro-size);
   line-height: 1.2;
 }
@@ -229,5 +229,5 @@
   color: var(--wb-accent-fg-sm);
   font-weight: 600;
   border-radius: var(--wb-radius-sm);
-  padding: 0 1px;
+  padding: 0 var(--wb-space-2);
 }

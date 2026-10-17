@@ -12,7 +12,7 @@
 
 .root {
   max-width: 420px;
-  margin-top: 6px;
+  margin-top: var(--wb-space-4);
 }
 
 .pill {
@@ -22,7 +22,7 @@
   max-width: 100%;
   min-height: 28px;
   margin: 0;
-  padding: 3px 10px 3px var(--wb-space-3);
+  padding: var(--wb-space-3) var(--wb-space-4) var(--wb-space-3) var(--wb-space-3);
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-pill);
   background: var(--wb-surface-raised);
@@ -128,7 +128,7 @@
    超 6 个来源第 6 位折叠为 +N 计数球；展开后沿导轨列出来源行。 */
 .board {
   position: relative;
-  padding-left: 14px;
+  padding-left: var(--wb-space-5);
 }
 
 /* 左缘竖向连接线 */
@@ -180,7 +180,7 @@
   font-weight: 600;
   border: 2px solid var(--wb-surface);
   box-sizing: border-box;
-  margin-left: -7px;
+  margin-left: calc(-1 * var(--wb-space-4));
   transition: transform 140ms ease;
 }
 .stackOrb:first-child,
@@ -214,7 +214,7 @@
 /* 包一层做重叠/层级：Favicon 自身是 grid 球，margin/zIndex 落在外壳。 */
 .stackOrbWrap {
   display: inline-flex;
-  margin-left: -7px;
+  margin-left: calc(-1 * var(--wb-space-4));
 }
 .stackOrbWrap:first-child { margin-left: 0; }
 
@@ -222,7 +222,7 @@
 .batchOrbs {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--wb-space-4);
 }
 .batchOrb { display: inline-flex; }
 .batchStack {
@@ -231,7 +231,7 @@
 }
 .batchOrbWrap {
   display: inline-flex;
-  margin-left: -7px;
+  margin-left: calc(-1 * var(--wb-space-4));
   transition: transform 140ms ease;
 }
 .batchOrbWrap:first-child { margin-left: 0; }
@@ -288,9 +288,9 @@
 .failChip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--wb-space-4);
   max-width: 100%;
-  padding: 3px 10px 3px var(--wb-space-3);
+  padding: var(--wb-space-3) var(--wb-space-4) var(--wb-space-3) var(--wb-space-3);
   border: 1px solid color-mix(in srgb, var(--wb-danger) 34%, var(--wb-line));
   border-radius: var(--wb-radius-pill);
   background: var(--wb-danger-bg);
@@ -336,8 +336,8 @@
 .trackList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 6px 0 0;
+  gap: var(--wb-space-4);
+  margin: var(--wb-space-4) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -392,7 +392,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 1px;
+  gap: var(--wb-space-2);
 }
 
 .title {
@@ -459,7 +459,7 @@
 .boneShort {
   height: 10px;
   width: 42%;
-  margin-top: 6px;
+  margin-top: var(--wb-space-4);
 }
 
 @media (prefers-reduced-motion: reduce) {

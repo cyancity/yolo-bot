@@ -56,7 +56,7 @@
 .msgBody {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
   flex: 1;
   min-width: 0;
   max-width: 780px;
@@ -81,8 +81,8 @@
 .msgBubble {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: var(--wb-space-4);
+  padding: var(--wb-bubble-pad-y) var(--wb-bubble-pad-x);
   border-radius: var(--wb-radius-panel);
   background: var(--wb-surface-raised);
   border: 1px solid var(--wb-line-soft);
@@ -106,7 +106,7 @@
 .sidebarSectionHead {
   height: 12px;
   width: 48px;
-  margin: 6px var(--wb-space-3) var(--wb-space-2);
+  margin: var(--wb-space-4) var(--wb-space-3) var(--wb-space-2);
 }
 
 .sidebarRow {
@@ -133,15 +133,15 @@
 .empListSkeleton {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--wb-space-4);
   width: 100%;
 }
 
 .empCardSkeleton {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: var(--wb-space-5);
+  padding: var(--wb-space-5);
   border-radius: var(--wb-radius-panel);
   border: 1px solid var(--wb-line);
   background: var(--wb-surface-raised);
@@ -157,7 +157,7 @@
 .empBody {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
   flex: 1;
 }
 

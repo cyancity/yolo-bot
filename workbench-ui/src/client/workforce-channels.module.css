@@ -10,7 +10,7 @@
 .groupBlock {
   display: flex;
   flex-direction: column;
-  margin-bottom: 6px;
+  margin-bottom: var(--wb-space-4);
 }
 
 /* 分组标题行（参考 Discord） */
@@ -18,7 +18,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px var(--wb-space-4) var(--wb-space-3) 6px;
+  padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-3);
   cursor: pointer;
   user-select: none;
   border-radius: var(--wb-radius-sm);
@@ -95,7 +95,7 @@
 .channelList {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--wb-space-2);
   padding-left: var(--wb-space-2);
 }
 
@@ -104,9 +104,10 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--wb-space-4);
   width: 100%;
-  padding: 6px var(--wb-space-4);
+  min-height: var(--wb-control-height-sm);
+  padding: var(--wb-space-3) var(--wb-space-4);
   border: none;
   border-radius: var(--wb-radius-md);
   background: transparent;
@@ -184,7 +185,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--wb-space-4) 10px var(--wb-space-3);
+  padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-3);
 }
 
 /* 侧栏区标题（「频道」「私信」共用同一套字重与字号） */
@@ -249,14 +250,14 @@
 
 /* 本地旧数据同步提示横幅 */
 .migrationBanner {
-  margin: 6px var(--wb-space-4);
-  padding: var(--wb-space-4) 10px;
+  margin: var(--wb-space-4);
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-md);
   background: color-mix(in srgb, var(--wb-accent) 12%, var(--wb-surface));
   border: 1px solid color-mix(in srgb, var(--wb-accent) 30%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
   font-size: var(--wb-type-caption-size);
   color: var(--wb-fg);
 }
@@ -267,16 +268,16 @@
 
 .migrationActions {
   display: flex;
-  gap: 6px;
+  gap: var(--wb-space-4);
   align-items: center;
 }
 
 .syncBtn {
-  border: none;
+  border: 1px solid transparent;
   background: var(--wb-accent);
   color: var(--wb-on-accent);
   border-radius: var(--wb-radius-sm);
-  padding: 3px var(--wb-space-4);
+  padding: var(--wb-space-2) var(--wb-space-4);
   font-size: var(--wb-type-micro-size);
   font-weight: 600;
   cursor: pointer;
@@ -296,7 +297,7 @@
   background: transparent;
   color: var(--wb-fg-muted);
   border-radius: var(--wb-radius-sm);
-  padding: var(--wb-space-2) 6px;
+  padding: var(--wb-space-2) var(--wb-space-4);
   font-size: var(--wb-type-micro-size);
   cursor: pointer;
 }
@@ -308,8 +309,8 @@
 
 /* 错误提示横幅 */
 .errorBanner {
-  margin: 6px var(--wb-space-4);
-  padding: 6px 10px;
+  margin: var(--wb-space-4);
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-md);
   background: var(--wb-danger-bg);
   border: 1px solid var(--wb-danger);
@@ -331,7 +332,7 @@
 
 .errorActions {
   display: flex;
-  gap: 6px;
+  gap: var(--wb-space-4);
   align-items: center;
   flex: none;
 }
@@ -384,13 +385,13 @@
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-lg);
   box-shadow: var(--wb-shadow-dialog);
-  padding: 22px var(--wb-space-7);
+  padding: var(--wb-space-7);
   color: var(--wb-fg);
   box-sizing: border-box;
 }
 
 .dialogTitle {
-  margin: 0 0 14px;
+  margin: 0 0 var(--wb-space-6);
   font-size: var(--wb-type-heading-size);
   font-weight: 700;
 }
@@ -398,13 +399,13 @@
 .dialogForm {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--wb-space-6);
 }
 
 .formItem {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
 }
 
 .formLabel {
@@ -416,7 +417,8 @@
 
 .inputField {
   width: 100%;
-  padding: 9px var(--wb-space-5);
+  min-height: var(--wb-control-height-lg);
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-md);
   border: 1px solid var(--wb-line);
   background: var(--wb-surface);
@@ -432,7 +434,8 @@
 
 .selectField {
   width: 100%;
-  padding: 9px var(--wb-space-5);
+  min-height: var(--wb-control-height-lg);
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-md);
   border: 1px solid var(--wb-line);
   background: var(--wb-surface);
@@ -450,8 +453,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
+  gap: var(--wb-space-4);
+  margin-top: var(--wb-space-4);
 }
 
 .cancelBtn {
@@ -470,7 +473,7 @@
 }
 
 .submitBtn {
-  padding: var(--wb-space-4) 18px;
+  padding: var(--wb-space-4) var(--wb-space-6);
   border: none;
   border-radius: var(--wb-radius-md);
   background: var(--wb-accent);

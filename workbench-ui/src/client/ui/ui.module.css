@@ -109,8 +109,9 @@
 .step {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 14px;
+  gap: var(--wb-space-4);
+  min-height: var(--wb-control-height-md);
+  padding: var(--wb-space-3) var(--wb-space-5);
   border: 1px solid transparent;
   border-radius: var(--wb-radius-pill);
   background: transparent;
@@ -286,12 +287,12 @@ button.stepDone:hover { background: var(--wb-hover); }
 .tag {
   display: inline-block;
   flex: none;
-  padding: 1px 9px;
+  padding: var(--wb-space-2) var(--wb-space-4);
   border-radius: var(--wb-radius-pill);
   background: var(--wb-surface-sub);
   color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
-  line-height: 1.6;
+  line-height: calc(1.6em - 2px);
   white-space: nowrap;
 }
 
@@ -310,7 +311,7 @@ button.stepDone:hover { background: var(--wb-hover); }
 }
 
 .statLabel { font-size: var(--wb-type-caption-size); color: var(--wb-fg-placeholder); }
-.statValue { margin-top: 1px; font-weight: 700; }
+.statValue { margin-top: var(--wb-space-2); font-weight: 700; }
 .statOk { color: var(--wb-success); }
 .statWarn { color: var(--wb-warning); }
 .statDanger { color: var(--wb-danger); }
@@ -320,7 +321,7 @@ button.stepDone:hover { background: var(--wb-hover); }
 .skeleton {
   display: block;
   height: 1em;
-  margin: 5px 0;
+  margin: var(--wb-space-3) 0;
   border-radius: var(--wb-radius-md);
   background: linear-gradient(90deg, var(--wb-skeleton-base) 25%, var(--wb-skeleton-highlight) 50%, var(--wb-skeleton-base) 75%);
   background-size: 200% 100%;
@@ -338,7 +339,7 @@ button.stepDone:hover { background: var(--wb-hover); }
 /* 工作台根节点带 CSS zoom（--wb-zoom），宿主标题栏高度是屏幕 px，要先除回去才和原生标题栏底边对齐 */
 .dialog:modal { top: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)); }
 .dialog::backdrop { top: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)); background: color-mix(in srgb, var(--wb-fg) 40%, transparent); }
-.dialogFullScreen:modal { position: fixed; inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0; margin: 0; width: calc(100vw / var(--wb-zoom)); height: calc((100dvh - var(--dsh-frame-chrome-top, 0px)) / var(--wb-zoom)); max-width: none; max-height: none; box-sizing: border-box; border: 0; border-radius: 0; padding: clamp(16px, 4vw, 48px); }
+.dialogFullScreen:modal { position: fixed; inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0; margin: 0; width: calc(100vw / var(--wb-zoom)); height: calc((100dvh - var(--dsh-frame-chrome-top, 0px)) / var(--wb-zoom)); max-width: none; max-height: none; box-sizing: border-box; border: 0; border-radius: 0; padding: clamp(var(--wb-space-6), 4vw, var(--wb-space-9)); }
 .dialogHead { display: flex; align-items: center; gap: var(--wb-space-5); margin-bottom: var(--wb-space-5); }
 .dialogHead h2 { flex: 1; font-size: var(--wb-type-body-size); margin: 0; }
 .dialogHead button { background: var(--wb-surface-sub); border: 1px solid var(--wb-line); color: var(--wb-fg-muted); border-radius: var(--wb-radius-control); cursor: pointer; }

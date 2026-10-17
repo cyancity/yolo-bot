@@ -45,7 +45,7 @@
 .selectWrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
   width: 100%;
 }
 
@@ -140,12 +140,12 @@
 .cardActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--wb-space-4);
 }
 
 .actionBtn {
   height: 28px;
-  padding: 0 10px;
+  padding: 0 var(--wb-space-5);
   font-size: var(--wb-type-caption-size);
   font-weight: 500;
   border-radius: var(--wb-radius-control);
@@ -200,13 +200,13 @@
 .modelsTags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--wb-space-3);
   margin-top: var(--wb-space-3);
 }
 
 .modelTag {
   font-size: var(--wb-type-micro-size);
-  padding: var(--wb-space-2) 7px;
+  padding: var(--wb-space-2) var(--wb-space-4);
   border-radius: var(--wb-radius-sm);
   background: var(--wb-line-soft);
   color: var(--wb-fg);
@@ -220,7 +220,7 @@
 }
 
 .errorBanner {
-  padding: 10px 14px;
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-control);
   background: var(--wb-danger-bg);
   border: 1px solid color-mix(in srgb, var(--wb-danger) 40%, transparent);
@@ -233,7 +233,7 @@
 }
 
 .successBanner {
-  padding: 10px 14px;
+  padding: var(--wb-space-4) var(--wb-space-5);
   border-radius: var(--wb-radius-control);
   background: var(--wb-success-bg);
   border: 1px solid color-mix(in srgb, var(--wb-success) 40%, transparent);
@@ -255,7 +255,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
 }
 
 .field label {
@@ -274,7 +274,7 @@
 .keyInput {
   width: 100%;
   height: 36px;
-  padding: 0 54px 0 var(--wb-space-4);
+  padding: 0 var(--wb-space-9) 0 var(--wb-space-4);
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-control);
   background: var(--wb-surface-raised);
@@ -297,7 +297,7 @@
   color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
   cursor: pointer;
-  padding: var(--wb-space-3) 6px;
+  padding: var(--wb-space-3);
   border-radius: var(--wb-radius-control);
 }
 
