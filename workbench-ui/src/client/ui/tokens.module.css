@@ -7,7 +7,10 @@
 
 /* token 承载层：.root 是插件根（带布局 reset），.scope 只声明变量、供 portal 到
    body 的浮层重建 token 环境。scheme 色块同时挂 html[data-wb-*]（全局偏好镜像，
-   供 body 下 portal 继承）与 .root/.scope[data-wb-*]（本根权威值，优先级更高）。 */
+   供 body 下 portal 继承）与 .root/.scope[data-wb-*]（本根权威值，优先级更高）。
+   基础刻度同样挂 html[data-wb-style]：portal 到 body、未包 .scope 的弹窗也能取到
+   间距/字号/圆角 token，组件里因此不需要写 fallback。刻度说明见 docs/design-tokens.md。 */
+html[data-wb-style],
 .root,
 .scope {
   /* 字体 */
@@ -17,7 +20,11 @@
   --wb-weight-medium: 500;
   --wb-weight-semibold: 600;
 
-  /* 字阶：size/weight/leading */
+  /* 字阶：size/weight/leading。正文 5 档 micro/caption/compact/label/body，
+     标题 3 档 section/heading/title；strong、code 是同字号的语义别名。 */
+  --wb-type-micro-size: .6875rem;
+  --wb-type-micro-weight: 400;
+  --wb-type-micro-leading: 1.4545;
   --wb-type-caption-size: .75rem;
   --wb-type-caption-weight: 400;
   --wb-type-caption-leading: 1.5;
@@ -36,6 +43,9 @@
   --wb-type-section-size: 1rem;
   --wb-type-section-weight: 600;
   --wb-type-section-leading: 1.5;
+  --wb-type-heading-size: 1.125rem;
+  --wb-type-heading-weight: 600;
+  --wb-type-heading-leading: 1.4444;
   --wb-type-title-size: 1.25rem;
   --wb-type-title-weight: 600;
   --wb-type-title-leading: 1.4;
@@ -60,12 +70,13 @@
   --wb-font-xs: .75rem;
   /* 运行时偏好覆写：气泡圆角（workforce.tsx 内联写入）。 */
   --wb-bubble-radius: 12px;
-  /* 组件局部小色阶别名 */
-  --wb-accent-fg-sm: var(--wb-accent-fg);
+  /* 组件局部小色阶别名；--wb-accent-fg-sm / --wb-sub-fg-sm 按深浅在色表里定义 */
   --wb-danger-soft: var(--wb-danger-bg);
   --wb-line-strong: var(--wb-line-control);
-  --wb-sub-fg-sm: var(--wb-fg-muted);
   --wb-surface-soft: color-mix(in srgb, var(--wb-fg) 6%, transparent);
+  /* 与深浅无关的固定色：彩色填充（站点色、生成色）上的文字、媒体底色 */
+  --wb-on-color: #ffffff;
+  --wb-media-bg: #000000;
 
   /* 控件共享 */
   --wb-icon-sm: 16px;
@@ -75,8 +86,13 @@
   --wb-border-width: 1px;
   --wb-focus-width: 2px;
   --wb-focus-offset: 2px;
+  /* 圆角三档 + 胶囊/圆形；panel/control/bubble/overlay 等语义圆角按布局风格取三档之一 */
+  --wb-radius-sm: 4px;
+  --wb-radius-md: 6px;
+  --wb-radius-lg: 8px;
+  --wb-radius-pill: 999px;
   --wb-radius-dot: 50%;
-  --wb-radius-badge: 4px;
+  --wb-radius-badge: var(--wb-radius-sm);
   --wb-control-height-sm: 32px;
   --wb-control-height-md: 36px;
   --wb-control-height-lg: 44px;
@@ -136,10 +152,10 @@
 html[data-wb-style='discord'],
 .scope[data-wb-style='discord'],
 .root[data-wb-style='discord'] {
-  --wb-radius-panel: 6px;
-  --wb-radius-control: 8px;
-  --wb-radius-bubble: 6px;
-  --wb-radius-overlay: 6px;
+  --wb-radius-panel: var(--wb-radius-md);
+  --wb-radius-control: var(--wb-radius-lg);
+  --wb-radius-bubble: var(--wb-radius-md);
+  --wb-radius-overlay: var(--wb-radius-md);
   --wb-radius-avatar: 50%;
   --wb-nav-row-height: 32px;
   --wb-header-height: 48px;
@@ -156,11 +172,11 @@ html[data-wb-style='discord'],
 html[data-wb-style='wechat'],
 .scope[data-wb-style='wechat'],
 .root[data-wb-style='wechat'] {
-  --wb-radius-panel: 4px;
-  --wb-radius-control: 6px;
-  --wb-radius-bubble: 4px;
-  --wb-radius-overlay: 6px;
-  --wb-radius-avatar: 4px;
+  --wb-radius-panel: var(--wb-radius-sm);
+  --wb-radius-control: var(--wb-radius-md);
+  --wb-radius-bubble: var(--wb-radius-sm);
+  --wb-radius-overlay: var(--wb-radius-md);
+  --wb-radius-avatar: var(--wb-radius-sm);
   --wb-nav-row-height: 64px;
   --wb-header-height: 56px;
   --wb-message-gap: 20px;
@@ -185,6 +201,7 @@ html[data-wb-style='discord'][data-wb-scheme='dark'],
   --wb-fg: #f2f3f5;
   --wb-fg-muted: #b5bac1;
   --wb-fg-placeholder: #a0a6b0;
+  --wb-fg-placeholder-aa: #a0a6b0; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
   --wb-line: #44474f;
   --wb-line-soft: #35373d;
   --wb-line-control: #737985;
@@ -226,8 +243,11 @@ html[data-wb-style='discord'][data-wb-scheme='dark'],
   --wb-overlay: rgba(0, 0, 0, .56);
   --wb-tooltip-bg: #111214;
   --wb-tooltip-fg: #f2f3f5;
+  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .28);
   --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .32);
   --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .40);
+  --wb-accent-fg-sm: var(--wb-accent);
+  --wb-sub-fg-sm: var(--wb-fg-muted);
 }
 
 /* ---- Discord light ---- */
@@ -243,6 +263,7 @@ html[data-wb-style='discord'][data-wb-scheme='light'],
   --wb-fg: #232428;
   --wb-fg-muted: #5c616c;
   --wb-fg-placeholder: #6b707b;
+  --wb-fg-placeholder-aa: #5f6672; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
   --wb-line: #dedede;
   --wb-line-soft: #dedede;
   --wb-line-control: #7a808c;
@@ -284,8 +305,12 @@ html[data-wb-style='discord'][data-wb-scheme='light'],
   --wb-overlay: rgba(0, 0, 0, .32);
   --wb-tooltip-bg: #232428;
   --wb-tooltip-fg: #ffffff;
+  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .08);
   --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .12);
   --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .18);
+  /* 小字前景加深到 AA（浅色下 accent / muted 小字直接用不达 4.5:1） */
+  --wb-accent-fg-sm: color-mix(in srgb, var(--wb-accent) 82%, #000);
+  --wb-sub-fg-sm: color-mix(in srgb, var(--wb-fg-muted) 78%, #000);
 }
 
 /* ---- WeChat light ---- */
@@ -301,6 +326,7 @@ html[data-wb-style='wechat'][data-wb-scheme='light'],
   --wb-fg: #19191a;
   --wb-fg-muted: #9f9fa6;
   --wb-fg-placeholder: #9f9fa6;
+  --wb-fg-placeholder-aa: #5f6672; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
   --wb-line: #dedede;
   --wb-line-soft: #dedede;
   --wb-line-control: #9f9fa6;
@@ -342,8 +368,12 @@ html[data-wb-style='wechat'][data-wb-scheme='light'],
   --wb-overlay: rgba(0, 0, 0, .28);
   --wb-tooltip-bg: #19191a;
   --wb-tooltip-fg: #ffffff;
+  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .06);
   --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .08);
   --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .14);
+  /* 小字前景加深到 AA（浅色下 accent / muted 小字直接用不达 4.5:1） */
+  --wb-accent-fg-sm: color-mix(in srgb, var(--wb-accent) 82%, #000);
+  --wb-sub-fg-sm: color-mix(in srgb, var(--wb-fg-muted) 78%, #000);
 }
 
 /* ---- WeChat dark ---- */
@@ -359,6 +389,7 @@ html[data-wb-style='wechat'][data-wb-scheme='dark'],
   --wb-fg: #ededed;
   --wb-fg-muted: #a9a9a9;
   --wb-fg-placeholder: #929292;
+  --wb-fg-placeholder-aa: #929292; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
   --wb-line: #3b3b3b;
   --wb-line-soft: #2c2c2c;
   --wb-line-control: #858585;
@@ -400,8 +431,11 @@ html[data-wb-style='wechat'][data-wb-scheme='dark'],
   --wb-overlay: rgba(0, 0, 0, .60);
   --wb-tooltip-bg: #ededed;
   --wb-tooltip-fg: #202020;
+  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .30);
   --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .36);
   --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .44);
+  --wb-accent-fg-sm: var(--wb-accent);
+  --wb-sub-fg-sm: var(--wb-fg-muted);
 }
 
 /* reduced-motion：时长归零、不做编排动画；loading 仍保留静态标记 */

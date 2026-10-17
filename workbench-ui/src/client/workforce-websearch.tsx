@@ -191,7 +191,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
             const isLast = index === visible.length - 1 && extra > 0
             if (isLast) {
               return (
-                <span key={`${source.url}${index}`} className={css.stackOrb} style={{ backgroundColor: 'var(--wb-hover, #efefea)', color: 'var(--wb-sub, #6f6f66)', zIndex: 0 }}>
+                <span key={`${source.url}${index}`} className={css.stackOrb} style={{ backgroundColor: 'var(--wb-hover)', color: 'var(--wb-fg-muted)', zIndex: 0 }}>
                   {`+${extra + 1}`}
                 </span>
               )

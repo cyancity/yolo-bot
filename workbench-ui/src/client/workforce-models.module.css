@@ -27,7 +27,7 @@
 .sectionHead {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--wb-space-2);
 }
 
 .sectionTitle {
@@ -113,8 +113,8 @@
   align-items: center;
   font-size: var(--wb-type-caption-size);
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: var(--wb-space-2) var(--wb-space-4);
+  border-radius: var(--wb-radius-lg);
   line-height: 1.2;
 }
 
@@ -124,7 +124,7 @@
    回落 --wb-fg（正文色对 line-soft 底必达 AA）。 */
 .badgeKind {
   background: var(--wb-line-soft);
-  color: var(--wb-sub-fg-sm, var(--wb-fg));
+  color: var(--wb-sub-fg-sm);
 }
 
 .badgeOk {
@@ -134,7 +134,7 @@
 
 .badgeDim {
   background: var(--wb-line-soft);
-  color: var(--wb-sub-fg-sm, var(--wb-fg));
+  color: var(--wb-sub-fg-sm);
 }
 
 .cardActions {
@@ -150,13 +150,13 @@
   font-weight: 500;
   border-radius: var(--wb-radius-control);
   border: 1px solid var(--wb-line);
-  background: var(--wb-surface-raised, var(--wb-surface));
+  background: var(--wb-surface-raised);
   color: var(--wb-fg);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
   transition: all 0.12s ease;
   white-space: nowrap;
 }
@@ -173,7 +173,7 @@
 .actionBtnPrimary {
   background: var(--wb-accent);
   border-color: var(--wb-accent);
-  color: var(--wb-on-accent, #ffffff);
+  color: var(--wb-on-accent);
 }
 
 .actionBtnPrimary:hover:not(:disabled) {
@@ -201,13 +201,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: var(--wb-space-3);
 }
 
 .modelTag {
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-size: var(--wb-type-micro-size);
+  padding: var(--wb-space-2) 7px;
+  border-radius: var(--wb-radius-sm);
   background: var(--wb-line-soft);
   color: var(--wb-fg);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -297,7 +297,7 @@
   color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
   cursor: pointer;
-  padding: 4px 6px;
+  padding: var(--wb-space-3) 6px;
   border-radius: var(--wb-radius-control);
 }
 

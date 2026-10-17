@@ -3,7 +3,7 @@
 .channelsContainer {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--wb-space-3);
 }
 
 /* 分组块 */
@@ -18,21 +18,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px 4px 6px;
+  padding: 6px var(--wb-space-4) var(--wb-space-3) 6px;
   cursor: pointer;
   user-select: none;
-  border-radius: 4px;
+  border-radius: var(--wb-radius-sm);
   transition: color 0.1s ease;
 }
 
 .groupHeader:hover {
-  color: var(--wb-fg, #f2f3f5);
+  color: var(--wb-fg);
 }
 
 .groupHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
   flex: 1;
   min-width: 0;
 }
@@ -43,7 +43,7 @@
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -52,18 +52,18 @@
 }
 
 .groupTitle {
-  font-size: 11px;
+  font-size: var(--wb-type-micro-size);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .groupHeader:hover .groupTitle {
-  color: var(--wb-fg, #dbdee1);
+  color: var(--wb-fg);
 }
 
 .groupAddBtn {
@@ -74,9 +74,9 @@
   height: 18px;
   padding: 0;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--wb-radius-sm);
   background: transparent;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.1s ease, color 0.1s ease, background 0.1s ease;
@@ -87,8 +87,8 @@
 }
 
 .groupAddBtn:hover {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
-  color: var(--wb-fg, #f2f3f5);
+  background: var(--wb-hover);
+  color: var(--wb-fg);
 }
 
 /* 频道列表容器 */
@@ -96,7 +96,7 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-left: 2px;
+  padding-left: var(--wb-space-2);
 }
 
 /* 频道按钮行 */
@@ -106,13 +106,13 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px var(--wb-space-4);
   border: none;
-  border-radius: 5px;
+  border-radius: var(--wb-radius-md);
   background: transparent;
   /* 小字前景：token 在 .sidebar 上定义，fallback --wb-fg-muted 保护独立挂载 */
-  color: var(--wb-sub-fg-sm, var(--wb-fg-muted, #949ba4));
-  font-size: 13px;
+  color: var(--wb-sub-fg-sm);
+  font-size: var(--wb-type-compact-size);
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -121,19 +121,19 @@
 }
 
 .channelItem:hover {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.05));
-  color: var(--wb-fg, #dbdee1);
+  background: var(--wb-hover);
+  color: var(--wb-fg);
 }
 
 .channelItemActive {
-  background: var(--wb-accent-soft, rgba(88, 101, 242, 0.15));
-  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+  background: var(--wb-accent-soft);
+  color: var(--wb-accent-fg-sm);
   font-weight: 600;
 }
 
 .channelItemActive:hover {
-  background: var(--wb-accent-soft, rgba(88, 101, 242, 0.22));
-  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+  background: var(--wb-accent-soft);
+  color: var(--wb-accent-fg-sm);
 }
 
 .hashIcon {
@@ -145,11 +145,11 @@
   color: inherit;
   opacity: 0.7;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--wb-type-label-size);
 }
 
 .channelItemActive .hashIcon {
-  color: var(--wb-accent-fg-sm, var(--wb-accent, #5865f2));
+  color: var(--wb-accent-fg-sm);
   opacity: 1;
 }
 
@@ -167,7 +167,7 @@
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   opacity: 0.8;
 }
 
@@ -175,8 +175,8 @@
   flex: none;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background: #459ffe;
+  border-radius: var(--wb-radius-dot);
+  background: var(--wb-unread-bg);
 }
 
 /* 顶部总分组/新建操作栏 */
@@ -184,12 +184,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px 4px;
+  padding: var(--wb-space-4) 10px var(--wb-space-3);
 }
 
 /* 侧栏区标题（「频道」「私信」共用同一套字重与字号） */
 .topTitle {
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   font-weight: 700;
   text-transform: uppercase;
   color: var(--wb-fg-muted);
@@ -199,14 +199,14 @@
 .sectionToggleBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
   border: none;
   background: transparent;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: var(--wb-space-2) var(--wb-space-3);
+  border-radius: var(--wb-radius-sm);
   cursor: pointer;
   color: var(--wb-fg-muted);
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
@@ -214,18 +214,18 @@
 }
 
 .sectionToggleBtn:hover .topTitle {
-  color: var(--wb-fg, #f2f3f5);
+  color: var(--wb-fg);
 }
 
 .sectionToggleBtn:focus-visible {
-  outline: 2px solid var(--wb-accent, #5865f2);
+  outline: 2px solid var(--wb-accent);
   outline-offset: 1px;
 }
 
 .topActions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
 }
 
 .iconBtn {
@@ -235,30 +235,30 @@
   width: 22px;
   height: 22px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--wb-radius-sm);
   background: transparent;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   cursor: pointer;
   transition: background 0.1s ease, color 0.1s ease;
 }
 
 .iconBtn:hover {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
-  color: var(--wb-fg, #f2f3f5);
+  background: var(--wb-hover);
+  color: var(--wb-fg);
 }
 
 /* 本地旧数据同步提示横幅 */
 .migrationBanner {
-  margin: 6px 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--wb-accent, #5865f2) 12%, var(--wb-surface, #2b2d31));
-  border: 1px solid color-mix(in srgb, var(--wb-accent, #5865f2) 30%, transparent);
+  margin: 6px var(--wb-space-4);
+  padding: var(--wb-space-4) 10px;
+  border-radius: var(--wb-radius-md);
+  background: color-mix(in srgb, var(--wb-accent) 12%, var(--wb-surface));
+  border: 1px solid color-mix(in srgb, var(--wb-accent) 30%, transparent);
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 11.5px;
-  color: var(--wb-fg, #f2f3f5);
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg);
 }
 
 .migrationText {
@@ -273,11 +273,11 @@
 
 .syncBtn {
   border: none;
-  background: var(--wb-accent, #5865f2);
-  color: var(--wb-on-accent, #ffffff);
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 11px;
+  background: var(--wb-accent);
+  color: var(--wb-on-accent);
+  border-radius: var(--wb-radius-sm);
+  padding: 3px var(--wb-space-4);
+  font-size: var(--wb-type-micro-size);
   font-weight: 600;
   cursor: pointer;
 }
@@ -292,33 +292,33 @@
 }
 
 .dismissBtn {
-  border: 1px solid var(--wb-line, #3f4147);
+  border: 1px solid var(--wb-line);
   background: transparent;
-  color: var(--wb-fg-muted, #949ba4);
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
+  color: var(--wb-fg-muted);
+  border-radius: var(--wb-radius-sm);
+  padding: var(--wb-space-2) 6px;
+  font-size: var(--wb-type-micro-size);
   cursor: pointer;
 }
 
 .dismissBtn:hover:not(:disabled) {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
-  color: var(--wb-fg, #f2f3f5);
+  background: var(--wb-hover);
+  color: var(--wb-fg);
 }
 
 /* 错误提示横幅 */
 .errorBanner {
-  margin: 6px 8px;
+  margin: 6px var(--wb-space-4);
   padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--wb-danger-bg, rgba(237, 66, 69, 0.1));
-  border: 1px solid var(--wb-danger, #ed4245);
+  border-radius: var(--wb-radius-md);
+  background: var(--wb-danger-bg);
+  border: 1px solid var(--wb-danger);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 11.5px;
-  color: var(--wb-danger, #ed4245);
+  gap: var(--wb-space-4);
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-danger);
 }
 
 .errorMessage {
@@ -339,27 +339,27 @@
 .errorRetryBtn {
   border: none;
   background: transparent;
-  color: var(--wb-accent, #5865f2);
+  color: var(--wb-accent);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
-  font-size: 11px;
+  font-size: var(--wb-type-micro-size);
 }
 
 .errorDismissBtn {
   border: none;
   background: transparent;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   cursor: pointer;
   padding: 0;
-  font-size: 11px;
+  font-size: var(--wb-type-micro-size);
 }
 
 .formError {
-  color: var(--wb-danger, #ed4245);
-  font-size: 12px;
-  margin-top: 4px;
+  color: var(--wb-danger);
+  font-size: var(--wb-type-caption-size);
+  margin-top: var(--wb-space-3);
   line-height: 1.4;
 }
 
@@ -367,31 +367,31 @@
 .dialogBackdrop {
   position: fixed;
   /* 从 Windows 标题栏下方开始，避免标题栏变灰而原生窗口按钮仍是原色 */
-  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom, 1)) 0 0;
+  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0;
   z-index: 10050;
-  background: var(--wb-overlay, rgba(0, 0, 0, 0.45));
+  background: var(--wb-overlay);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: var(--wb-space-6);
 }
 
 .dialogCard {
   width: 100%;
   max-width: 420px;
-  background: var(--wb-surface-raised, #2b2d31);
-  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
-  padding: 22px 24px;
-  color: var(--wb-fg, #f2f3f5);
+  background: var(--wb-surface-raised);
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-lg);
+  box-shadow: var(--wb-shadow-dialog);
+  padding: 22px var(--wb-space-7);
+  color: var(--wb-fg);
   box-sizing: border-box;
 }
 
 .dialogTitle {
   margin: 0 0 14px;
-  font-size: 17px;
+  font-size: var(--wb-type-heading-size);
   font-weight: 700;
 }
 
@@ -408,42 +408,42 @@
 }
 
 .formLabel {
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   font-weight: 600;
-  color: var(--wb-fg-muted, #b5bac1);
+  color: var(--wb-fg-muted);
   text-transform: uppercase;
 }
 
 .inputField {
   width: 100%;
-  padding: 9px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
-  background: var(--wb-surface, #1e1f22);
-  color: var(--wb-fg, #f2f3f5);
-  font-size: 14px;
+  padding: 9px var(--wb-space-5);
+  border-radius: var(--wb-radius-md);
+  border: 1px solid var(--wb-line);
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  font-size: var(--wb-type-label-size);
   outline: none;
   box-sizing: border-box;
 }
 
 .inputField:focus {
-  border-color: var(--wb-accent, #5865f2);
+  border-color: var(--wb-accent);
 }
 
 .selectField {
   width: 100%;
-  padding: 9px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--wb-line, rgba(255, 255, 255, 0.12));
-  background: var(--wb-surface, #1e1f22);
-  color: var(--wb-fg, #f2f3f5);
-  font-size: 14px;
+  padding: 9px var(--wb-space-5);
+  border-radius: var(--wb-radius-md);
+  border: 1px solid var(--wb-line);
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  font-size: var(--wb-type-label-size);
   outline: none;
   box-sizing: border-box;
 }
 
 .selectField:focus {
-  border-color: var(--wb-accent, #5865f2);
+  border-color: var(--wb-accent);
 }
 
 .dialogFooter {
@@ -455,27 +455,27 @@
 }
 
 .cancelBtn {
-  padding: 8px 16px;
+  padding: var(--wb-space-4) var(--wb-space-6);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--wb-radius-md);
   background: transparent;
-  color: var(--wb-fg, #f2f3f5);
-  font-size: 13px;
+  color: var(--wb-fg);
+  font-size: var(--wb-type-compact-size);
   font-weight: 500;
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  background: var(--wb-hover);
 }
 
 .submitBtn {
-  padding: 8px 18px;
+  padding: var(--wb-space-4) 18px;
   border: none;
-  border-radius: 6px;
-  background: var(--wb-accent, #5865f2);
-  color: #ffffff;
-  font-size: 13px;
+  border-radius: var(--wb-radius-md);
+  background: var(--wb-accent);
+  color: var(--wb-on-accent);
+  font-size: var(--wb-type-compact-size);
   font-weight: 600;
   cursor: pointer;
 }
