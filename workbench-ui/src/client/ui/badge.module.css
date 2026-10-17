@@ -3,10 +3,10 @@
   align-items: center;
   gap: var(--wb-space-2);
   border-radius: var(--wb-radius-badge);
-  padding: 1px var(--wb-space-3);
+  padding: var(--wb-space-2) var(--wb-space-3);
   font-size: var(--wb-type-caption-size);
   font-weight: var(--wb-weight-medium);
-  line-height: 1.5;
+  line-height: calc(1.5em - 2px);
   white-space: nowrap;
   border: var(--wb-border-width) solid var(--wb-line-soft);
   background: var(--wb-surface-sub);

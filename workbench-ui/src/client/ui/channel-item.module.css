@@ -25,14 +25,14 @@
 .item:hover:not(:disabled):not(.selected) { background: var(--wb-hover); color: var(--wb-fg); }
 
 .selected {
-  background: #15ac70;
-  color: #ffffff;
+  background: var(--wb-selected-bg);
+  color: var(--wb-selected-fg);
 }
 
 .selected:hover,
 .item:hover.selected {
-  background: #14a36a !important;
-  color: #ffffff !important;
+  background: color-mix(in srgb, var(--wb-selected-bg) 92%, var(--wb-fg));
+  color: var(--wb-selected-fg);
 }
 
 .muted { opacity: .55; }
@@ -117,8 +117,8 @@
   flex-shrink: 0;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
+  padding: 0 var(--wb-space-3);
+  border-radius: var(--wb-radius-lg);
   background: var(--wb-unread-bg);
   color: var(--wb-on-unread);
   font-size: var(--wb-type-caption-size);

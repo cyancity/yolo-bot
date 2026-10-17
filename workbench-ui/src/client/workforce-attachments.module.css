@@ -1,25 +1,25 @@
 .attachment {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--wb-space-4);
   max-width: 100%;
-  margin: 8px 0;
+  margin: var(--wb-space-4) 0;
   white-space: normal;
 }
 
 .fileCard {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--wb-space-5);
   box-sizing: border-box;
   width: min(100%, 440px);
   min-width: 0;
-  padding: 10px 12px;
+  padding: var(--wb-space-5);
   border: 1px solid var(--wb-line);
-  border-radius: 10px;
+  border-radius: var(--wb-radius-lg);
   background: var(--wb-surface);
   color: var(--wb-fg);
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
   line-height: 20px;
 }
 :global([data-wb-style='wechat']) .fileCard {
@@ -33,27 +33,27 @@
 .fileIcon[data-extension='pdf'], .fileIcon[data-extension='pptx'] { color: var(--wb-danger); }
 .fileDetails { display: flex; flex: 1; min-width: 0; flex-direction: column; }
 .fileName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
-.fileMeta { color: var(--wb-fg-muted); font-size: 11px; line-height: 17px; }
+.fileMeta { color: var(--wb-fg-muted); font-size: var(--wb-type-micro-size); line-height: 17px; }
 .fileCard > a, .fileCard > button {
   border: 0;
   background: transparent;
-  padding: 4px 2px;
+  padding: var(--wb-space-3) var(--wb-space-2);
   color: var(--wb-accent);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   cursor: pointer;
   text-decoration: none;
   flex: none;
 }
 .fileCard > a:hover, .fileCard > button:hover { text-decoration: underline; }
 .fileCard :focus-visible, .thumbnail:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
-.thumbnail { display: block; align-self: flex-start; max-width: 100%; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: zoom-in; background: var(--wb-hover); }
+.thumbnail { display: block; align-self: flex-start; max-width: 100%; padding: 0; border: 0; border-radius: var(--wb-radius-lg); overflow: hidden; cursor: zoom-in; background: var(--wb-hover); }
 .thumbnail img { display: block; max-width: 100%; max-height: 240px; width: auto; height: auto; object-fit: contain; }
-.video { display: block; max-width: 100%; max-height: 280px; width: min(100%, 480px); border: 1px solid var(--wb-line); border-radius: 10px; background: #111; }
+.video { display: block; max-width: 100%; max-height: 280px; width: min(100%, 480px); border: 1px solid var(--wb-line); border-radius: var(--wb-radius-lg); background: var(--wb-media-bg); }
 .audio { display: block; max-width: 100%; width: min(100%, 420px); }
-.galleryControls { position: fixed; z-index: 1001; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; align-items: center; padding: 6px 12px; color: var(--wb-fg); background: var(--wb-surface); border: 1px solid var(--wb-line); border-radius: 999px; font-family: inherit; font-size: 13px; line-height: 20px; }
-.galleryControls button { border: 0; background: transparent; color: inherit; font-family: inherit; font-size: 26px; line-height: 28px; cursor: pointer; padding: 0 8px; }
-.galleryControls button:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; border-radius: 4px; }
+.galleryControls { position: fixed; z-index: 1001; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: var(--wb-space-6); align-items: center; padding: var(--wb-space-4) var(--wb-space-5); color: var(--wb-fg); background: var(--wb-surface); border: 1px solid var(--wb-line); border-radius: var(--wb-radius-pill); font-family: inherit; font-size: var(--wb-type-compact-size); line-height: 20px; }
+.galleryControls button { border: 0; background: transparent; color: inherit; font-family: inherit; font-size: var(--wb-icon-lg); line-height: 28px; cursor: pointer; padding: 0 var(--wb-space-4); }
+.galleryControls button:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; border-radius: var(--wb-radius-sm); }
 .previewDialog {
   box-sizing: border-box;
   width: min(90vw, 880px) !important;
@@ -69,8 +69,8 @@
   background: var(--wb-surface) !important;
   color: var(--wb-fg) !important;
   border: 1px solid var(--wb-line) !important;
-  border-radius: var(--wb-radius-overlay, 14px) !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28) !important;
+  border-radius: var(--wb-radius-overlay) !important;
+  box-shadow: var(--wb-shadow-dialog) !important;
 }
 
 .previewContainer {
@@ -86,8 +86,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: var(--wb-space-5);
+  padding: var(--wb-space-5) var(--wb-space-7);
   border-bottom: 1px solid var(--wb-line);
   background: var(--wb-surface);
   flex: none;
@@ -96,7 +96,7 @@
 .previewTitleRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--wb-space-4);
   min-width: 0;
   flex: 1;
 }
@@ -113,7 +113,7 @@
 
 .previewTitle {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--wb-type-body-size);
   font-weight: 600;
   line-height: 22px;
   color: var(--wb-fg);
@@ -125,12 +125,12 @@
 .previewBadge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 11px;
+  padding: var(--wb-space-2) var(--wb-space-4);
+  border-radius: var(--wb-radius-pill);
+  font-size: var(--wb-type-micro-size);
   font-weight: 500;
-  line-height: 16px;
-  background: var(--wb-accent-soft, rgba(47, 111, 237, 0.1));
+  line-height: 14px;
+  background: var(--wb-accent-soft);
   color: var(--wb-accent);
   flex: none;
 }
@@ -143,7 +143,7 @@
   height: 32px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--wb-radius-control, 6px);
+  border-radius: var(--wb-radius-control);
   background: transparent;
   color: var(--wb-fg-muted);
   cursor: pointer;
@@ -165,7 +165,7 @@
 .previewBody {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 20px 24px;
+  padding: var(--wb-space-6) var(--wb-space-7);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--wb-surface);
@@ -178,7 +178,7 @@
 .previewBody :global([class*='code']),
 .previewBody :global(pre),
 .previewBody :global(code) {
-  background: var(--wb-surface-raised, var(--wb-surface)) !important;
+  background: var(--wb-surface-raised) !important;
   color: var(--wb-fg) !important;
   border-color: var(--wb-line) !important;
 }
@@ -187,7 +187,7 @@
 .previewBody :global([class*='gutter']),
 .previewBody :global([class*='lineNumber']) {
   background: transparent !important;
-  color: var(--wb-fg-placeholder, var(--wb-fg-muted)) !important;
+  color: var(--wb-fg-placeholder) !important;
 }
 
 
@@ -216,8 +216,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 20px;
+  gap: var(--wb-space-5);
+  padding: var(--wb-space-5) var(--wb-space-7);
   border-top: 1px solid var(--wb-line);
   background: var(--wb-surface);
   flex: none;
@@ -226,15 +226,15 @@
 .previewFooterInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12px;
+  gap: var(--wb-space-5);
+  font-size: var(--wb-type-caption-size);
   color: var(--wb-fg-muted);
 }
 
 .previewDownloadLink {
   color: var(--wb-accent);
   text-decoration: none;
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
 }
 .previewDownloadLink:hover {
   text-decoration: underline;
@@ -244,13 +244,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 16px;
+  min-height: var(--wb-control-height-sm);
+  padding: var(--wb-space-3) var(--wb-space-6);
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-control, 6px);
+  border-radius: var(--wb-radius-control);
   background: var(--wb-surface);
   color: var(--wb-fg);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
   line-height: 18px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
@@ -268,14 +269,14 @@
 
 .pdfDialog { width: min(90vw, 880px); max-width: 90vw; }
 .textDialog { width: min(90vw, 880px); max-width: 90vw; }
-.textStatus { margin: 12px 0; color: var(--wb-fg-muted); font-size: var(--wb-type-compact-size); }
+.textStatus { margin: var(--wb-space-5) 0; color: var(--wb-fg-muted); font-size: var(--wb-type-compact-size); }
 .infoIcon {
   border: 0;
   background: transparent;
-  padding: 4px 2px;
+  padding: var(--wb-space-3) var(--wb-space-2);
   color: var(--wb-fg-muted);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
   line-height: 1;
   cursor: pointer;
   flex: none;
@@ -283,7 +284,7 @@
 .infoIcon:hover, .infoIcon[aria-describedby] { color: var(--wb-accent); }
 .infoIcon:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
 @media (max-width: 600px) {
-  .fileCard { gap: 8px; padding: 8px; }
+  .fileCard { gap: var(--wb-space-4); padding: var(--wb-space-4); }
   .fileIcon { display: none; }
 }
 
@@ -292,7 +293,7 @@
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-control, 6px);
+  border-radius: var(--wb-radius-control);
   background: var(--wb-surface);
   overflow: hidden;
   flex: none;
@@ -302,9 +303,9 @@
   border: 0;
   background: transparent;
   color: var(--wb-fg-muted);
-  padding: 3px 6px;
+  padding: var(--wb-space-2) var(--wb-space-4);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -332,7 +333,7 @@
 .cardActions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--wb-space-4);
   flex: none;
 }
 
@@ -363,7 +364,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 16px;
+  padding: var(--wb-space-6);
   box-sizing: border-box;
 }
 
@@ -372,8 +373,8 @@
   max-height: min(65vh, 520px);
   width: auto;
   height: auto;
-  border-radius: 8px;
-  background: #000;
+  border-radius: var(--wb-radius-lg);
+  background: var(--wb-media-bg);
   outline: none;
 }
 
@@ -382,7 +383,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 36px 16px;
+  padding: var(--wb-space-8) var(--wb-space-6);
   box-sizing: border-box;
 }
 
@@ -396,18 +397,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: var(--wb-space-7) var(--wb-space-6);
   text-align: center;
-  gap: 12px;
+  gap: var(--wb-space-5);
 }
 
 .attachmentBarWrapper {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--wb-space-4);
   width: min(100%, 780px);
   max-width: min(100%, 780px);
-  margin-top: 6px;
+  margin-top: var(--wb-space-4);
   container-type: inline-size;
 }
 /* wechat 下附件条与气泡上限统一，与 .msgBubble 一致。 */
@@ -418,16 +419,16 @@
 .attachmentBarToggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--wb-space-4);
   box-sizing: border-box;
   width: 100%;
-  padding: 6px 12px;
+  padding: var(--wb-space-4) var(--wb-space-5);
   border: 1px solid var(--wb-line);
-  border-radius: 8px;
+  border-radius: var(--wb-radius-lg);
   background: var(--wb-surface);
   color: var(--wb-fg);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--wb-type-compact-size);
   line-height: 20px;
   cursor: pointer;
   text-align: left;
@@ -447,7 +448,7 @@
 .attachmentBarTitleRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--wb-space-4);
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -465,24 +466,24 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  margin-left: 2px;
+  margin-left: var(--wb-space-2);
 }
 
 .attachmentBarAction {
   flex: none;
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   color: var(--wb-accent);
   white-space: nowrap;
-  margin-left: 8px;
+  margin-left: var(--wb-space-4);
 }
 
 .attachmentGrid {
   display: grid;
-  gap: 8px;
+  gap: var(--wb-space-4);
   width: 100%;
   box-sizing: border-box;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 4px;
+  margin-top: var(--wb-space-3);
 }
 
 .attachmentGrid[data-count='1'] {
@@ -538,8 +539,8 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 6px 8px;
-  gap: 6px;
+  padding: var(--wb-space-3) var(--wb-space-4);
+  gap: var(--wb-space-4);
 }
 
 .attachmentGrid .fileIcon {
@@ -547,12 +548,12 @@
 }
 
 .attachmentGrid .cardActions {
-  gap: 4px;
+  gap: var(--wb-space-3);
   flex: none;
 }
 
 .attachmentGrid .mainActionBtn {
-  padding: 3px 6px;
+  padding: var(--wb-space-2) var(--wb-space-4);
 }
 
 .attachmentGrid .video {
@@ -570,29 +571,29 @@
 .fileLinkWrapper {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
   vertical-align: middle;
 }
 
 .fileLinkError {
-  font-size: 11px;
-  color: var(--wb-danger, #e06c75);
-  margin-inline-start: 4px;
+  font-size: var(--wb-type-micro-size);
+  color: var(--wb-danger);
+  margin-inline-start: var(--wb-space-3);
   white-space: nowrap;
 }
 .fileLink {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 1px 6px;
-  margin: 1px 2px;
-  border: 1px solid var(--wb-line, rgba(127, 127, 127, 0.2));
-  border-radius: 6px;
-  background: var(--wb-surface-soft, rgba(127, 127, 127, 0.06));
+  gap: var(--wb-space-3);
+  padding: var(--wb-space-2) var(--wb-space-4);
+  margin: 0 var(--wb-space-2);
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-md);
+  background: var(--wb-surface-soft);
   color: var(--wb-fg);
   font: inherit;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: var(--wb-type-compact-size);
+  line-height: 18px;
   cursor: pointer;
   text-decoration: none;
   vertical-align: middle;

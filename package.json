@@ -7,7 +7,8 @@
     "build": "pnpm -r --workspace-concurrency=1 run build",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
-    "pack": "pnpm -r exec npm pack --dry-run"
+    "pack": "pnpm -r exec npm pack --dry-run",
+    "lint": "pnpm -r run lint"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "~4.0.4",

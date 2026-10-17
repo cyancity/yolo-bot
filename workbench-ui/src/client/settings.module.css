@@ -1,11 +1,11 @@
 /* Workbench settings tab ('settings.section' contribution) — the content
    column inside the DSH settings dialog. Reads the workbench tokens; the
    section root carries .tokens so it works in the dialog's own container. */
-.section { display: flex; flex-direction: column; gap: var(--wb-space-6, 24px); padding: var(--wb-space-5, 16px) var(--wb-space-6, 24px); overflow: auto; }
-.group { display: flex; flex-direction: column; gap: var(--wb-space-3, 8px); }
-.groupTitle { margin: 0; font-size: var(--wb-type-label-size, 14px); font-weight: 650; color: var(--wb-fg, #23231f); }
-.row { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5, 16px); line-height: 1.7; }
-.rowLabel { color: var(--wb-fg, #23231f); }
-.radioGroup { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: var(--wb-space-2, 6px); }
-.radioRow { display: flex; align-items: center; gap: var(--wb-space-3, 8px); line-height: 1.7; color: var(--wb-fg, #23231f); cursor: pointer; }
-.radioRow input { accent-color: var(--wb-accent, #5865f2); }
+.section { display: flex; flex-direction: column; gap: var(--wb-space-6); padding: var(--wb-space-5) var(--wb-space-6); overflow: auto; }
+.group { display: flex; flex-direction: column; gap: var(--wb-space-3); }
+.groupTitle { margin: 0; font-size: var(--wb-type-label-size); font-weight: 650; color: var(--wb-fg); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5); line-height: 1.7; }
+.rowLabel { color: var(--wb-fg); }
+.radioGroup { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: var(--wb-space-2); }
+.radioRow { display: flex; align-items: center; gap: var(--wb-space-3); line-height: 1.7; color: var(--wb-fg); cursor: pointer; }
+.radioRow input { accent-color: var(--wb-accent); }

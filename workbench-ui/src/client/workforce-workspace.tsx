@@ -154,8 +154,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             <span className={css.empSidebarTitle}>{WF.workspace.employeeListTitle(snapshot.employees.length)}</span>
             <button
               type="button"
-              className={css.empBtnAdd}
-              style={{ padding: '3px 10px', fontSize: 12 }}
+              className={`${css.empBtnAdd} ${css.empBtnAddCompact}`}
               onClick={() => selectEmployee('new')}
             >
               ＋ {WF.employeesPage.add}

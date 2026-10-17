@@ -10,7 +10,7 @@
   width: var(--sz);
   height: var(--sz);
   /* 外框形状随 preset：Discord 圆形，WeChat 4px 圆角矩形（D2 判据）。 */
-  border-radius: var(--wb-radius-avatar, 50%);
+  border-radius: var(--wb-radius-avatar);
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -27,11 +27,11 @@
   font-size: calc(var(--sz) * 0.42);
   font-weight: 700;
   border: 1px solid var(--wb-line-soft);
-  border-radius: var(--wb-radius-avatar, 50%);
+  border-radius: var(--wb-radius-avatar);
 }
 
 .avatarUser img {
-  border-radius: var(--wb-radius-avatar, 50%);
+  border-radius: var(--wb-radius-avatar);
 }
 
 /* 员工头像外壳 */
@@ -39,7 +39,7 @@
   position: relative;
   overflow: hidden;
   cursor: default;
-  border-radius: var(--wb-radius-avatar, 50%);
+  border-radius: var(--wb-radius-avatar);
   /* 默认琥珀配色兜底 */
   --bot-case: #FFAE38;
   --bot-border: #E08A00;
@@ -48,6 +48,11 @@
   --bot-screen: #131418;
   --bot-eye: #FF5459;
   --bot-scanline: rgba(255, 84, 89, 0.35);
+  /* 插画局部色：圆形白眼、终端字符流、自定义机身描边的加深底 */
+  --bot-eye-circle: #FFFFFF;
+  --bot-typing: #50FA7B; /* Dracula green：0101 与 CLI */
+  --bot-typing-hash: #FF79C6;
+  --bot-shade: #000000;
 }
 
 /* 5 种官方调色盘定义（高饱和实色、完全不透明、明度中偏亮，在深浅背景下一眼可辨）：
@@ -135,7 +140,7 @@
 /* 圆形风格只是形状差异：配色一律吃 data-palette（avatarColor 为空时已按 role/name
    落到 5 盘），不再有独立粉色兜底。白胶囊眼为 Grok 标志特征，所有圆形机身统一白眼。 */
 .avatarEmployee[data-avatar-style='circle'] .botEyeShape {
-  fill: var(--bot-eye-circle, #FFFFFF);
+  fill: var(--bot-eye-circle);
 }
 
 .avatarEmployee[data-avatar-style='terminal'] {
@@ -143,7 +148,7 @@
 }
 
 .avatarEmployee[data-avatar-style='circle'] {
-  border-radius: 50%;
+  border-radius: var(--wb-radius-dot);
   /* 圆形风格：用该配色的机身色填圆、白色胶囊眼（默认未选色机身见上方粉色默认组） */
 }
 
@@ -157,8 +162,8 @@
 /* 自定义色覆盖机身（自定义色仍只改机身，其余用 retro-cream） */
 .avatarEmployee[data-custom-color='true'] {
   --bot-case: var(--bot-case-custom);
-  --bot-border: color-mix(in srgb, var(--bot-case) 82%, #000);
-  --bot-case-shadow: color-mix(in srgb, var(--bot-case) 70%, #000);
+  --bot-border: color-mix(in srgb, var(--bot-case) 82%, var(--bot-shade));
+  --bot-case-shadow: color-mix(in srgb, var(--bot-case) 70%, var(--bot-shade));
 }
 
 /* 3D 舞台与分层容器：由 workforce-avatar-motion 引擎直接写 transform */
@@ -207,7 +212,8 @@
 }
 
 .typingRows text {
-  fill: #50FA7B; /* Dracula green：0101 与 CLI */
+  fill: var(--bot-typing);
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- SVG viewBox 单位，不是界面字号 */
   font-size: 6.6px;
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, "Courier New", monospace;
@@ -216,5 +222,5 @@
 }
 
 .typingRows[data-variant='hash'] text {
-  fill: var(--hash-grad-url, #FF79C6);
+  fill: var(--hash-grad-url, var(--bot-typing-hash));
 }

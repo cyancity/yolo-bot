@@ -11,12 +11,12 @@
 /* 侧栏顶部标题行：基础规则 .workspaceBrand 在 workforce.module.css，那里没有
    display:flex，导致 .brandNameSpan 的 flex:1 不生效。这里补上 flex 行布局，
    并把横向内边距对齐下方「频道」行的
-   channelScroll(8px) + topActionRow(10px) = 18px。 */
+   channelScroll(8px) + topActionRow(8px) = 16px。 */
 :global([data-workforce-sidebar]) :global([class*="workspaceBrand"]) {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 18px 18px 14px;
+  gap: var(--wb-space-4);
+  padding: var(--wb-space-6);
 }
 
 
@@ -24,13 +24,13 @@
 .dmSectionHeadBtn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--wb-space-3);
   width: 100%;
-  padding: 8px 10px 4px;
+  padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-3);
   border: none;
   background: transparent;
   color: var(--wb-fg-muted);
-  font-size: 12px;
+  font-size: var(--wb-type-caption-size);
   font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
@@ -39,11 +39,11 @@
 }
 
 .dmSectionHeadBtn:hover {
-  color: var(--wb-fg, #2c2c28);
+  color: var(--wb-fg);
 }
 
 .dmSectionHeadBtn:focus-visible {
-  outline: 2px solid var(--wb-accent, #2f6fed);
+  outline: 2px solid var(--wb-accent);
   outline-offset: 1px;
 }
 
@@ -53,7 +53,7 @@
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--wb-fg-muted, #8a8a80);
+  color: var(--wb-fg-muted);
   transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -76,7 +76,7 @@
 /* 「频道」与「私信」两区之间的视觉分隔线 */
 .sectionDivider {
   height: 1px;
-  margin: 8px 10px;
+  margin: var(--wb-space-4);
   background: var(--wb-line);
   flex: none;
 }
@@ -110,7 +110,7 @@
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--wb-fg-muted, #949ba4);
+  color: var(--wb-fg-muted);
   opacity: 0.8;
 }
 
@@ -119,7 +119,7 @@
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--wb-line, rgba(255, 255, 255, 0.08));
+  border-top: 1px solid var(--wb-line);
   background: var(--wb-nav);
 }
 
@@ -131,18 +131,18 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--wb-radius-dot);
   cursor: pointer;
   padding: 0;
   overflow: hidden;
 }
 
 .railAvatarBtn:hover {
-  background: var(--wb-hover, rgba(255, 255, 255, 0.08));
+  background: var(--wb-hover);
 }
 
 .railAvatarBtn:focus-visible {
-  outline: 2px solid var(--wb-accent, #5865f2);
+  outline: 2px solid var(--wb-accent);
   outline-offset: 2px;
 }
 
