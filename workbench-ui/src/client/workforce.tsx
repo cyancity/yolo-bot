@@ -1797,7 +1797,9 @@ export function WorkforceComposer(props: ComposerProps) {
           <div className={css.contextRibbon}>
             <div className={css.contextRibbonPill}>
               <span className={css.contextRibbonLabel}>{WF.taskStatus.continueLabel}</span>
-              <span className={css.contextRibbonIcon}>↩</span>
+              <span className={css.contextRibbonIcon} aria-hidden="true">
+                <Icon name="reply" width={13} height={13} />
+              </span>
               <span className={css.contextRibbonTitle} title={continuationPrompt}>
                 {continuationFirstLine}
               </span>
@@ -1817,9 +1819,7 @@ export function WorkforceComposer(props: ComposerProps) {
         ) : (
           <div className={css.contextRibbonNew}>
             <div className={css.contextRibbonPillNew}>
-              <span className={css.contextRibbonIcon}>
-                <Icon name="plus" width={13} height={13} />
-              </span>
+              <span className={css.contextRibbonIcon}>✨</span>
               <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
             </div>
             <button
@@ -2335,7 +2335,6 @@ function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: 
       </div>
       <div className={css.emptyCardMeta}>
         <h3 className={css.emptyCardName}>{employee?.name ?? (channelTitle ? `# ${channelTitle}` : WF.brand)}</h3>
-        {employee?.persona && <p className={css.emptyCardPersona}>{employee.persona}</p>}
       </div>
       {starters.length > 0 && (
         <div className={css.emptyCardStarters}>

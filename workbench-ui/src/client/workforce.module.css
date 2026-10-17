@@ -285,13 +285,6 @@
 }
 
 
-.emptyCardPersona {
-  margin: var(--wb-space-2) 0 0;
-  font-size: var(--wb-type-compact-size);
-  color: var(--wb-fg-muted);
-  line-height: 1.5;
-  max-width: 440px;
-}
 
 .emptyCardStarters {
   display: flex;
@@ -822,8 +815,13 @@ div.msgNoticeLine { cursor: default; }
 }
 
 .contextRibbonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--wb-type-compact-size);
   color: var(--wb-accent);
+  line-height: 1;
+  flex: none;
 }
 
 .contextRibbonPillNew .contextRibbonIcon {
