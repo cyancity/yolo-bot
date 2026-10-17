@@ -5,6 +5,7 @@
  * - 支持置顶频道与标记已读。
  */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { HostChannel, HostChannelGroup } from './workforce-api.ts'
 import type { Channel } from './workforce-types.ts'
 import { ConfirmDialog, WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
@@ -730,7 +731,7 @@ function CreateChannelModal({
     void onSubmit(trimmed, groupId || undefined)
   }
 
-  return (
+  const modal = (
     <div className={css.dialogBackdrop} onClick={onClose}>
       <div className={css.dialogCard} role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <h3 className={css.dialogTitle}>{WF.channelUI.createChannel}</h3>
@@ -770,6 +771,7 @@ function CreateChannelModal({
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
 
 /** 单行文本重命名/输入模态弹窗；allowEmpty 时留空也提交 ''（由调用方决定空语义）。 */
@@ -802,7 +804,7 @@ function RenameModal({
     try { await onSubmit(trimmed) } finally { setBusy(false) }
   }
 
-  return (
+  const modal = (
     <div className={css.dialogBackdrop} onClick={onClose}>
       <div className={css.dialogCard} role="dialog" aria-modal="true"
         onClick={e => e.stopPropagation()}
@@ -828,4 +830,5 @@ function RenameModal({
       </div>
     </div>
   )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
