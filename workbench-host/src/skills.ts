@@ -7,7 +7,6 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { packagedPath } from './packaged.ts'
 import { WorkforceError } from './workforce/types.ts'
 
 const BUNDLED_SKILL_RANK = 600
@@ -21,7 +20,6 @@ export interface SkillCandidateLike {
   invocation: { modelInvocable: boolean; userInvocable: boolean }
   provider: string
   source: 'bundled'
-  resourceBase: { kind: 'directory'; path: string }
   rank: number
   locator: string
 }
@@ -36,7 +34,6 @@ export interface SkillsService {
       invocation: SkillCandidateLike['invocation']
       provider: string
       source: 'bundled'
-      resourceBase: SkillCandidateLike['resourceBase']
       content: string
     } | undefined>
   }): unknown
@@ -86,7 +83,6 @@ export async function scanSkillFiles(dir: string, depth = 3): Promise<string[]> 
 async function loadCandidates(): Promise<SkillCandidateLike[]> {
   const out: SkillCandidateLike[] = []
   for (const file of await scanSkillFiles(SKILLS_DIR)) {
-    const dir = join(file, '..')
     const meta = parseFrontmatter(await readFile(file, 'utf8'))
     if (!meta.name) continue
     out.push({
@@ -95,10 +91,7 @@ async function loadCandidates(): Promise<SkillCandidateLike[]> {
       invocation: { modelInvocable: true, userInvocable: true },
       provider: PROVIDER_NAME,
       source: 'bundled',
-      // The renderer hands resourceBase to the model's filesystem tools;
-      // under app.asar those tools (rg-backed glob/grep) cannot see the
-      // archive, so point at the asarUnpack'd mirror in packaged builds.
-      resourceBase: { kind: 'directory', path: packagedPath(dir) },
+      // Bundled instructions are self-contained; package-manager files need no employee filesystem projection.
       rank: BUNDLED_SKILL_RANK,
       locator: file,
     })
@@ -125,7 +118,6 @@ export function registerSkills(ctx: { get(name: 'skills'): SkillsService | undef
           invocation: candidate.invocation,
           provider: candidate.provider,
           source: candidate.source,
-          resourceBase: candidate.resourceBase,
           content,
         }
       } catch {

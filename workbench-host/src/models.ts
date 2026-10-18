@@ -284,7 +284,7 @@ export function createModelsHandler(deps: { get: Get }, admit: AdmitFn, fallback
           const { provider, ref } = apikeyTarget(get, input)
           const value = key(input)
           try { await credentials.set(ref, value) }
-          catch { throw httpError(503, 'unavailable', 'Key 保存失败：若有同名环境变量请先移除，再重试') }
+          catch { throw httpError(503, 'unavailable', 'Key 保存失败，请重试') }
           return ok(res, { provider, configured: (await describeCredential(get, ref)).configured })
         }
         if (method === 'DELETE') {

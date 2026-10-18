@@ -15,7 +15,7 @@ import { WorkforceQuestionCard } from './workforce-question-card.tsx'
 import type { Employee, SkillSummary, Task, WorkforceActivity, WorkforceMessage, WorkforceSkillDraft, WorkforceSnapshot } from './workforce-types.ts'
 import type { HostChannel } from './workforce-api.ts'
 import type { PendingReply, WorkforceSource } from './workforce-source.ts'
-import { channelStream, replyGroups, threadTask, threadView, visibleReplyCounts } from './workforce-source.ts'
+import { channelStream, isLeaderNoReplyDraft, mentionsEveryone, replyGroups, threadTask, threadView, visibleReplyCounts } from './workforce-source.ts'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { useWorkforcePrefs, type AvatarStyle, type ReplyGrouping, type TypingEffect } from './workforce-prefs.ts'
@@ -426,10 +426,17 @@ function resolveSkeletons({
   const isPending = pendingSend !== undefined
   const isRunning = threadStatus === 'running'
   if (isPending || isRunning) {
-    // 每位收件人一条骨架；已给出可见回复的收件人不再挂骨架。
-    const mentioned = pendingSend === undefined ? [] : pendingSend.recipientIds
+    // 每位收件人一条骨架；已给出可见回复的收件人不再挂骨架。投递完成后仍按最近一条人类消息的收件人算，
+    // 单独 @ 某位员工时不回落到任务负责人。
+    let latestUser: WorkforceMessage | undefined
+    for (let index = messages.length - 1; index >= 0 && latestUser === undefined; index--) {
+      if (messages[index]!.role === 'user') latestUser = messages[index]
+    }
+    const mentioned = (pendingSend?.recipientIds ?? latestUser?.recipientIds ?? [])
       .map(id => employees.find(employee => employee.id === id))
       .filter((employee): employee is Employee => employee !== undefined)
+    // 收件人不详而这一轮已有员工开口（正在输入或已回复），说明负责人不是这一轮的接收方，不再补负责人骨架。
+    if (mentioned.length === 0 && hasAgentReplyToLatestUserMessage(messages)) return []
     const targets = (mentioned.length > 0 ? mentioned : fallbackRecipient === undefined ? [] : [fallbackRecipient])
       .filter(employee => !hasAgentReplyToLatestUserMessage(messages, employee.id))
     if (targets.length > 0) return targets.map(employee => ({ threadId, employee }))
@@ -502,6 +509,8 @@ function processMessagesForDisplay(
   }
 
   for (const message of messages) {
+    // 负责人核对后无需补充时只输出约定标记，宿主落盘后不再投影；流式草稿阶段同样不出气泡。
+    if (message.role === 'agent' && isLeaderNoReplyDraft(message)) continue
     if (message.role === 'system') {
       // tip 行（如「已中断 · 回复可继续」）不是聊天内容：居中纯文本，无状态、不挂载到任何消息。
       if (message.tip === true) {
@@ -2599,6 +2608,23 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
     const set = new Set(memberIds)
     return employees.filter(employee => set.has(employee.id))
   }, [surface, snapshot.channels, employees])
+  // 同一句人类消息发给 ≥3 位员工（频道 @所有人 或多 @）时，这一轮从发出起就合成一张组卡：
+  // 默认每人两行摘要，点开右侧预览看全文；两位及以下保持普通气泡。
+  const groups = useMemo(() => {
+    const memberIds = mentionable.map(employee => employee.id)
+    return replyGroups(messages, {
+      order: employees.map(employee => employee.id),
+      names: new Map(employees.map(employee => [employee.id, employee.name])),
+      recipients: parent => parent.recipientIds !== undefined && parent.recipientIds.length > 0
+        ? parent.recipientIds
+        : surface.kind === 'channel' && mentionsEveryone(parent.text) ? memberIds : undefined,
+    })
+  }, [messages, employees, mentionable, surface.kind])
+  const groupOfMessage = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const group of groups.values()) for (const member of group.members) map.set(member.message.id, group.parentId)
+    return map
+  }, [groups])
 
   useEffect(() => {
     if (activeThreadId) {
@@ -2623,7 +2649,10 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
       threadStatus: thread.kind === 'channel' ? undefined : view.status,
       pendingSend: pendingSendFor(view.list), fallbackRecipient: recipient,
     })
-  }), [visibleThreads, snapshot, employees, pendingReplies])
+  // 进行中的组卡已给每位收件人留了成员行，组内员工不再另挂骨架气泡。
+  }).filter(item => ![...groups.values()].some(group => group.live
+    && group.members.some(member => member.employeeId === item.employee.id && member.message.threadId === item.threadId))),
+  [visibleThreads, snapshot, employees, pendingReplies, groups])
   const footers = useMemo(() => taskFooterTargets(snapshot.tasks.filter(task => surface.kind === 'channel'
     ? task.channelId === surface.id : task.threadId === surface.threadId), displayItems, skeletons),
   [snapshot.tasks, surface, displayItems, skeletons])
@@ -2668,14 +2697,6 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
     return roots
   }, [messages])
   const replies = useMemo(() => visibleReplyCounts(messages), [messages])
-  // 同一句人类消息的多条员工回复（频道 @所有人 时每人各回一条）合成一张组卡：
-  // 默认每人两行摘要，点开右侧预览看全文，不再让三条长回复各占一整屏。
-  const groups = useMemo(() => replyGroups(messages, employees.map(e => e.id)), [messages, employees])
-  const groupOfMessage = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const group of groups.values()) for (const member of group.members) map.set(member.message.id, group.parentId)
-    return map
-  }, [groups])
   // 手动展开/收起：默认态由偏好决定，用户这一次的点击优先。
   const [toggledGroups, setToggledGroups] = useState<ReadonlySet<string>>(() => new Set())
   const [previewTarget, setPreviewTarget] = useState<{ readonly groupId: string; readonly messageId: string } | undefined>()

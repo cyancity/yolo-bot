@@ -1,10 +1,11 @@
-// Vendored from deepseek-harness @ dsh-v0.2.0-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
 // (scripts/bundle-input-isolation.ts); sync on dsh pin bump.
 /** Experimental ownership of the actual filesystem and package inputs supplied to a bundler. */
 
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { hasExperimentalPackageReference, isExperimentalPackageName } from './experimental-package-policy.ts'
 
 /** Package identities are cached only within one build. */
 export class BundleInputIsolation {
@@ -37,7 +38,7 @@ export class BundleInputIsolation {
   }
 
   private checkInput(id: string, allowMissing: boolean): void {
-    if (/(?:^|[/:\u0000])@deepseek-ai\/dsh-experimental-[^/?#]+/.test(id)) {
+    if (hasExperimentalPackageReference(id)) {
       throw new Error(`${this.label}: experimental input ${id}`)
     }
     const file = physicalBundleInput(id)
@@ -56,7 +57,7 @@ export class BundleInputIsolation {
     const canonical = resolve(realpathSync(existing), relative(existing, file))
     if (canonical !== file) this.checkInput(canonical, allowMissing)
     const name = this.packageName(dirname(canonical))
-    if (name?.startsWith('@deepseek-ai/dsh-experimental-')) {
+    if (name !== undefined && isExperimentalPackageName(name)) {
       throw new Error(`${this.label}: ${id} belongs to experimental package ${name}`)
     }
   }

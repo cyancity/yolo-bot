@@ -12,7 +12,7 @@ yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信
 
 ## 依赖与构建
 
-- `@deepseek-ai/*` 钉 `0.2.0-rc.2`（`dsh-v0.2.0-rc.2`，pin `639ed015`）；Cordis `~4.0.4`、schemastery `~3.18.4`。
+- `@deepseek-ai/*` 钉 `0.2.1-rc.2`（`dsh-v0.2.1-rc.2`，pin `687f282e86`）；Cordis `~4.0.5`、schemastery `~3.18.4`。
 - `build-support/` 是 vendored clientBundle preset；升级钉版时同步文件头标明的来源。`entries.ts` / `system.ts` 是 type-only 构建输入。
 - UI 的 `@deepseek-ai/dsh-llm-retry` 与 `workforce-live.ts` 顶部 type-only import 合并 retry 事件到 SessionEvent union，不删除。
 - `workbench-ui/tests/vendor/session-events.ts` 是上游 events.ts 的单文件副本；上游 npm 不发布源码，升级钉版时同步。
@@ -30,7 +30,7 @@ yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信
 
 - 浏览器开发使用 `pnpm dev`，默认 `http://127.0.0.1:3099`，可用 `--port` 改端口。启动器用精确钉版的官方 DSH CLI，把两包链接到当前工作树，监听构建并交给原生 HMR 更新。只修改启动命令所属工作树的代码才会更新该实例。
 - 开发 profile、模型设置、员工、频道与会话持久保存在当前工作树 `tmp/dev-web/`，与 Release 分开；`instance.json` 标明源码位置与本次进程，`access.json` 是受限的本机登录入口，不打印或提交。宿主用户技能只读发现，技能 CRUD 仍在开发 home。不要清空开发数据来处理普通 UI 问题，也不要因此重启或覆盖 Release。
-- 官方安装支持包来源、tgz 绝对路径和 git tag；peer 为精确 `0.2.0-rc.2`。跨版本宿主会进行兼容检查。
+- 官方安装支持包来源、tgz 绝对路径和 git tag；peer 为精确 `0.2.1-rc.2`。跨版本宿主会进行兼容检查。
 - 模型由官方已注册 provider 提供，默认选择与凭据由宿主管理；核心不建立第二套账户、模型目录或凭据库。
 - 技能来源继续使用官方 skills registry；用户技能 CRUD 限 user root，并进行 canonical 路径检查；扩展 provider 独立管理其资源和启停。
 - 维护门纳入核心和扩展 participant。扩展写入、安装、任务恢复都必须参与 busy 观察，备份与卸载不能绕过门。

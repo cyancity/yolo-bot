@@ -25,6 +25,7 @@ beforeEach(async () => {
     agent.ctx.on = (name: string, fn: any) => agent.hooks.set(name, [...(agent.hooks.get(name) ?? []), fn])
     agent.fire = (name: string, request: any) => { const list = agent.hooks.get(name) ?? []; let index = 0; const run = (): Promise<unknown> => (list[index++]?.(request, run) ?? Promise.resolve('delegated')); return run() }
     agent.followup = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextTurn.push(message); logs.set(id, [{ type: 'agent/inbox/spliced', seq: 0, time: 1, data: { inserted: [message] } }, { type: 'turn/start', seq: 1, time: 2, data: {} }]) })
+    agent.steer = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextStep.push(message); logs.set(id, [...(logs.get(id) ?? []), { type: 'agent/inbox/spliced', seq: logs.get(id)?.length ?? 0, time: 3, data: { target: 'next-step', inserted: [message] } }]) })
     agent.cancel = vi.fn(() => { agent.status = 'idle'; agent.inbox.nextTurn = []; agent.inbox.nextStep = []; logs.set(id, end('aborted')) })
     agents.set(id, agent); if (!logs.has(id)) logs.set(id, [])
     return { agent, dispose: vi.fn(async () => { agents.delete(id) }) }
@@ -34,9 +35,9 @@ beforeEach(async () => {
     agents: { get: (id: string) => agents.get(id), create: vi.fn(make), resume: vi.fn(make) },
     sessionQuery: { observeSession: vi.fn(async (id: string) => { if (!logs.has(id)) throw missing(); return { header: headers.get(id), events: [...logs.get(id)!], [Symbol.dispose]: () => {} } }) },
     subagents: {
-      startContinuable: vi.fn(async (spec: { childId: string; cwd?: string; request: { parent: { session: { header: { cwd: string } } } } }) => { headers.set(spec.childId, { id: spec.childId, cwd: spec.cwd ?? spec.request.parent.session.header.cwd }); logs.set(spec.childId, end()); return { childId: spec.childId, messageId: 'initial-child-message' } }),
+      startActivation: vi.fn(async (spec: { childId: string; delivery: 'parent'; request: { cwd?: string; parent: { session: { header: { cwd: string } } } } }) => { headers.set(spec.childId, { id: spec.childId, cwd: spec.request.cwd ?? spec.request.parent.session.header.cwd }); logs.set(spec.childId, end()); return { childId: spec.childId, messageId: 'initial-child-message', result: Promise.resolve({ output: [], stopReason: 'completed' }), dispose: async () => {} } }),
       sendMessage: vi.fn(async () => 'delegated-message'), prompt: vi.fn(async () => ({ messageId: 'human-child-message' })),
-      drainContinuableChildren: vi.fn(async () => {}), drainContinuableDescendants: vi.fn(async () => {}),
+      drainChildren: vi.fn(async () => {}), drainDescendants: vi.fn(async () => {}),
     },
   }
   runtime = new WorkforceRuntime(store, name => services[name])

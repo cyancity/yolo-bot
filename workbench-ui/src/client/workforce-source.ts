@@ -1065,15 +1065,36 @@ export interface ReplyGroup {
   readonly parentId: string
   readonly members: readonly ReplyGroupMember[]
   readonly running: number
+  /** 父消息是所在 thread 最新一条人类消息：这一轮还在进行，未开口的收件人以占位成员留在组里。 */
+  readonly live: boolean
+}
+
+/** 一轮回复达到这么多位员工才合成组卡；两位及以下保持普通气泡。 */
+export const REPLY_GROUP_MIN_MEMBERS = 3
+
+/** 人类消息正文是否 @所有人 / @everyone（与输入框展开收件人的口径一致）。 */
+export function mentionsEveryone(text: string): boolean {
+  return /@(?:所有人|everyone)(?=$|[\s,，。;；:：!！?？()（）])/i.test(text)
+}
+
+export interface ReplyGroupOptions {
+  /** 员工 id 顺序，组内成员按它排列。 */
+  readonly order?: readonly string[] | undefined
+  /** 员工显示名，用于未开口收件人的占位成员。 */
+  readonly names?: ReadonlyMap<string, string> | undefined
+  /** 这一轮的收件人；发出时就已确定，达到人数门槛即从一开始成组。 */
+  readonly recipients?: ((parent: WorkforceMessage) => readonly string[] | undefined) | undefined
 }
 
 /**
  * 按 replyTo 聚合「同一句人类消息的多条员工回复」：只收可见员工正文
- * （无工具、非过程文字、非提问/审批、非空），同一父 ≥2 条才成组。
+ * （无工具、非过程文字、非提问/审批；空正文只收仍在生成的草稿）。
  * 已结束的员工正文仍然只按 replyTo 归组；没有 replyTo 的 running === true 员工正文
  * 归到同一 thread 里 ts 不晚于它的最近一条人类消息。父消息须是同 thread 的人类行。
+ * 收件人或实际开口的员工合计 ≥ REPLY_GROUP_MIN_MEMBERS 位才成组；收件人已知时发出即成组，
+ * 本轮未开口的收件人补成占位成员，避免先出一排各自的气泡再收敛成组卡。
  */
-export function replyGroups(messages: readonly WorkforceMessage[], order?: readonly string[]): ReadonlyMap<string, ReplyGroup> {
+export function replyGroups(messages: readonly WorkforceMessage[], options: ReplyGroupOptions = {}): ReadonlyMap<string, ReplyGroup> {
   const humans = new Map<string, WorkforceMessage>()
   const humansByThread = new Map<string, WorkforceMessage[]>()
   for (const message of messages) {
@@ -1093,7 +1114,8 @@ export function replyGroups(messages: readonly WorkforceMessage[], order?: reado
     if (message.role !== 'agent') continue
     if (message.tool !== undefined || message.intermediate === true || message.tip === true) continue
     if (message.question !== undefined || message.approval !== undefined) continue
-    if (message.text.trim() === '') continue
+    if (message.text.trim() === '' && message.running !== true) continue
+    if (isLeaderNoReplyDraft(message)) continue
 
     let parentId: string | undefined = undefined
     if (message.replyTo !== undefined) {
@@ -1120,13 +1142,33 @@ export function replyGroups(messages: readonly WorkforceMessage[], order?: reado
     if (bucket === undefined) grouped.set(parentId, [message])
     else bucket.push(message)
   }
-  const orderMap = order !== undefined && order.length > 0
-    ? new Map(order.map((id, index) => [id, index]))
+  const orderMap = options.order !== undefined && options.order.length > 0
+    ? new Map(options.order.map((id, index) => [id, index]))
     : undefined
   const result = new Map<string, ReplyGroup>()
-  for (const [parentId, bucket] of grouped) {
-    if (bucket.length < 2) continue
-    const members = [...bucket].sort((a, b) => {
+  for (const parent of humans.values()) {
+    const bucket = grouped.get(parent.id) ?? []
+    const recipients = options.recipients?.(parent) ?? []
+    const speakers = new Set([...bucket.map(message => message.senderId), ...recipients])
+    if (speakers.size < REPLY_GROUP_MIN_MEMBERS) continue
+    const thread = humansByThread.get(parent.threadId) ?? []
+    const live = thread[thread.length - 1]?.id === parent.id
+    const replied = new Set(bucket.map(message => message.senderId))
+    // 这一轮谁要回复在发出时就确定了：未开口的收件人先以占位成员进组，开口后由真实正文替换。
+    const placeholders: WorkforceMessage[] = live
+      ? [...new Set(recipients)].filter(id => !replied.has(id)).map(id => ({
+        id: `pending:${parent.id}:${id}`,
+        threadId: parent.threadId,
+        ts: parent.ts,
+        role: 'agent',
+        senderId: id,
+        senderName: options.names?.get(id) ?? id,
+        text: '',
+        running: true,
+        replyTo: parent.id,
+      }))
+      : []
+    const members = [...bucket, ...placeholders].sort((a, b) => {
       if (orderMap !== undefined) {
         const idxA = orderMap.get(a.senderId) ?? Number.MAX_SAFE_INTEGER
         const idxB = orderMap.get(b.senderId) ?? Number.MAX_SAFE_INTEGER
@@ -1140,7 +1182,7 @@ export function replyGroups(messages: readonly WorkforceMessage[], order?: reado
       employeeId: message.senderId,
       running: message.running === true || message.delivery === 'sending',
     }))
-    result.set(parentId, { parentId, members, running: members.filter(member => member.running).length })
+    result.set(parent.id, { parentId: parent.id, members, running: members.filter(member => member.running).length, live })
   }
   return result
 }
@@ -1148,4 +1190,14 @@ export function replyGroups(messages: readonly WorkforceMessage[], order?: reado
 function mergedReply(messages: readonly WorkforceMessage[], user: WorkforceMessage, employeeId: string): boolean {
   return messages.some(message => message.role === 'agent' && message.senderId === employeeId
     && message.ts >= user.ts && (message.text.trim() !== '' || message.tool !== undefined))
+}
+
+/** 负责人核对员工结果后无需补充时的约定输出（与 host LEADER_NO_REPLY 一致）。 */
+export const LEADER_NO_REPLY = '[无需补充]'
+
+/** 负责人约定的「无需补充」标记或其流式前缀：不作为聊天气泡展示。 */
+export function isLeaderNoReplyDraft(message: WorkforceMessage): boolean {
+  const text = message.text.trim()
+  if (text === LEADER_NO_REPLY) return true
+  return message.running === true && text !== '' && LEADER_NO_REPLY.startsWith(text)
 }

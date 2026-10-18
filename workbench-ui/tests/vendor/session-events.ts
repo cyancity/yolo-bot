@@ -1,6 +1,6 @@
-// Vendored from @deepseek-ai/dsh-api-session-controller@0.2.0-rc.2
-// (src/client/contract/events.ts — upstream ships only lib/types/* JS which is
-// unreachable through the package exports map). Sync on dsh pin bump.
+// Vendored from @deepseek-ai/dsh-api-session-controller@0.2.1-rc.2
+// (src/client/contract/events.ts; the published package omits source files).
+// Sync on dsh pin bump.
 /** Observable contiguous Session event window consumed by domain assemblers. */
 import { notifySubscribers, type ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type { LlmAttemptId, StreamChunk } from '@deepseek-ai/dsh-llm'

@@ -7,7 +7,7 @@
 在频道里说一句任务，负责人拆解、派给员工执行，最后把成果交到你手上。<br>
 员工各自挂模型和 skill，有记忆，能被 @、能私信，干完的流程还能沉淀成新技能。
 
-[![Release](https://img.shields.io/github/v/release/cyancity/yolo-bot?include_prereleases&label=release&color=111111)](https://github.com/cyancity/yolo-bot/releases) [![DSH](https://img.shields.io/badge/DSH-0.2.0--rc.2-111111)](https://github.com/deepseek-ai/deepseek-harness) [![License](https://img.shields.io/badge/license-MIT-111111)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/cyancity/yolo-bot?include_prereleases&label=release&color=111111)](https://github.com/cyancity/yolo-bot/releases) [![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.2-111111)](https://github.com/deepseek-ai/deepseek-harness) [![License](https://img.shields.io/badge/license-MIT-111111)](LICENSE)
 
 **[下载](https://github.com/cyancity/yolo-bot/releases)** &nbsp;·&nbsp; **[快速开始](#快速开始)** &nbsp;·&nbsp; **[功能](#功能)** &nbsp;·&nbsp; **[扩展 API](docs/extension-api.md)**
 
@@ -34,7 +34,7 @@ DSH 默认是一个人对一个会话。任务一复杂，你就得自己拆步�
 
 ## 快速开始
 
-先安装 DSH 并至少配置一个模型。yolo-bot 直接使用 DSH 里注册的模型和凭据，不另建账户。插件要求 DSH `0.2.0-rc.2`。
+先安装 DSH 并至少配置一个模型。yolo-bot 直接使用 DSH 里注册的模型和凭据，不另建账户。插件要求 DSH `0.2.1-rc.2`。
 
 **1. 下载。** 从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载两个包，两个都要装：
 
@@ -50,12 +50,14 @@ DSH 桌面版：侧栏 **插件** → **添加插件**，在地址栏填 `.tgz` 
 DSH Web 版（需要 Node.js 22.19 以上）：
 
 ```sh
-npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add <yolo-bot.tgz 绝对路径>
-npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add <yolo-bot-ui.tgz 绝对路径>
-npx @deepseek-ai/dsh@0.2.0-rc.2 web
+npx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add <yolo-bot.tgz 绝对路径>
+npx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add <yolo-bot-ui.tgz 绝对路径>
+npx @deepseek-ai/dsh@0.2.1-rc.2 web
 ```
 
-命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
+命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
+
+升级 DSH 或拉取新源码都不会更新已装的插件。更新时把后端包和界面包换成同一版本一起装。
 
 **3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析、执行。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
 
@@ -162,6 +164,8 @@ yolo-bot 核心只提供通用的协作能力，不附带行业目录或制作�
 |---|---|---|
 | `@cyancity/yolo-bot` | [`workbench-host`](workbench-host) | Cordis host 插件 |
 | `@cyancity/yolo-bot-ui` | [`workbench-ui`](workbench-ui) | `dsh.client` web 插件 |
+
+环境要求 Node.js `^22.19.0 || >=24.0.0`、pnpm >= 9，与 DSH 宿主一致。
 
 ```sh
 pnpm install

@@ -16,6 +16,7 @@ import { createWorkforceBackup } from './backup.ts'
 /** Explicit core handler dependencies; optional native surfaces retain standalone test seams. */
 export interface WorkforceHandlerDeps {
   skills?: SkillsService
+  skillScope?: () => Promise<({ key: object } & AsyncDisposable) | undefined>
   mcp?: EmployeeMcp
   templates?: WorkbenchTemplateService
   userSkills?: WorkbenchSkills
@@ -269,13 +270,13 @@ export function createWorkforceHandler(runtime: WorkforceRuntime, admit: AdmitFn
       }
       if (seg[0] === 'skills' && seg.length === 1 && method === 'GET') {
         const skills = deps.skills as SkillListLike | undefined
-        const list = skills && typeof skills.list === 'function' ? await skills.list({}).catch(() => []) : []
-        // web 档案禁用宿主级 skill-filesystem，文件系统 provider 挂在各 preset 层；
-        // 不带 cwd/scope 的原生 list 只见全局层（bundled/runtime）。用户根技能
-        // （安装的 workflow）经用户技能服务并入，原生同名优先，保持目录完整。
-        const userSkills = await (deps.userSkills?.list() ?? runtime.listUserSkills()).catch(() => [])
-        const names = new Set(list.flatMap(item => { const name = (item as { name?: unknown })?.name; return typeof name === 'string' ? [name] : [] }))
-        return ok(res, { skills: [...list, ...userSkills.filter(item => !names.has(item.name))] })
+        const scope = await deps.skillScope?.()
+        try {
+          const list = skills && typeof skills.list === 'function' ? await skills.list({ scope: scope?.key }) : []
+          const userSkills = await (deps.userSkills?.list() ?? runtime.listUserSkills()).catch(() => [])
+          const names = new Set(list.flatMap(item => { const name = (item as { name?: unknown })?.name; return typeof name === 'string' ? [name] : [] }))
+          return ok(res, { skills: [...list, ...userSkills.filter(item => !names.has(item.name))] })
+        } finally { await scope?.[Symbol.asyncDispose]() }
       }
       if (seg[0] === 'mcp-servers') {
         if (seg.length === 1 && method === 'GET') {
