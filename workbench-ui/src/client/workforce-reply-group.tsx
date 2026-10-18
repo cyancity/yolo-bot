@@ -35,7 +35,8 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
   const expanded = mode === 'expanded'
   const collapsed = mode === 'collapsed'
   const runningCount = group.members.filter(member => {
-    const activity = activities.find(item => item.employeeId === member.employeeId)
+    // 员工的实时活动只属于进行中的这一轮，旧组卡不跟着亮「正在回复」。
+    const activity = group.live ? activities.find(item => item.employeeId === member.employeeId) : undefined
     return member.running || activity !== undefined
   }).length
   const isRunning = runningCount > 0
@@ -67,7 +68,7 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
           {group.members.map(member => {
             const message = member.message
             const employee = employees.find(item => item.id === member.employeeId)
-            const activity = activities.find(item => item.employeeId === member.employeeId)
+            const activity = group.live ? activities.find(item => item.employeeId === member.employeeId) : undefined
             const running = member.running || activity !== undefined
             const excerpt = replyExcerpt(message.text)
             return (
@@ -98,7 +99,7 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
                       </span>
                     </span>
                     <span className={css.memberExcerpt} data-running={running}>
-                      {excerpt === '' ? WF.replyGroup.emptyExcerpt : excerpt}
+                      {excerpt !== '' ? excerpt : running ? (activity?.state === 'typing' ? WF.skeleton.typing : WF.skeleton.thinking) : WF.replyGroup.emptyExcerpt}
                     </span>
                   </span>
                   <Icon name="chevronRight" width={16} height={16} className={css.memberArrow} />
