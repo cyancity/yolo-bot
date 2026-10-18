@@ -8,7 +8,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const KEY = 'workforce.preferences'
-const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, avatarStyle: 'circle', typingEffect: 'hash', showTokenStats: false }
+// replyGrouping 是新增字段（同一句消息多条员工回复的呈现方式），老数据缺省回落 summary。
+const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, avatarStyle: 'circle', typingEffect: 'hash', showTokenStats: false, replyGrouping: 'summary' }
 let backing: Map<string, string>
 let storage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void; removeItem: (k: string) => void; clear: () => void }
 
@@ -71,6 +72,13 @@ describe('数字员工显示偏好', () => {
     // V2 不再存 sidebarMode / bubbleRadius：风格即结构，圆角由 token 定
     backing.set(KEY, JSON.stringify({ sidebarMode: 'chat', bubbleRadius: 25, style: 'wechat' }))
     expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat' })
+    // 多人回复呈现方式：只有两个显式值才改写，缺省/非法回落摘要卡片
+    backing.set(KEY, JSON.stringify({ replyGrouping: 'expanded' }))
+    expect((await fresh()).getWorkforcePrefs().replyGrouping).toBe('expanded')
+    backing.set(KEY, JSON.stringify({ replyGrouping: 'collapsed' }))
+    expect((await fresh()).getWorkforcePrefs().replyGrouping).toBe('collapsed')
+    backing.set(KEY, JSON.stringify({ replyGrouping: 'bogus' }))
+    expect((await fresh()).getWorkforcePrefs().replyGrouping).toBe('summary')
   })
 
   it('存储损坏或读取抛错时回退默认，不抛异常', async () => {
@@ -96,6 +104,12 @@ describe('数字员工显示偏好', () => {
     prefs.setWorkforcePrefs({ scheme: 'bogus' as never })
     expect(listener).toHaveBeenCalledTimes(2)
     expect(prefs.getWorkforcePrefs().scheme).toBe('dark')
+    // 同值重复写不通知；换值才落盘并通知
+    prefs.setWorkforcePrefs({ replyGrouping: 'summary' })
+    expect(listener).toHaveBeenCalledTimes(2)
+    prefs.setWorkforcePrefs({ replyGrouping: 'collapsed' })
+    expect(listener).toHaveBeenCalledTimes(3)
+    expect(JSON.parse(backing.get(KEY) ?? '').replyGrouping).toBe('collapsed')
   })
 
   it('localStorage 写失败时内存态仍生效并通知', async () => {

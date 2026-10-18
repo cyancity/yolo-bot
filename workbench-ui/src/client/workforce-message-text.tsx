@@ -30,8 +30,21 @@ function mentionsPlugin(employees: readonly Employee[]) {
         let start = 0
         for (let index = 0; index < value.length; index++) {
           if (value[index] !== '@') continue
+          const boundary = /[\s,，。;；:：!！?？()（）]/
+          const isEveryoneZh = value.startsWith('@所有人', index)
+            && (index + 4 === value.length || boundary.test(value[index + 4]!))
+          const isEveryoneEn = value.slice(index, index + 9).toLowerCase() === '@everyone'
+            && (index + 9 === value.length || boundary.test(value[index + 9]!))
+          if (isEveryoneZh || isEveryoneEn) {
+            const tokenLen = isEveryoneZh ? 4 : 9
+            if (index > start) result.push({ type: 'text', value: value.slice(start, index) })
+            result.push({ type: 'link', url: '#workforce-all', children: [{ type: 'text', value: value.slice(index, index + tokenLen) }] })
+            index += tokenLen - 1
+            start = index + 1
+            continue
+          }
           const employee = named.find(item => value.startsWith(item.name, index + 1)
-            && (index + item.name.length + 1 === value.length || /[\s,，。;；:：!！?？()（）]/.test(value[index + item.name.length + 1]!)))
+            && (index + item.name.length + 1 === value.length || boundary.test(value[index + item.name.length + 1]!)))
           if (!employee) continue
           if (index > start) result.push({ type: 'text', value: value.slice(start, index) })
           result.push({ type: 'link', url: `#workforce-employee/${encodeURIComponent(employee.id)}`, children: [{ type: 'text', value: `@${employee.name}` }] })
@@ -219,6 +232,7 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
     table: ({ children }: { children?: ReactNode }) => <div className={css.tableScroll}><table>{children}</table></div>,
     pre: MessageCodeBlock,
     a: ({ href, title, children }: { href?: string | undefined; title?: string | undefined; children?: ReactNode }) => {
+      if (href === '#workforce-all') return <span className={`${workforceCss.mention} ${workforceCss.mentionAll}`}>{children}</span>
       if (href?.startsWith('#workforce-employee/')) {
         const id = decodeURIComponent(href.slice('#workforce-employee/'.length))
         return <button type="button" className={workforceCss.mention} onClick={() => onDmRef.current(id)}>{children}</button>
@@ -286,7 +300,7 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
   }), [openImage, authorNameOf, hasAttachments, hasDeliverables])
   const cleanedText = useMemo(() => cleanMessageText(text), [text])
   const rendered = useMemo(() => (
-    <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{cleanedText}</Markdown>
+    <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value === '#workforce-all' || value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{cleanedText}</Markdown>
   ), [cleanedText, mentionPlugin, components])
   return <div ref={rootRef} className={css.messageText}>
     {rendered}

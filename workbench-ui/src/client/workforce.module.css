@@ -497,7 +497,8 @@
 }
 /* 消息内 @ 提及：员工名可点（路由到 DM），保持左对齐文本流。 */
 .mention {
-  vertical-align: middle;
+  display: inline-block;
+  vertical-align: baseline;
   border: none;
   background: var(--wb-accent-soft);
   color: var(--wb-accent-fg-sm);
@@ -509,6 +510,8 @@
 }
 
 .mention:hover { text-decoration: underline; }
+.mentionAll { cursor: default; }
+.mentionAll:hover { text-decoration: none; }
 
 /* 深色消息行 hover 时 accent-soft 复合底变深（Mocha 实测 63,71,97），
    纯 accent 小字掉到 4.36:1；混入白提亮至 ≥4.5，rest/focus 5.66:1 不动。 */
@@ -1759,6 +1762,42 @@ div.msgNoticeLine { cursor: default; }
 }
 
 /* ---------- 布局切换：Discord vs WeChat ---------- */
+
+/* 单条超长正文：超过 --wb-message-clamp-height 折叠，底部渐隐 + 「展开全文」。
+   只在 .msgBubble[data-clamped] 上生效，阈值与 token 单一来源。 */
+.msgClamp {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.msgBubble[data-clamped] .msgClamp {
+  max-height: var(--wb-message-clamp-height);
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, var(--wb-fg) 0%, var(--wb-fg) calc(100% - var(--wb-space-9)), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, var(--wb-fg) 0%, var(--wb-fg) calc(100% - var(--wb-space-9)), transparent 100%);
+}
+
+.msgClampToggle {
+  display: block;
+  margin-top: var(--wb-space-4);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--wb-accent);
+  font: inherit;
+  font-size: var(--wb-type-caption-size);
+  line-height: var(--wb-type-caption-leading);
+  cursor: pointer;
+}
+
+.msgClampToggle:hover {
+  text-decoration: underline;
+}
+
+.msgClampToggle:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 2px;
+}
 
 /* 阅读行宽上限收至内容区一半（用户要求），与 780px 取小者，宽屏不再整行拉满。 */
 .msgBubble {
