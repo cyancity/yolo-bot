@@ -1,0 +1,7 @@
+.label { display: inline-flex; align-items: center; gap: var(--wb-space-4); color: var(--wb-fg); font-size: var(--wb-type-label-size); cursor: pointer; }
+.root { display: inline-flex; flex: none; align-items: center; width: var(--wb-control-height-md); height: var(--wb-icon-md); padding: var(--wb-space-2); border: 0; border-radius: var(--wb-radius-pill); background: var(--wb-line-control); cursor: pointer; transition: background var(--wb-motion-fast) var(--wb-motion-ease); }
+.root[data-state='checked'] { background: var(--wb-fg); }
+.root:focus-visible { outline: var(--wb-border-width) solid var(--wb-focus-ring); outline-offset: var(--wb-space-2); }
+.root:disabled { opacity: var(--wb-opacity-disabled); cursor: not-allowed; }
+.thumb { display: block; width: var(--wb-icon-sm); height: var(--wb-icon-sm); border-radius: var(--wb-radius-dot); background: var(--wb-bg); transition: transform var(--wb-motion-fast) var(--wb-motion-ease); }
+.thumb[data-state='checked'] { transform: translateX(var(--wb-icon-sm)); }

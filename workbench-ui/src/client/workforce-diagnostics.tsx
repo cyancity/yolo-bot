@@ -1,3 +1,4 @@
+import { Textarea } from './ui/primitives.ts'
 import { useEffect, useId, useState } from 'react'
 import { API_PREFIX } from './transport.ts'
 import { useWorkforceFileSession } from './workforce-attachments.tsx'
@@ -124,10 +125,10 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
       {partial && <p role="status" className={css.hint}>{WF.diagnostics.partialErrorNotice}</p>}
       <div className={css.form}>
         <label htmlFor={previewId}>{WF.diagnostics.jsonPreview}</label>
-        <textarea id={previewId} aria-busy={loading} readOnly rows={12} value={preview} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)', maxHeight: '40vh', resize: 'vertical' }} />
+        <Textarea id={previewId} aria-busy={loading} readOnly rows={12} value={preview} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)', maxHeight: '40vh', resize: 'vertical' }} />
       </div>
       {savedPath && <div className={css.form}>
-        <label>{WF.diagnostics.savedToLocalMachine}<textarea readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
+        <label>{WF.diagnostics.savedToLocalMachine}<Textarea readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
       </div>}
       <div className={css.actions}>
         {fileSession ? (

@@ -33,18 +33,16 @@
 }
 .secondary:hover:not(:disabled) { background: var(--wb-hover); }
 
-.pressed { background: var(--wb-accent-soft); color: var(--wb-accent-fg); }
+.pressed { background: var(--wb-selected-bg); color: var(--wb-selected-fg); }
 
 .iconButton:disabled {
-  background: var(--wb-disabled-bg);
-  border-color: var(--wb-disabled-line);
-  color: var(--wb-disabled-fg);
+  opacity: var(--wb-opacity-disabled);
   cursor: not-allowed;
 }
 
 .iconButton:focus-visible {
-  outline: var(--wb-focus-width) solid var(--wb-focus);
-  outline-offset: var(--wb-focus-offset);
+  outline: var(--wb-border-width) solid var(--wb-focus-ring);
+  outline-offset: var(--wb-space-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

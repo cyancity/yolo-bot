@@ -68,6 +68,7 @@ export function apply(ctx: ClientContext): void {
     yield ctx.slots.register({ name: 'main', key: PANEL_ID,
       children: {
         'workbench.pages': { kind: 'keyed', scope: 'root' },
+        'workbench.previews': { kind: 'keyed', scope: 'root' },
         'workbench.notice': { kind: 'list', scope: 'root' },
         'workbench.overlay': { kind: 'list', scope: 'root' },
       }, store: navStore, inject: () => ({ ...face, chrome }),
@@ -78,6 +79,10 @@ export function apply(ctx: ClientContext): void {
     hooks: { prefs },
     patchPrefs: fields => prefs.patch(fields),
     openWorkbench: chrome.openWorkbench, openChat: face.openNativeChat, toggleColumn: face.toggleSidebar,
+    sidebarHidden: () => {
+      const view = nav.getSnapshot().view
+      return view.kind === 'extension' && view.sidebar === 'hidden'
+    },
     workforce: face.workforce, chrome,
     navigation: {
       getSnapshot: () => ctx.slots.getVersion('workbench.navigation'),

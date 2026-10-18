@@ -22,10 +22,7 @@
   font-size: var(--wb-type-compact-size);
   line-height: 20px;
 }
-:global([data-wb-style='wechat']) .fileCard {
-  width: 100%;
-  max-width: 520px;
-}
+
 
 .fileIcon { display: flex; flex: none; color: var(--wb-fg-muted); }
 .fileIcon[data-extension='docx'], .fileIcon[data-extension='doc'] { color: var(--wb-accent); }
@@ -412,9 +409,7 @@
   container-type: inline-size;
 }
 /* wechat 下附件条与气泡上限统一，与 .msgBubble 一致。 */
-:global([data-wb-style='wechat']) .attachmentBarWrapper {
-  width: min(72%, 640px);
-}
+
 
 .attachmentBarToggle {
   display: flex;

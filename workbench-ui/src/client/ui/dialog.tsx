@@ -1,11 +1,6 @@
-/**
- * Dialog：原生 <dialog>.showModal()。top layer 由浏览器提供，焦点循环/Esc
- * 为原生语义；不扫描/关闭宿主 dialog、不写 body scroll-lock。
- * 同时支持受控（open + onOpenChange）与挂载即开（onClose/closeLabel）两种
- * 调用形态；footer 最多一个主动作（primaryAction），关闭为标题栏 IconButton。
- * fullScreen 实例挂载时暂时收起其他已开 dialog、卸载时恢复（不触发其 onClose）。
- */
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { useOverlayTarget } from './root.tsx'
 import css from './dialog.module.css'
 import { Button } from './button.tsx'
 import { IconButton } from './icon-button.tsx'
@@ -44,97 +39,42 @@ export interface DialogProps {
 }
 
 export function Dialog({ open, onOpenChange, onClose, closeLabel, title, description, children, primaryAction, busy, initialFocusRef, returnFocusRef, wide, fullScreen }: DialogProps) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null)
+  const overlay = useOverlayTarget()
   const restoreRef = useRef<HTMLElement | null>(null)
-  const titleId = useId()
-  const descId = useId()
-  const isOpen = open ?? true
-  const busyRef = useRef(busy)
-  busyRef.current = busy
-  const closeRef = useRef(() => {})
-  closeRef.current = () => {
-    onOpenChange?.(false)
-    onClose?.()
-  }
-
-  // 生命周期：fullScreen 挂载时收起其他 dialog（不经 onClose），卸载时恢复。
+  const dialogRef = useRef<HTMLDialogElement | null>(null)
   useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    restoreRef.current = returnFocusRef?.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
-    const suspended = fullScreen
-      ? Array.from(document.querySelectorAll<HTMLDialogElement>('dialog[open]')).filter(item => item !== el)
-      : []
-    for (const item of suspended) item.close()
-    return () => {
-      el.close()
-      for (const item of suspended) if (item.isConnected && !item.open) item.showModal()
-      restoreRef.current?.focus?.()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // 开合状态跟随 open 属性（挂载即开时缺省 true）。
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (isOpen && !el.open) {
-      el.showModal()
-      const initial = initialFocusRef?.current
-      if (initial && el.contains(initial)) initial.focus()
-      else el.querySelector<HTMLElement>('[data-dialog-close]')?.focus()
-    } else if (!isOpen && el.open) {
-      el.close()
-    }
-  }, [isOpen, initialFocusRef])
-
-  const requestClose = () => {
-    if (busyRef.current) return
-    closeRef.current()
+    if (!fullScreen || !(open ?? true)) return
+    const suspended = Array.from(document.querySelectorAll<HTMLDialogElement>('dialog[open]')).filter(dialog => dialog !== dialogRef.current)
+    for (const dialog of suspended) dialog.open = false
+    return () => { for (const dialog of suspended) if (dialog.isConnected) dialog.open = true }
+  }, [fullScreen, open])
+  const change = (next: boolean) => {
+    if (!next && busy) return
+    onOpenChange?.(next)
+    if (!next) onClose?.()
   }
-
-  return (
-    <dialog
-      ref={dialogRef}
-      className={`${css.dialog} ${wide ? css.wide : ''} ${fullScreen ? css.fullScreen : ''}`}
-      aria-labelledby={titleId}
-      aria-describedby={description ? descId : undefined}
-      aria-busy={busy ? true : undefined}
-      onCancel={e => {
-        // Esc/cancel：不走原生默认关闭，统一经 onClose（旧契约）。
-        e.preventDefault()
-        requestClose()
-      }}
-      onClick={e => {
-        // 点遮罩（dialog 元素自身，非内容盒）关闭；busy 时阻止。
-        if (e.target === dialogRef.current) requestClose()
-      }}
-    >
-      <div className={css.head}>
-        <h2 className={css.title} id={titleId}>{title}</h2>
-        <IconButton
-          label={closeLabel ?? WF.common.close}
-          icon={<Icon name="close" />}
-          size="sm"
-          data-dialog-close
-          disabled={busy}
-          onClick={requestClose}
-        />
-      </div>
-      {description && <p className={css.description} id={descId}>{description}</p>}
-      <div className={css.body}>{children}</div>
-      {primaryAction && (
-        <div className={css.foot}>
-          <Button
-            variant={primaryAction.tone === 'danger' ? 'danger' : 'primary'}
-            disabled={primaryAction.disabled ?? false}
-            loading={primaryAction.loading ?? false}
-            onClick={primaryAction.onInvoke}
-          >
-            {primaryAction.label}
-          </Button>
+  return <DialogPrimitive.Root open={open ?? true} onOpenChange={change}>
+    <DialogPrimitive.Portal container={overlay ?? undefined}>
+      <DialogPrimitive.Overlay className={css.overlay} />
+      <DialogPrimitive.Content asChild className={`${css.dialog} ${wide ? css.wide : ''} ${fullScreen ? css.fullScreen : ''}`} {...(!description ? { 'aria-describedby': undefined } : {})} aria-busy={busy ? true : undefined}
+        onOpenAutoFocus={event => {
+          restoreRef.current = returnFocusRef?.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
+          if (initialFocusRef?.current) { event.preventDefault(); initialFocusRef.current.focus() }
+        }}
+        onCloseAutoFocus={event => { event.preventDefault(); (returnFocusRef?.current ?? restoreRef.current)?.focus() }}
+        onEscapeKeyDown={event => { if (busy) event.preventDefault() }}
+        onPointerDownOutside={event => { if (busy) event.preventDefault() }}
+      ><dialog ref={dialogRef} open={open ?? true} onCancel={event => { event.preventDefault(); change(false) }}>
+        <div className={css.head}>
+          <DialogPrimitive.Title className={css.title}>{title}</DialogPrimitive.Title>
+          <DialogPrimitive.Close asChild><IconButton label={closeLabel ?? WF.common.close} icon={<Icon name="close" />} size="sm" data-dialog-close disabled={busy} /></DialogPrimitive.Close>
         </div>
-      )}
-    </dialog>
-  )
+        {description && <DialogPrimitive.Description className={css.description}>{description}</DialogPrimitive.Description>}
+        <div className={css.body}>{children}</div>
+        {primaryAction && <div className={css.foot}>
+          <Button variant={primaryAction.tone === 'danger' ? 'danger' : 'primary'} disabled={primaryAction.disabled ?? false} loading={primaryAction.loading ?? false} onClick={primaryAction.onInvoke}>{primaryAction.label}</Button>
+        </div>}
+      </dialog></DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  </DialogPrimitive.Root>
 }

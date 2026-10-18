@@ -1,7 +1,7 @@
 /**
  * 数字员工 UI 显示偏好 V2（持久化到浏览器 localStorage，键不变）。
- * style（discord/wechat）与 scheme（system/light/dark）是两个独立维度，
- * 各自运行时切换；不写 document 级主题属性（由 token 根的 data-wb-*
+ * style（历史键 discord/wechat，仅选择导航结构）与 scheme（system/light/dark）是两个独立维度，
+ * 外观统一使用 assistant-ui 官方默认语义主题。导航和深浅各自切换；不写 document 级主题属性（由 token 根的 data-wb-*
  * 属性承接）。showSteps、avatarStyle、typingEffect 沿用。
  *
  * V1 → V2 迁移：

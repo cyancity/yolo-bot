@@ -52,10 +52,9 @@
 }
 
 .groupTitle {
-  font-size: var(--wb-type-micro-size);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--wb-type-caption-size);
+  font-weight: var(--wb-weight-medium);
+  letter-spacing: normal;
   color: var(--wb-fg-muted);
   overflow: hidden;
   text-overflow: ellipsis;

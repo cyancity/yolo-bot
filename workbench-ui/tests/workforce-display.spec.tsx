@@ -116,14 +116,14 @@ describe('数字员工消息展示', () => {
     expect(screen.queryByText(/web_search/)).toBeNull()
   })
 
-  it('设置菜单切换 discord/wechat 风格，data-wb-style 跟随偏好', () => {
+  it('设置菜单切换导航结构，data-wb-style 跟随偏好', () => {
     const { container } = renderMain(dmSnapshot([msg({ id: 'h1', role: 'user', senderId: 'user', senderName: '你', text: 'hi' })]))
     expect(container.querySelector('[data-wb-style="discord"]')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '聊天设置' }))
     fireEvent.click(screen.getByRole('menuitem', { name: '偏好设置' }))
-    fireEvent.click(screen.getByRole('radio', { name: /WeChat/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /会话列表/ }))
     expect(container.querySelector('[data-wb-style="wechat"]')).toBeTruthy()
-    fireEvent.click(screen.getByRole('radio', { name: /Discord/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /分组频道/ }))
     expect(container.querySelector('[data-wb-style="discord"]')).toBeTruthy()
   })
 

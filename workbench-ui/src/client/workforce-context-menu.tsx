@@ -2,6 +2,7 @@
  * WorkforceContextMenu：Discord 风格右键菜单组件。
  * 替换浏览器默认上下文菜单，提供分组、高亮、危险操作与二级菜单支持。
  */
+import { Button } from './ui/primitives.ts'
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Dialog, useTokenScopeAttrs } from './ui/index.tsx'
@@ -114,7 +115,7 @@ export function WorkforceContextMenu({ x, y, sections, onClose }: WorkforceConte
                     else setActiveSubmenuId(null)
                   }}
                 >
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={`${css.item} ${item.danger ? css.itemDanger : ''} ${item.disabled ? css.itemDisabled : ''} ${isSubmenuOpen ? css.itemFocused : ''}`}
                     onClick={e => handleItemClick(e, item)}
@@ -122,14 +123,14 @@ export function WorkforceContextMenu({ x, y, sections, onClose }: WorkforceConte
                     {item.icon && <span className={css.itemIcon}>{item.icon}</span>}
                     <span className={css.itemLabel}>{item.label}</span>
                     {hasChildren && <span className={css.arrow}>›</span>}
-                  </button>
+                  </Button>
 
                   {hasChildren && isSubmenuOpen && (
                     <div
                       className={`${css.submenu} ${submenuToLeft ? css.submenuLeft : ''}`}
                     >
                       {item.children!.map(child => (
-                        <button
+                        <Button variant="plain"
                           key={child.id}
                           type="button"
                           className={`${css.item} ${child.danger ? css.itemDanger : ''} ${child.disabled ? css.itemDisabled : ''}`}
@@ -137,7 +138,7 @@ export function WorkforceContextMenu({ x, y, sections, onClose }: WorkforceConte
                         >
                           {child.icon && <span className={css.itemIcon}>{child.icon}</span>}
                           <span className={css.itemLabel}>{child.label}</span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -183,16 +184,16 @@ export function ConfirmDialog({
           {error && <div className={css.modalError} role="alert">{error}</div>}
         </div>
         <div className={css.modalFoot}>
-          <button type="button" className={css.modalCancelBtn} autoFocus onClick={onCancel}>
+          <Button variant="plain" type="button" className={css.modalCancelBtn} autoFocus onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button variant="plain"
             type="button"
             className={`${css.modalConfirmBtn} ${danger ? css.modalDangerBtn : ''}`}
             onClick={onConfirm}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
     </Dialog>
   )

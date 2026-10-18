@@ -7,7 +7,7 @@ import type { WorkbenchChromeProps } from '../extension.ts'
 import type { PrefsSource, ZoomPref } from './prefs.ts'
 import type { PreferenceFields } from '../extension.ts'
 import { ZOOM_CHOICES, normalizeZoom, normalizeLocale, LOCALE_FIELD, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
-import { Select, Switch, WorkbenchSurface } from './ui/index.tsx'
+import { Select, Switch, RadioGroup, WorkbenchSurface } from './ui/index.tsx'
 import { useZoom } from './ui/zoom.ts'
 import { S } from './strings.ts'
 import { useWorkforcePrefs, type WorkforceScheme, type WorkforceStyle } from './workforce-prefs.ts'
@@ -64,23 +64,22 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
       <h3 className={css.groupTitle}>{S.settings.appearance}</h3>
       <fieldset className={css.radioGroup}>
         <legend className={css.rowLabel}>{S.settings.styleLabel}</legend>
-        {(['discord', 'wechat'] as WorkforceStyle[]).map(value => (
-          <label key={value} className={css.radioRow}>
-            <input type="radio" name="wb-style" checked={prefs.style === value}
-              onChange={() => setPrefs({ style: value })} />
-            <span>{value === 'discord' ? S.settings.styleDiscord : S.settings.styleWechat}</span>
-          </label>
-        ))}
+        <RadioGroup label={S.settings.styleLabel} value={prefs.style}
+        onValueChange={value => setPrefs({ style: value as WorkforceStyle })}
+        items={[
+          { value: 'discord', label: S.settings.styleDiscord },
+          { value: 'wechat', label: S.settings.styleWechat },
+        ]} />
       </fieldset>
       <fieldset className={css.radioGroup}>
         <legend className={css.rowLabel}>{S.settings.schemeLabel}</legend>
-        {(['system', 'light', 'dark'] as WorkforceScheme[]).map(value => (
-          <label key={value} className={css.radioRow}>
-            <input type="radio" name="wb-scheme" checked={prefs.scheme === value}
-              onChange={() => setPrefs({ scheme: value })} />
-            <span>{value === 'system' ? S.settings.schemeSystem : value === 'light' ? S.settings.schemeLight : S.settings.schemeDark}</span>
-          </label>
-        ))}
+        <RadioGroup label={S.settings.schemeLabel} value={prefs.scheme}
+        onValueChange={value => setPrefs({ scheme: value as WorkforceScheme })}
+        items={[
+          { value: 'system', label: S.settings.schemeSystem },
+          { value: 'light', label: S.settings.schemeLight },
+          { value: 'dark', label: S.settings.schemeDark },
+        ]} />
       </fieldset>
       <Switch label={S.settings.showSteps} checked={prefs.showSteps}
         onChange={checked => setPrefs({ showSteps: checked })} />

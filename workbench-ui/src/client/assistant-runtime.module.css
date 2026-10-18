@@ -1,0 +1,5 @@
+.tool { border: var(--wb-border-width) solid var(--wb-line-soft); border-radius: var(--wb-radius-control); padding: var(--wb-space-4) var(--wb-space-5); font-size: var(--wb-type-compact-size); color: var(--wb-fg-muted); }
+.tool summary { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5); color: var(--wb-fg); cursor: pointer; }
+.tool summary:focus-visible { outline: var(--wb-focus-width) solid var(--wb-focus); outline-offset: var(--wb-focus-offset); }
+.toolState { color: var(--wb-fg-muted); font-size: var(--wb-type-caption-size); }
+.output { margin: var(--wb-space-4) 0 0; max-height: var(--wb-message-clamp-height); overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: var(--wb-type-code-size) / var(--wb-type-code-leading) var(--wb-font-mono); }

@@ -3,9 +3,14 @@
  * 数据来自 WorkforceSource（Host 轮询 API），组件不感知 ctx；消息左对齐
  * 署名+头像+时间（不做两方气泡）；工具调用/产物折叠可开。
  */
-import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type ComponentProps } from 'react'
 import { FileTypeIcon, IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Icon } from './ui/icons.tsx'
+import { AssistantRuntimeProvider, ComposerPrimitive, MessagePrimitive, useExternalStoreRuntime, type CreateAttachment, type ThreadMessageLike } from '@assistant-ui/react'
+import { WorkforceAssistantRuntime, AssistantMessageScope, AssistantMessageParts, AssistantToolParts, dshAttachmentAdapter } from './assistant-runtime.tsx'
+import { WorkbenchExtensionPreview, readExtensionPreview } from './extension-preview.tsx'
+import { Button } from './ui/button.tsx'
+import { Checkbox, RadioGroup } from './ui/choice.tsx'
 import { useUserProfile } from './workforce-profile.tsx'
 import { WF } from './workforce-strings.ts'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
@@ -138,45 +143,45 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
   return <div className={css.msgFooter} data-message-footer data-task-id={task.id}>
     {task.deliverables.length > 0 && <DeliverableChips task={task} employees={employees} source={source} />}
     {task.status === 'running' && <div className={css.taskActions}>
-      <button type="button" className={css.taskCancel} disabled={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</button>
+      <Button variant="plain" type="button" className={css.taskCancel} disabled={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</Button>
       <span className={css.taskStatus} data-state={task.status}>{WF.employee.running}</span>
     </div>}
     {stopped && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state={task.status}>{WF.taskStatus.stopped(quiet)}</span>
       {onSelectContinuation && (
-        <button
+        <Button variant="plain"
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </button>
+        </Button>
       )}
     </div>}
     {task.status === 'failed' && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state="failed">✕ {WF.employee.failed}</span>
       {onSelectContinuation && (
-        <button
+        <Button variant="plain"
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </button>
+        </Button>
       )}
     </div>}
     {task.status !== 'running' && !stopped && task.status !== 'failed' && onSelectContinuation && (
       <div className={css.taskActions}>
-        <button
+        <Button variant="plain"
           type="button"
           className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </button>
+        </Button>
       </div>
     )}
     {error && <span className={css.msgFailed} role="alert">{formatErrorReason(error)}</span>}
@@ -212,7 +217,7 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
 
   return (
     <div className={css.stepsRow}>
-      <button
+      <Button variant="plain"
         type="button"
         className={css.stepsToggle}
         aria-expanded={open}
@@ -223,7 +228,7 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
           {hasRunning ? WF.steps.running(steps.length) : WF.steps.summary(steps.length)}
         </span>
         <span className={css.stepsArrow} aria-hidden="true">{open ? '▾' : '▸'}</span>
-      </button>
+      </Button>
       {open && (
         <div className={css.stepsDetail}>
           {steps.map((step, idx) => {
@@ -237,15 +242,15 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
                   <span className={css.stepsStateIcon} data-state={stepState}>
                     {stepState === 'running' ? '⏳' : stepState === 'error' ? '✕' : '✓'}
                   </span>
-                  <span>{stepLabel}</span>
+                  <span>{step.tool ? WF.employee.tool : stepLabel}</span>
                 </div>
-                {step.text ? <div className={css.stepItemText}>{step.text}</div> : null}
+                {step.tool ? <AssistantToolParts message={step} /> : step.text ? <div className={css.stepItemText}>{step.text}</div> : null}
               </div>
             )
           })}
         </div>
       )}
-      {open && <button type="button" className={css.stepsCollapse} onClick={toggle}>{WF.steps.collapseSteps}</button>}
+      {open && <Button variant="plain" type="button" className={css.stepsCollapse} onClick={toggle}>{WF.steps.collapseSteps}</Button>}
     </div>
   )
 }
@@ -994,9 +999,9 @@ function EarlierMessages({ loading, errors, onEarlier }: {
   // 容器不参与滚动锚定（见 .earlierRow）：它在新插入的历史行上方，被选为锚点会让补页后视口跳回顶端。
   if (errors.length > 0) return (
     <div className={css.earlierRow}>
-      <button type="button" className={css.earlierRetry} aria-label={WF.employee.older} title={WF.employee.older} onClick={onEarlier}>
+      <Button variant="plain" type="button" className={css.earlierRetry} aria-label={WF.employee.older} title={WF.employee.older} onClick={onEarlier}>
         <IconRefreshOutlineRegular size={14} />
-      </button>
+      </Button>
     </div>
   )
   // 不加载时也保留这一行的高度，只隐藏 spinner：读者停在最顶时若整行卸载，内容会上跳一个行高。
@@ -1119,6 +1124,11 @@ const MessageRow = memo(function MessageRow({
   // 成果卡固定在产出它的回复上，不随任务页脚移到后续消息或进行中的行。
   const deliverableNames = useMemo(() => messageDeliverableNames(message), [message])
   const deliverableTask = deliverableNames.size > 0 ? tasks.find(item => item.threadId === message.threadId) : undefined
+  const messagePreview = useMemo(() => {
+    if (message.extensionPreview) return message.extensionPreview
+    if (message.tool || !message.text.trim().startsWith('{')) return undefined
+    try { return readExtensionPreview(JSON.parse(message.text)) } catch { return undefined }
+  }, [message.extensionPreview, message.tool, message.text])
   const copy = async (): Promise<void> => {
     setActionError(undefined)
     setCopied(false)
@@ -1140,22 +1150,22 @@ const MessageRow = memo(function MessageRow({
   </div>
   const actionBar = canAct ? (
     <div className={css.messageActions} role="group" aria-label={WF.message.actions}>
-      <button type="button" title={copied ? WF.message.copied : WF.message.copy} aria-label={copied ? WF.message.copied : WF.message.copy} onClick={() => void copy()}>
+      <Button variant="plain" type="button" title={copied ? WF.message.copied : WF.message.copy} aria-label={copied ? WF.message.copied : WF.message.copy} onClick={() => void copy()}>
         <svg viewBox="0 0 20 20" aria-hidden="true">{copied ? <path d="m4 10 4 4 8-9" /> : <><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h2" /></>}</svg>
-      </button>
-      <button type="button" title={regenerating ? WF.message.regenerating : WF.message.regenerate} aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate} disabled={regenerating || message.running === true} onClick={() => void regenerate()}>
+      </Button>
+      <Button variant="plain" type="button" title={regenerating ? WF.message.regenerating : WF.message.regenerate} aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate} disabled={regenerating || message.running === true} onClick={() => void regenerate()}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
-      </button>
-      <button type="button" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
+      </Button>
+      <Button variant="plain" type="button" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M7 5V3h6v2M5 5l1 12h8l1-12M8 8v6M12 8v6" /></svg>
-      </button>
-      <button type="button" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
+      </Button>
+      <Button variant="plain" type="button" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5-5 5 5M5 12l5 5 5-5" /></svg>
-      </button>
+      </Button>
     </div>
   ) : undefined
   return (
-    <div className={`${css.msg} ${isConsecutive ? css.msgConsecutive : ''} ${message.running === true || message.delivery === 'sending' ? css.msgPending : ''}`} data-msg-role={message.role} data-message-id={message.id} data-delivery={message.delivery}>
+    <AssistantMessageScope message={message}><MessagePrimitive.Root className={`${css.msg} ${isConsecutive ? css.msgConsecutive : ''} ${message.running === true || message.delivery === 'sending' ? css.msgPending : ''}`} data-msg-role={message.role} data-message-id={message.id} data-delivery={message.delivery}>
       {isConsecutive ? (
         <div className={css.avatarPlaceholder}>
           <span className={css.consecutiveHoverTime}>{fmtHm(message.ts)}</span>
@@ -1182,7 +1192,7 @@ const MessageRow = memo(function MessageRow({
         )}
         {message.replyTo !== undefined && (
           onJumpToReply !== undefined ? (
-            <button
+            <Button variant="plain"
               type="button"
               className={css.replyQuote}
               title={WF.reply.jump}
@@ -1193,7 +1203,7 @@ const MessageRow = memo(function MessageRow({
               <span className={css.replySnippet}>
                 {repliedSnippet ? `${WF.reply.quotePrefix}${repliedSnippet}` : WF.reply.original}
               </span>
-            </button>
+            </Button>
           ) : (
             <div className={css.replyQuote} title={repliedSnippet ? WF.reply.quoteSnippet(repliedSnippet) : undefined}>
               <span className={css.replyTarget}>@{profile.name}</span>
@@ -1207,19 +1217,17 @@ const MessageRow = memo(function MessageRow({
         {hasText && (
           <div className={css.msgBubble} data-clamped={clamped || undefined}>
             <div className={css.msgClamp} ref={clampRef}>
-              <WorkforceMessageText
-                text={formatErrorReason(message.text)}
-                employees={employees}
-                onDm={onDm}
-                tasks={tasks}
-                hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
-                hasDeliverables={task !== undefined && task.deliverables.length > 0}
-              />
+              <AssistantMessageParts renderText={text => {
+                const fallback = <WorkforceMessageText assistant text={formatErrorReason(text)} employees={employees} onDm={onDm} tasks={tasks}
+                  hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
+                  hasDeliverables={task !== undefined && task.deliverables.length > 0} />
+                return messagePreview ? <WorkbenchExtensionPreview preview={messagePreview} fallback={fallback} /> : fallback
+              }} />
             </div>
             {clampable && (
-              <button type="button" className={css.msgClampToggle} aria-expanded={!clamped} onClick={() => setExpandedText(value => !value)}>
+              <Button variant="plain" type="button" className={css.msgClampToggle} aria-expanded={!clamped} onClick={() => setExpandedText(value => !value)}>
                 {clamped ? WF.message.expandFull : WF.message.collapseFull}
-              </button>
+              </Button>
             )}
             {actionBar}
           </div>
@@ -1249,17 +1257,17 @@ const MessageRow = memo(function MessageRow({
           <div className={css.userMsgMeta}>
             {(replyCount ?? 0) > 0 ? (
               openThreadId !== undefined && onOpenThread !== undefined ? (
-                <button type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
+                <Button variant="plain" type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
                   {WF.thread.count(replyCount!)} →
-                </button>
+                </Button>
               ) : (
                 <span className={css.threadLink}>{WF.thread.count(replyCount!)}</span>
               )
             ) : (
               openThreadId !== undefined && onOpenThread !== undefined && (task !== undefined || tasks.some(t => t.threadId === message.threadId || t.id === message.threadId)) ? (
-                <button type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
+                <Button variant="plain" type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
                   {WF.thread.open}
-                </button>
+                </Button>
               ) : null
             )}
             {message.reactions && message.reactions.length > 0 && (
@@ -1320,9 +1328,9 @@ const MessageRow = memo(function MessageRow({
         {message.delivery === 'failed' && (
           <div className={css.sendFailure} role="alert">
             <span>{WF.common.failed}</span><span aria-hidden="true">·</span>
-            <button type="button" disabled={source === undefined} onClick={() => {
+            <Button variant="plain" type="button" disabled={source === undefined} onClick={() => {
               if (message.clientId) void source?.retryMessage(message.clientId).catch(() => { /* Failure remains visible on this message. */ })
-            }}>{WF.common.retry}</button>
+            }}>{WF.common.retry}</Button>
             {message.deliveryError && <span>{formatErrorReason(message.deliveryError)}</span>}
           </div>
         )}
@@ -1337,7 +1345,7 @@ const MessageRow = memo(function MessageRow({
           />
         )}
       </div>
-    </div>
+    </MessagePrimitive.Root></AssistantMessageScope>
   )
 }, (prev, next) =>
   prev.message === next.message
@@ -1402,9 +1410,9 @@ function ModelFailureBanner({ message, onRetry, onOpenKey, onOpenModels }: {
   const failure = classifyModelError(undefined, message)
   return <div className={css.streamError} role="alert">
     <span>{failure?.message ?? message}</span>
-    {failure?.action === 'addKey' && <button type="button" className={css.empAction} onClick={() => onOpenKey(failure.provider)}>{WF.errorActions.addKey}</button>}
-    {failure?.action === 'changeModel' && <button type="button" className={css.empAction} onClick={onOpenModels}>{WF.errorActions.changeModel}</button>}
-    <button type="button" className={css.empAction} onClick={onRetry}>{WF.status.retry}</button>
+    {failure?.action === 'addKey' && <Button variant="plain" type="button" className={css.empAction} onClick={() => onOpenKey(failure.provider)}>{WF.errorActions.addKey}</Button>}
+    {failure?.action === 'changeModel' && <Button variant="plain" type="button" className={css.empAction} onClick={onOpenModels}>{WF.errorActions.changeModel}</Button>}
+    <Button variant="plain" type="button" className={css.empAction} onClick={onRetry}>{WF.status.retry}</Button>
   </div>
 }
 
@@ -1437,30 +1445,30 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
   if (stopped) return <div className={css.msgNotice} data-kind="info"><div className={css.msgNoticeLine}><span className={css.msgNoticeIcon} aria-hidden="true">■</span><span className={css.msgNoticeText}>{WF.taskStatus.taskStoppedStatus}</span></div></div>
   return (
     <div className={css.msgNotice} data-kind={isError ? 'error' : 'info'}>
-      <button type="button" className={css.msgNoticeLine} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+      <Button variant="plain" type="button" className={css.msgNoticeLine} aria-expanded={open} onClick={() => setOpen(value => !value)}>
         <span className={css.msgNoticeIcon} aria-hidden="true">{isError ? '✕' : 'ℹ'}</span>
         <span className={css.msgNoticeText}>{summary}</span>
         <span aria-hidden="true">{open ? '▾' : '▸'}</span>
-      </button>
+      </Button>
       {open && (
         <div className={css.msgNoticeDetail}>
           <div>{detail}</div>
           {errorAction !== undefined && (
             <div className={css.msgErrorActions}>
               {errorAction.kind === 'addKey' && (
-                <button type="button" className={css.msgErrorActionBtn} onClick={() => onOpenKeyModal?.(errorAction.provider)}>
+                <Button variant="plain" type="button" className={css.msgErrorActionBtn} onClick={() => onOpenKeyModal?.(errorAction.provider)}>
                   🔑 {errorAction.label}
-                </button>
+                </Button>
               )}
               {errorAction.kind === 'retry' && (
-                <button type="button" className={css.msgErrorActionBtn} disabled={busy || retryTarget === undefined} onClick={() => void retry()}>
+                <Button variant="plain" type="button" className={css.msgErrorActionBtn} disabled={busy || retryTarget === undefined} onClick={() => void retry()}>
                   🔄 {errorAction.label}
-                </button>
+                </Button>
               )}
               {(errorAction.kind === 'changeModel' || errorAction.kind === 'editEmployee' || errorAction.kind === 'checkModels') && (
-                <button type="button" className={css.msgErrorActionBtn} onClick={() => onOpenModelsModal?.()}>
+                <Button variant="plain" type="button" className={css.msgErrorActionBtn} onClick={() => onOpenModelsModal?.()}>
                   ⚙️ {errorAction.label}
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -1505,7 +1513,7 @@ function TriggerMenu({ items, activeIndex, loading, onPick }: {
   return (
     <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}>
       {items.map((item, index) => (
-        <button
+        <Button variant="plain"
           key={item.key}
           ref={index === activeIndex ? activeItemRef : null}
           type="button"
@@ -1517,7 +1525,7 @@ function TriggerMenu({ items, activeIndex, loading, onPick }: {
           {item.icon}
           <span className={css.atItemName}>{item.label}</span>
           <span className={css.atItemRole}>{item.meta}</span>
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -1772,7 +1780,7 @@ export function WorkforceComposer(props: ComposerProps) {
     requestAnimationFrame(() => { input.focus(); const pos = before.length; input.setSelectionRange(pos, pos) })
   }
 
-  const doSend = async (continueThread = false, retry = false): Promise<void> => {
+  const doSend = async (continueThread = false, retry = false, propagate = false): Promise<void> => {
     const text = draft.trim()
     const sentAttachments = attachmentsRef.current
     if (sendingRef.current || sentAttachments.some(attachment => attachment.uploaded === undefined)
@@ -1826,15 +1834,40 @@ export function WorkforceComposer(props: ComposerProps) {
     } catch (e) {
       // 发送失败：draft 和附件原样保留，可重试。
       if (mountedRef.current) setError(e instanceof Error ? e.message : String(e))
+      if (propagate) throw e
     } finally {
       sendingRef.current = false
       if (mountedRef.current) setSending(false)
     }
   }
+  // The composer keeps the host's draft/upload transaction and delegates sending through assistant-ui.
+  const runtimeAttachments = useMemo(() => props.onUploadFile ? dshAttachmentAdapter(props.onUploadFile) : undefined, [props.onUploadFile])
+  const runtime = useExternalStoreRuntime<ThreadMessageLike>({
+    messages: [], convertMessage: message => message, isRunning: sending, isSendDisabled: sendDisabled,
+    onNew: async () => { await doSend(continuationMode === 'continue' && isContinuationActive, false, true) },
+    ...(runtimeAttachments ? { adapters: { attachments: runtimeAttachments } } : {}),
+  })
+  useLayoutEffect(() => {
+    const composer = runtime.thread.composer
+    if (composer.getState().text !== draft) composer.setText(draft)
+    const ready = attachments.filter(attachment => attachment.uploaded !== undefined)
+    const nextIds = new Set(ready.map(attachment => `wb-upload-${attachment.key}`))
+    for (const attachment of composer.getState().attachments) {
+      if (!nextIds.has(attachment.id)) void composer.getAttachmentByIndex(composer.getState().attachments.findIndex(item => item.id === attachment.id)).remove()
+    }
+    const ids = new Set(composer.getState().attachments.map(attachment => attachment.id))
+    for (const attachment of ready) {
+      const id = `wb-upload-${attachment.key}`
+      if (!ids.has(id)) void composer.addAttachment({
+        id, name: attachment.name, type: attachment.mime.startsWith('image/') ? 'image' : 'file',
+        contentType: attachment.mime, content: [{ type: 'text', text: attachmentMessage('', [attachment.uploaded!]) }],
+      } satisfies CreateAttachment)
+    }
+  }, [runtime, draft, attachments, error])
   const continuationPrompt = props.continuationTask?.prompt?.trim() || props.continuationTask?.title || WF.taskStatus.currentTask
   const continuationFirstLine = continuationPrompt.split(/\r?\n/)[0]?.trim() || continuationPrompt
   return (
-    <div
+    <AssistantRuntimeProvider runtime={runtime}><div
       className={`${css.composerWrap}${dragging ? ` ${attachmentCss.dropActive}` : ''}`}
       onDragOver={event => {
         if (props.onUploadFile === undefined || !Array.from(event.dataTransfer.types).includes('Files')) return
@@ -1875,7 +1908,7 @@ export function WorkforceComposer(props: ComposerProps) {
                 {continuationFirstLine}
               </span>
             </div>
-            <button
+            <Button variant="plain"
               type="button"
               className={css.contextRibbonBtn}
               onClick={() => {
@@ -1885,7 +1918,7 @@ export function WorkforceComposer(props: ComposerProps) {
               title={WF.taskStatus.startNewTaskTitle}
             >
               {WF.taskStatus.startNewTask}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className={css.contextRibbonNew}>
@@ -1893,14 +1926,14 @@ export function WorkforceComposer(props: ComposerProps) {
               <span className={css.contextRibbonIcon}>✨</span>
               <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
             </div>
-            <button
+            <Button variant="plain"
               type="button"
               className={css.contextRibbonBtn}
               onClick={() => setContinuationMode('continue')}
               title={WF.taskStatus.switchBackContinuationTitle}
             >
               {WF.taskStatus.switchBackContinuation}
-            </button>
+            </Button>
           </div>
         )
       )}
@@ -1912,7 +1945,7 @@ export function WorkforceComposer(props: ComposerProps) {
           onPick={applyTrigger}
         />
       )}
-      <div className={css.composer} data-section="composer">
+      <ComposerPrimitive.Root className={css.composer} data-section="composer">
         {attachments.length > 0 && (
           <div className={attachmentCss.attachments} aria-label={WF.taskStatus.attachmentsToSendAria}>
             {attachments.map(attachment => {
@@ -1931,7 +1964,7 @@ export function WorkforceComposer(props: ComposerProps) {
                       ? <span className={attachmentCss.error} role="alert">{WF.taskStatus.uploadFailedPrefix}{attachment.error}</span>
                       : <span className={attachmentCss.meta} role="status">{attachment.uploaded === undefined ? WF.ui.uploadingState : WF.taskStatus.uploadSuccess}</span>}
                   </div>
-                  <button type="button" className={attachmentCss.remove} aria-label={WF.ui.removeAttachmentAria(attachment.name)} onClick={() => removeAttachment(attachment.key)}>×</button>
+                  <Button variant="plain" type="button" className={attachmentCss.remove} aria-label={WF.ui.removeAttachmentAria(attachment.name)} onClick={() => removeAttachment(attachment.key)}>×</Button>
                 </div>
               )
             })}
@@ -1944,13 +1977,16 @@ export function WorkforceComposer(props: ComposerProps) {
           hidden
           onChange={event => { addFiles(event.target.files); event.target.value = '' }}
         />
-        <textarea
+        <ComposerPrimitive.Input
           ref={inputRef}
+          submitMode="none"
+          addAttachmentOnPaste={false}
+          cancelOnEscape={false}
           className={css.composerInput}
           aria-label={WF.composer.placeholder}
           placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.composer.replyToTask : WF.composer.startNewTaskHint) : WF.composer.placeholder)}
           value={draft}
-          rows={2}
+          minRows={2}
           autoFocus={props.autoFocus === true}
           onChange={event => { draftRevision.current += 1; setDraft(event.target.value); refreshTrigger(event.target.value, event.target.selectionStart ?? 0) }}
           onFocus={event => { refreshTrigger(event.target.value, event.target.selectionStart ?? 0) }}
@@ -1985,31 +2021,31 @@ export function WorkforceComposer(props: ComposerProps) {
               props.onResetContinuation?.()
               return
             }
-            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void doSend(continuationMode === 'continue' && isContinuationActive) }
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); runtime.thread.composer.send() }
           }}
         />
         <div className={css.composerTools}>
-          <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
           {props.onUploadFile !== undefined && (
-            <button type="button" className={`${css.atItem} ${css.composerAttach}`} onClick={() => fileInputRef.current?.click()}>{WF.ui.attachmentsAria}</button>
+            <Button variant="ghost" type="button" className={css.composerAttach} aria-label={WF.ui.attachmentsAria} title={WF.ui.attachmentsAria} onClick={() => fileInputRef.current?.click()}><Icon name="plus" /></Button>
           )}
-          <button type="button" className={css.composerSend} disabled={sendDisabled} onClick={() => void doSend(continuationMode === 'continue' && isContinuationActive)}>
-            {sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send}
-          </button>
+          <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
+          <ComposerPrimitive.Send asChild><Button variant="primary" className={css.composerSend} disabled={sendDisabled} aria-label={sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send} title={WF.composer.send}>
+            <Icon name={sending || uploading ? 'refresh' : 'send'} />
+          </Button></ComposerPrimitive.Send>
         </div>
-      </div>
+      </ComposerPrimitive.Root>
       {error !== undefined && (
         <div className={css.composerError} role="alert">
           <span>{WF.composer.sendFailed}：{error}</span>
-          <button type="button" className={css.composerErrorRetry} disabled={sendDisabled} onClick={() => void doSend(false, true)}>{WF.composer.retry}</button>
+          <Button variant="plain" type="button" className={css.composerErrorRetry} disabled={sendDisabled} onClick={() => void doSend(false, true)}>{WF.composer.retry}</Button>
         </div>
       )}
-    </div>
+    </div></AssistantRuntimeProvider>
   )
 }
 
 /** DM/线程的 thread 面板（右列）：消息 + composer + 产物。 */
-export function ThreadPanel({ source, threadId, title, employees: employeesProp, onClose, onDm, onOpenKeyModal, onOpenModelsModal, sourceMessageId }: {
+function ThreadPanelContent({ source, threadId, title, employees: employeesProp, onClose, onDm, onOpenKeyModal, onOpenModelsModal, sourceMessageId }: {
   readonly source: WorkforceSource
   readonly threadId: string
   readonly title?: string
@@ -2205,7 +2241,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
             })()}
           </div>
           <div className={css.threadHeadActions}>
-            <button
+            <Button variant="plain"
               type="button"
               className={css.threadActionBtn}
               title={WF.taskStatus.threadFiles}
@@ -2213,15 +2249,15 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
               onClick={() => setFilesOpen(true)}
             >
               <IconDeliverDocRegular size={14} />
-            </button>
-            <button
+            </Button>
+            <Button variant="plain"
               type="button"
               className={css.threadClose}
               aria-label={WF.thread.close}
               onClick={onClose}
             >
               <IconCloseOutlineRegular size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -2234,7 +2270,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
           </div>
         )
       })()}
-      {view.error && <div className={css.streamError} role="alert">{view.error}<button type="button" className={css.empAction} onClick={() => source.refresh()}>{WF.common.retry}</button></div>}
+      {view.error && <div className={css.streamError} role="alert">{view.error}<Button variant="plain" type="button" className={css.empAction} onClick={() => source.refresh()}>{WF.common.retry}</Button></div>}
       <div className={css.scrollArea}>
       <div className={css.threadScroll} ref={scrollRef} tabIndex={-1}>
         <div className={css.messageList} ref={contentRef}>
@@ -2329,7 +2365,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
         ))}
         </div>
       </div>
-        {hasNewMessages && <button type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</button>}
+        {hasNewMessages && <Button variant="plain" type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</Button>}
         {replyJump.notice !== undefined && <div className={css.replyJumpNotice} role="status">{replyJump.notice}</div>}
       </div>
       <WorkforceComposer
@@ -2398,7 +2434,7 @@ function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: 
             name={employee.name}
             color={employee.avatarColor}
             role={employee.role}
-            size={56}
+            size={40}
             style={avatarStyle}
           />
         ) : (
@@ -2413,15 +2449,15 @@ function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: 
       {starters.length > 0 && (
         <div className={css.emptyCardStarters}>
           {starters.map((starter, idx) => (
-            <button
+            <Button variant="plain"
               key={idx}
               type="button"
               className={css.emptyCardStarterBtn}
               onClick={() => onSelectStarter(starter)}
             >
-              <span className={css.emptyCardStarterIcon} aria-hidden="true">💭</span>
+              <span className={css.emptyCardStarterIcon} aria-hidden="true"><Icon name="chat" /></span>
               <span className={css.emptyCardStarterText}>{starter}</span>
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -2430,7 +2466,7 @@ function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: 
 }
 
 /** 主工作区：surface 决定中列内容；thread 面板由页面态选中。 */
-export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, onCloseThread, onOpenThread, onNavigation, onOpenMemorySource, sourceMessageId }: {
+function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, onCloseThread, onOpenThread, onNavigation, onOpenMemorySource, sourceMessageId }: {
   readonly source: WorkforceSource
   readonly snapshot: WorkforceSnapshot
   readonly surface: WorkforceSurface
@@ -2789,20 +2825,20 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           <div className={css.streamHeadRow}>
             {hasMessages && (
               <>
-                <button type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
+                <Button variant="plain" type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <line x1="4" y1="6" x2="20" y2="6"/>
                     <line x1="4" y1="12" x2="20" y2="12"/>
                     <line x1="4" y1="18" x2="20" y2="18"/>
                   </svg>
-                </button>
+                </Button>
                 <h2 className={css.streamTitle}>{surface.kind === 'channel' ? `# ${title}` : title}</h2>
                 <span className={css.streamHeadDivider} aria-hidden="true" />
                 <span className={css.streamDesc}>{desc}</span>
               </>
             )}
             <div className={css.streamSettingsWrap} ref={settingsRef} style={!hasMessages ? { marginLeft: 'auto' } : undefined}>
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.streamHeadActionBtn}
                 title={WF.settings.menuLabel}
@@ -2814,11 +2850,11 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                 }}
               >
                 <Icon name="more" width={18} height={18} />
-              </button>
+              </Button>
               {actionMenuOpen && (
                 <div className={css.headActionDropdown} role="menu" aria-label={WF.taskStatus.actionsAndSettingsAria}>
                   {surface.kind === 'channel' && (
-                    <button
+                    <Button variant="plain"
                       type="button"
                       className={css.dropdownItem}
                       role="menuitem"
@@ -2829,9 +2865,9 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                     >
                       <Icon name="memory" width={15} height={15} />
                       <span>{WF.taskStatus.channelMemoryTab}</span>
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={css.dropdownItem}
                     role="menuitem"
@@ -2842,8 +2878,8 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="file" width={15} height={15} />
                     <span>{WF.taskStatus.sessionFilesTab}</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="plain"
                     type="button"
                     className={css.dropdownItem}
                     role="menuitem"
@@ -2854,9 +2890,9 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="settings" width={15} height={15} />
                     <span>{WF.models.title}</span>
-                  </button>
+                  </Button>
                   <div className={css.dropdownDivider} />
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={css.dropdownItem}
                     role="menuitem"
@@ -2867,53 +2903,22 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="settings" width={15} height={15} />
                     <span>{WF.settings.preferences}</span>
-                  </button>
+                  </Button>
                 </div>
               )}
               {settingsOpen && (
                 <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.replyGroup.settingsTitle}</div>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-reply-grouping"
-                        value="summary"
-                        checked={(prefs.replyGrouping ?? 'summary') === 'summary'}
-                        onChange={() => setPrefs({ replyGrouping: 'summary' })}
-                      />
-                      <span>{WF.replyGroup.summary}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-reply-grouping"
-                        value="expanded"
-                        checked={prefs.replyGrouping === 'expanded'}
-                        onChange={() => setPrefs({ replyGrouping: 'expanded' })}
-                      />
-                      <span>{WF.replyGroup.expanded}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-reply-grouping"
-                        value="collapsed"
-                        checked={prefs.replyGrouping === 'collapsed'}
-                        onChange={() => setPrefs({ replyGrouping: 'collapsed' })}
-                      />
-                      <span>{WF.replyGroup.collapsed}</span>
-                    </label>
-                    <div className={css.settingsHint}>{WF.replyGroup.summaryDesc}</div>
+                    <RadioGroup label={WF.replyGroup.settingsTitle} value={prefs.replyGrouping ?? 'summary'} onValueChange={value => setPrefs({ replyGrouping: value as ReplyGrouping })} items={[{ value: 'summary', label: WF.replyGroup.summary }, { value: 'expanded', label: WF.replyGroup.expanded }, { value: 'collapsed', label: WF.replyGroup.collapsed }]} /><div className={css.settingsHint}>{WF.replyGroup.summaryDesc}</div>
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
                     <label className={css.settingsCheckbox}>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={prefs.showTokenStats !== false}
-                        onChange={e => setPrefs({ showTokenStats: e.target.checked })}
+                        onCheckedChange={value => setPrefs({ showTokenStats: value === true })}
                       />
                       <span>{WF.settings.showTokens}</span>
                     </label>
@@ -2921,109 +2926,30 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.layoutTitle}</div>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-layout"
-                        value="discord"
-                        checked={prefs.style === 'discord'}
-                        onChange={() => setPrefs({ style: 'discord' })}
-                      />
-                      <span>{WF.settings.layoutDiscord}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-layout"
-                        value="wechat"
-                        checked={prefs.style === 'wechat'}
-                        onChange={() => setPrefs({ style: 'wechat' })}
-                      />
-                      <span>{WF.settings.layoutWechat}</span>
-                    </label>
+                    <RadioGroup label={WF.settings.layoutTitle} value={prefs.style} onValueChange={value => setPrefs({ style: value as typeof prefs.style })} items={[{ value: 'discord', label: WF.settings.layoutDiscord }, { value: 'wechat', label: WF.settings.layoutWechat }]} />
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.schemeTitle}</div>
-                    {(['system', 'light', 'dark'] as const).map(value => (
-                      <label key={value} className={css.settingsRadio}>
-                        <input
-                          type="radio"
-                          name="wf-scheme"
-                          value={value}
-                          checked={prefs.scheme === value}
-                          onChange={() => setPrefs({ scheme: value })}
-                        />
-                        <span>{value === 'system' ? WF.settings.schemeSystem : value === 'light' ? WF.settings.schemeLight : WF.settings.schemeDark}</span>
-                      </label>
-                    ))}
+                    <RadioGroup label={WF.settings.schemeTitle} value={prefs.scheme} onValueChange={value => setPrefs({ scheme: value as typeof prefs.scheme })} items={[{ value: 'system', label: WF.settings.schemeSystem }, { value: 'light', label: WF.settings.schemeLight }, { value: 'dark', label: WF.settings.schemeDark }]} />
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.avatarStyleTitle}</div>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-avatar-style"
-                        value="circle"
-                        checked={prefs.avatarStyle === 'circle'}
-                        onChange={() => setPrefs({ avatarStyle: 'circle' })}
-                      />
-                      <span>{WF.settings.avatarStyleCircle}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-avatar-style"
-                        value="terminal"
-                        checked={prefs.avatarStyle === 'terminal'}
-                        onChange={() => setPrefs({ avatarStyle: 'terminal' })}
-                      />
-                      <span>{WF.settings.avatarStyleTerminal}</span>
-                    </label>
+                    <RadioGroup label={WF.settings.avatarStyleTitle} value={prefs.avatarStyle} onValueChange={value => setPrefs({ avatarStyle: value as AvatarStyle })} items={[{ value: 'circle', label: WF.settings.avatarStyleCircle }, { value: 'terminal', label: WF.settings.avatarStyleTerminal }]} />
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.typingEffectTitle}</div>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-typing-effect"
-                        value="hash"
-                        checked={prefs.typingEffect === 'hash'}
-                        onChange={() => setPrefs({ typingEffect: 'hash' })}
-                      />
-                      <span>{WF.settings.typingEffectHash}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-typing-effect"
-                        value="binary"
-                        checked={prefs.typingEffect === 'binary'}
-                        onChange={() => setPrefs({ typingEffect: 'binary' })}
-                      />
-                      <span>{WF.settings.typingEffectBinary}</span>
-                    </label>
-                    <label className={css.settingsRadio}>
-                      <input
-                        type="radio"
-                        name="wf-typing-effect"
-                        value="cli"
-                        checked={prefs.typingEffect === 'cli'}
-                        onChange={() => setPrefs({ typingEffect: 'cli' })}
-                      />
-                      <span>{WF.settings.typingEffectCli}</span>
-                    </label>
+                    <RadioGroup label={WF.settings.typingEffectTitle} value={prefs.typingEffect} onValueChange={value => setPrefs({ typingEffect: value as TypingEffect })} items={[{ value: 'hash', label: WF.settings.typingEffectHash }, { value: 'binary', label: WF.settings.typingEffectBinary }, { value: 'cli', label: WF.settings.typingEffectCli }]} />
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.showStepsTitle}</div>
                     <label className={css.settingsCheckbox}>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={prefs.showSteps}
-                        onChange={e => setPrefs({ showSteps: e.target.checked })}
+                        onCheckedChange={value => setPrefs({ showSteps: value === true })}
                       />
                       <span>{WF.settings.showSteps}</span>
                     </label>
@@ -3031,17 +2957,17 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>{WF.taskStatus.globalMemoryTitle}</button>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setSkillDraftsOpen(true) }}>
+                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>{WF.taskStatus.globalMemoryTitle}</Button>
+                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setSkillDraftsOpen(true) }}>
                       {WF.skillDrafts.menuTitle}{pendingDraftCount > 0 ? `（${WF.skillDrafts.pendingBadge(pendingDraftCount)}）` : ''}
-                    </button>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>{WF.diagnostics.title}</button>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setBackupOpen(true) }}>{WF.backup.title}</button>
+                    </Button>
+                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>{WF.diagnostics.title}</Button>
+                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setBackupOpen(true) }}>{WF.backup.title}</Button>
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.models.title} (BYOK)</div>
-                    <button
+                    <Button variant="plain"
                       type="button"
                       className={css.settingsMenuAction}
                       onClick={() => {
@@ -3050,9 +2976,9 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                       }}
                     >
                       <span>{WF.models.title}</span>
-                      <span>⚙️</span>
-                    </button>
-                    <button type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); openModels() }}>{WF.models.openGuide}</button>
+                      <Icon name="settings" width={14} height={14} />
+                    </Button>
+                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); openModels() }}>{WF.models.openGuide}</Button>
                   </div>
                 </div>
               )}
@@ -3234,7 +3160,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           ))}
           </div>
         </div>
-          {hasNewMessages && <button type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</button>}
+          {hasNewMessages && <Button variant="plain" type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</Button>}
           {replyJump.notice !== undefined && <div className={css.replyJumpNotice} role="status">{replyJump.notice}</div>}
         </div>
         {deletedDm && <div className={css.taskActions}>{WF.taskStatus.deletedEmployeeNotice}</div>}
@@ -3336,4 +3262,22 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
       )}
     </AnchoredDeliverablesContext.Provider>
   )
+}
+
+export function WorkforceMain(props: ComponentProps<typeof WorkforceMainContent>) {
+  const { source, snapshot, surface } = props
+  const view = useMemo(() => surface.kind === 'channel'
+    ? channelStream(snapshot, surface.id)
+    : { messages: threadView(snapshot, surface.threadId).list, threads: snapshot.threads.filter(thread => thread.id === surface.threadId) }, [snapshot, surface])
+  const target = surface.kind === 'dm' ? surface.threadId : view.threads.find(thread => thread.kind === 'channel')?.id
+  return <WorkforceAssistantRuntime key={`${surface.kind}:${surface.kind === 'channel' ? surface.id : surface.threadId}`} source={source} snapshot={snapshot} messages={view.messages} threadIds={view.threads.map(thread => thread.id)} targetThreadId={target}>
+    <WorkforceMainContent {...props} />
+  </WorkforceAssistantRuntime>
+}
+
+export function ThreadPanel(props: ComponentProps<typeof ThreadPanelContent>) {
+  const snapshot = useSyncExternalStore(props.source.subscribe, props.source.getSnapshot, props.source.getSnapshot)
+  return <WorkforceAssistantRuntime key={props.threadId} source={props.source} snapshot={snapshot} messages={threadView(snapshot, props.threadId).list} threadIds={[props.threadId]} targetThreadId={props.threadId}>
+    <ThreadPanelContent {...props} />
+  </WorkforceAssistantRuntime>
 }

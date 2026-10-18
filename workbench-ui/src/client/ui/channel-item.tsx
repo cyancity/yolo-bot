@@ -1,3 +1,4 @@
+import { Button } from './button.tsx'
 import type { MouseEvent, ReactNode } from 'react'
 import css from './channel-item.module.css'
 import { WF } from '../workforce-strings.ts'
@@ -26,7 +27,7 @@ export function ChannelItem({ kind, label, selected, unreadCount, mentionCount, 
     mentionCount ? WF.ui.mentionCount(mentionCount) : '',
   ].filter(Boolean).join(', ')
   return (
-    <button
+    <Button variant="plain"
       type="button"
       className={`${css.item} ${kind === 'dm' ? css.dm : ''} ${selected ? css.selected : ''} ${muted ? css.muted : ''}`}
       data-kind={kind}
@@ -54,6 +55,6 @@ export function ChannelItem({ kind, label, selected, unreadCount, mentionCount, 
       {(unreadCount ?? 0) > 0 && (
         <span className={css.unread} aria-hidden="true">{unreadCount! > 99 ? '99+' : unreadCount}</span>
       )}
-    </button>
+    </Button>
   )
 }

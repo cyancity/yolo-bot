@@ -4,6 +4,7 @@
  * 行 = 头像（群聊为成员拼格）+ 名称 + 预览 + 右侧微信式时间 + 未读点。
  * 只做展示视图，不发额外请求。
  */
+import { Button, TextInput, Checkbox } from './ui/primitives.ts'
 import { memo, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { HostChannel } from './workforce-api.ts'
@@ -461,7 +462,7 @@ export function WorkforceChatList({
       const active = activeChannelId === row.channel.id
       const displayName = row.title
       return (
-        <button
+        <Button variant="plain"
           key={row.key}
           type="button"
           className={cx(css.chatItem, active && css.chatItemActive, meta.pinned && css.chatItemPinned)}
@@ -484,7 +485,7 @@ export function WorkforceChatList({
               {meta.pinned && <span className={css.chatPin} title={WF.common.pinned}><PinGlyph /></span>}
             </span>
           </span>
-        </button>
+        </Button>
       )
     }
     const isStale = row.kind === 'dm-stale'
@@ -501,7 +502,7 @@ export function WorkforceChatList({
         : undefined
 
     return (
-      <button
+      <Button variant="plain"
         key={row.key}
         type="button"
         className={cx(css.chatItem, active && css.chatItemActive, meta.pinned && css.chatItemPinned, isStale && css.chatItemDimmed)}
@@ -537,7 +538,7 @@ export function WorkforceChatList({
             {meta.pinned && <span className={css.chatPin} title={WF.common.pinned}><PinGlyph /></span>}
           </span>
         </span>
-      </button>
+      </Button>
     )
   }
 
@@ -579,8 +580,8 @@ export function WorkforceChatList({
         <div className={dialogCss.errorBanner} role="alert">
           <span className={dialogCss.errorMessage}>{opError.message}</span>
           <span className={dialogCss.errorActions}>
-            {opError.retry && <button type="button" className={dialogCss.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</button>}
-            <button type="button" className={dialogCss.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</button>
+            {opError.retry && <Button variant="plain" type="button" className={dialogCss.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</Button>}
+            <Button variant="plain" type="button" className={dialogCss.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</Button>
           </span>
         </div>
       )}
@@ -697,7 +698,7 @@ export function CreateChatModal({ employees, onClose, onSubmit }: {
         <form className={dialogCss.dialogForm} onSubmit={e => void submit(e)}>
           <div className={dialogCss.formItem}>
             <label className={dialogCss.formLabel} htmlFor="new-chat-name">{WF.chatList.groupChatNameOptional}</label>
-            <input
+            <TextInput
               id="new-chat-name"
               type="text"
               className={dialogCss.inputField}
@@ -713,7 +714,7 @@ export function CreateChatModal({ employees, onClose, onSubmit }: {
             <div className={css.memberList} role="group" aria-label={WF.chatList.selectMembersAria}>
               {employees.map(employee => (
                 <label key={employee.id} className={css.memberRow}>
-                  <input type="checkbox" checked={picked.has(employee.id)} onChange={() => toggle(employee.id)} />
+                  <Checkbox checked={picked.has(employee.id)} onCheckedChange={() => toggle(employee.id)} />
                   <span className={css.memberName}>{employee.name}{employee.isLeader && <span className={css.chatTag}>{WF.common.lead}</span>}</span>
                 </label>
               ))}
@@ -721,8 +722,8 @@ export function CreateChatModal({ employees, onClose, onSubmit }: {
             </div>
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.chatList.creating : WF.chatList.finish}</button>
+            <Button variant="plain" type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button variant="plain" type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.chatList.creating : WF.chatList.finish}</Button>
           </div>
         </form>
       </div>
@@ -767,7 +768,7 @@ function ChatNameModal({ current, fallback, title = WF.chatList.groupChatName, i
         <form className={dialogCss.dialogForm} onSubmit={e => void submit(e)}>
           <div className={dialogCss.formItem}>
             {inputLabel && <label className={dialogCss.formLabel}>{inputLabel}</label>}
-            <input
+            <TextInput
               type="text"
               className={dialogCss.inputField}
               value={value}
@@ -779,8 +780,8 @@ function ChatNameModal({ current, fallback, title = WF.chatList.groupChatName, i
             {hint && <span className={css.chatHint}>{hint}</span>}
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.models.saving : WF.common.save}</button>
+            <Button variant="plain" type="button" className={dialogCss.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button variant="plain" type="submit" className={dialogCss.submitBtn} disabled={busy}>{busy ? WF.models.saving : WF.common.save}</Button>
           </div>
         </form>
       </div>

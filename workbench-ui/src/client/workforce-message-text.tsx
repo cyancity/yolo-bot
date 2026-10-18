@@ -1,6 +1,7 @@
 import { isValidElement, memo, useCallback, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Markdown, { type Components } from 'react-markdown'
+import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CodeBlock } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Employee, Task, TaskDeliverable } from './workforce-types.ts'
@@ -9,6 +10,7 @@ import type { DeliverableInfo } from './workforce-attachments.tsx'
 import css from './workforce-message-text.module.css'
 import workforceCss from './workforce.module.css'
 import { WF } from './workforce-strings.ts'
+import { Button } from './ui/button.tsx'
 
 interface MarkdownNode {
   type: string
@@ -189,17 +191,18 @@ function MessageCodeBlock({ children }: { readonly children?: ReactNode }) {
   const [expanded, setExpanded] = useState(false)
   return <section className={css.codeFence} data-collapsed={lineCount > 20 && !expanded}>
     <CodeBlock code={code} lang={language ?? 'text'} copyLabel={WF.ui.copyCode} copiedLabel={WF.ui.copiedCode} />
-    {lineCount > 20 && <button type="button" className={css.expandCode} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
+    {lineCount > 20 && <Button variant="plain" type="button" className={css.expandCode} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>
       {expanded ? WF.ui.collapseCode : WF.ui.expandCode(lineCount)}
-    </button>}
+    </Button>}
   </section>
 }
 
 /** GFM for both roles; model-authored HTML remains inert literal text.
  *  memo 后未变化正文零重渲染；内部对 <Markdown> 元素再按 text 记忆化，
  *  即使外层因 tasks/employees 引用变化重渲染，也不重解析 markdown。 */
-export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false, hasDeliverables = false }: {
+export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false, hasDeliverables = false, assistant = false }: {
   readonly text: string
+  readonly assistant?: boolean | undefined
   readonly employees: readonly Employee[]
   readonly onDm: (id: string) => void
   readonly tasks?: readonly Task[] | undefined
@@ -235,7 +238,7 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
       if (href === '#workforce-all') return <span className={`${workforceCss.mention} ${workforceCss.mentionAll}`}>{children}</span>
       if (href?.startsWith('#workforce-employee/')) {
         const id = decodeURIComponent(href.slice('#workforce-employee/'.length))
-        return <button type="button" className={workforceCss.mention} onClick={() => onDmRef.current(id)}>{children}</button>
+        return <Button variant="plain" type="button" className={workforceCss.mention} onClick={() => onDmRef.current(id)}>{children}</Button>
       }
       const url = href && safeAttachmentUrl(href)
       if (!url) return <>{children}</>
@@ -299,9 +302,12 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
     },
   }), [openImage, authorNameOf, hasAttachments, hasDeliverables])
   const cleanedText = useMemo(() => cleanMessageText(text), [text])
-  const rendered = useMemo(() => (
+  const preprocess = useCallback(() => cleanedText, [cleanedText])
+  const rendered = useMemo(() => assistant ? (
+    <MarkdownTextPrimitive smooth={false} preprocess={preprocess} remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value === '#workforce-all' || value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''} />
+  ) : (
     <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value === '#workforce-all' || value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{cleanedText}</Markdown>
-  ), [cleanedText, mentionPlugin, components])
+  ), [assistant, preprocess, cleanedText, mentionPlugin, components])
   return <div ref={rootRef} className={css.messageText}>
     {rendered}
     {gallery && <WorkforceImageGallery images={gallery.images} initialIndex={gallery.index} onClose={closeGallery} />}

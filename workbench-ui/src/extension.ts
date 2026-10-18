@@ -26,18 +26,42 @@ export interface WorkbenchPageRegistration {
   readonly label: string | (() => string)
   readonly order?: number
   readonly icon?: ComponentType
+  /** Hide the collaboration column while retaining the navigation rail. */
+  readonly sidebar?: 'default' | 'hidden'
   readonly component: ComponentType<WorkbenchPageProps>
+}
+
+/** Extension-owned JSON payload carried by a message or a tool result. */
+export interface WorkbenchPreview {
+  readonly id: string
+  readonly data: unknown
+}
+
+export interface WorkbenchPreviewProps extends WorkbenchChromeProps {
+  readonly data: unknown
+}
+
+export interface WorkbenchPreviewRegistration {
+  readonly id: string
+  readonly component: ComponentType<WorkbenchPreviewProps>
+}
+
+export interface WorkbenchPreviewOutletProps {
+  readonly preview: WorkbenchPreview
+  readonly fallback?: ReactNode
 }
 
 export interface WorkbenchUi {
   /** Atomically registers the page and its navigation entry, or registers neither. */
   registerPage(page: WorkbenchPageRegistration): ExtensionDisposer
+  registerPreview(preview: WorkbenchPreviewRegistration): ExtensionDisposer
   navigate(id: string, location?: ExtensionLocation): void
   openWorkbench(): void
   readonly preferences: WorkbenchPreferences
   readonly components: {
     readonly PageShell: ComponentType<WorkbenchPageShellProps>
     readonly Dialog: ComponentType<WorkbenchDialogProps>
+    readonly Preview: ComponentType<WorkbenchPreviewOutletProps>
   }
 }
 
@@ -59,6 +83,7 @@ export interface WorkbenchPreferences {
 /** Root-scoped slots share only navigation capabilities, never a core Store or business face. */
 export interface WorkbenchSlotMap {
   'workbench.pages': { kind: 'keyed'; scope: 'root'; owner: WorkbenchPageProps }
+  'workbench.previews': { kind: 'keyed'; scope: 'root'; owner: WorkbenchPreviewProps }
   'workbench.navigation': { kind: 'list'; scope: 'root'; owner: WorkbenchChromeProps }
   'workbench.notice': { kind: 'list'; scope: 'root'; owner: WorkbenchChromeProps }
   'workbench.overlay': { kind: 'list'; scope: 'root'; owner: WorkbenchChromeProps }

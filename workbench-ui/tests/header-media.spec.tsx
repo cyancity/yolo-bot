@@ -41,7 +41,8 @@ it('missing cover uses a media fallback', () => {
 it('Select keeps labels, native change and disabled behavior', () => {
   const change = vi.fn()
   const { rerender } = render(<Select aria-label="统一档案" defaultValue="a" onChange={change}><option value="a">档案 A</option><option value="b">档案 B</option></Select>)
-  fireEvent.change(screen.getByRole('combobox', { name: '统一档案' }), { target: { value: 'b' } })
+  fireEvent.keyDown(screen.getByRole('combobox', { name: '统一档案' }), { key: 'ArrowDown' })
+  fireEvent.click(screen.getByRole('option', { name: '档案 B' }))
   expect(change).toHaveBeenCalledOnce()
   expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('b')
   rerender(<Select aria-label="统一档案" disabled><option>档案</option></Select>)

@@ -25,6 +25,7 @@ import type { WorkbenchUi, WorkbenchPageProps } from '@cyancity/yolo-bot-ui/exte
 | 插座 | kind / scope | owner props | 位置与用途 |
 |---|---|---|---|
 | `workbench.pages` | keyed / root | `WorkbenchPageProps` | 当前扩展页正文 |
+| `workbench.previews` | keyed / root | `WorkbenchPreviewProps` | 对话或工具结果里的扩展预览 |
 | `workbench.navigation` | list / root | `WorkbenchChromeProps` | 核心统一导航容器，沿用 label/order 和选中态 |
 | `workbench.notice` | list / root | `WorkbenchChromeProps` | 根提示条，不接管正文滚动 |
 | `workbench.overlay` | list / root | `WorkbenchChromeProps` | 扩展对话框或 gate；核心不解释 gate 策略 |
@@ -51,16 +52,34 @@ interface WorkbenchPageRegistration {
   readonly label: string | (() => string)
   readonly order?: number
   readonly icon?: ComponentType
+  readonly sidebar?: 'default' | 'hidden'
   readonly component: ComponentType<WorkbenchPageProps>
+}
+interface WorkbenchPreview {
+  readonly id: string
+  readonly data: unknown
+}
+interface WorkbenchPreviewProps extends WorkbenchChromeProps {
+  readonly data: unknown
+}
+interface WorkbenchPreviewRegistration {
+  readonly id: string
+  readonly component: ComponentType<WorkbenchPreviewProps>
+}
+interface WorkbenchPreviewOutletProps {
+  readonly preview: WorkbenchPreview
+  readonly fallback?: ReactNode
 }
 interface WorkbenchUi {
   registerPage(page: WorkbenchPageRegistration): ExtensionDisposer
+  registerPreview(preview: WorkbenchPreviewRegistration): ExtensionDisposer
   navigate(id: string, location?: ExtensionLocation): void
   openWorkbench(): void
   readonly preferences: WorkbenchPreferences
   readonly components: {
     readonly PageShell: ComponentType<WorkbenchPageShellProps>
     readonly Dialog: ComponentType<WorkbenchDialogProps>
+    readonly Preview: ComponentType<WorkbenchPreviewOutletProps>
   }
 }
 ```
@@ -68,6 +87,43 @@ interface WorkbenchUi {
 页面助手在同一个 lifecycle 内原子注册 keyed 内容和导航。排序为 order 升序，同值按 id；缺省 order 为 0。普通扩展用助手，不单独注册这两项。notice/overlay/settings/context 直接使用 `ctx.slots.inject` 与 `ctx.slots.register`，采用官方注册生命周期。组件注入的数据由扩展持有，不透传核心 Store、Runtime、Face 或会话数据源。
 
 核心导航状态用 `{ kind: 'extension', id, location }`。省略 location 时使用 `{ route: '' }`，扩展自己解释 route/params；核心不增加业务 view。卸载当前页、导航未知 id 均回核心首页，`activePageId` 为 null；卸载非当前页不改选择。导航不自动打开面板，跨表面跳转先调用 `openWorkbench()`。关闭扩展 UI 不卸载 host、不停止员工。
+
+页面的 `sidebar` 缺省为 `default`。`hidden` 在当前工作台面板激活时只保留窄导航 Rail，核心不挂载频道、私信与员工列表列。退出页面或卸载后恢复宿主原来的宽度和展开状态，不修改侧栏偏好；窄屏也保留 Rail。点击频道导航会返回之前打开的频道或私信。扩展通过注册表达页面布局，不自行定位或隐藏核心侧栏 DOM。当前钉版宿主没有临时侧栏布局 API，核心适配器只在当前页生效，保留宿主后两列与其更新，并在退出时释放布局覆盖。
+
+### 对话与工具结果中的扩展预览
+
+扩展通过 `registerPreview` 注册命名空间限定的 id，重复 id 同步失败。其 `component` 只接收扩展持有的 `data` 和通用导航能力，不接收核心会话或 Store。注册者负责校验未知数据、加载最新资源、操作权限和错误状态。撤销注册不会改动消息或扩展资源；既有消息回退到原文字或工具输出。直接注册 `workbench.previews` 时遵循同样的唯一 id 约定；普通扩展优先使用助手。
+
+消息或工具 JSON 结果可以携带下面的公开信封。`data` 必须可序列化，由扩展定义。核心不解释其中的资源类型、状态或操作。
+
+```ts
+{
+  extensionPreview: {
+    id: 'vendor.package.resource-preview',
+    data: { resourceId: 'resource-123' },
+  },
+}
+```
+
+工作台消息与工具渲染器从信封取得预览。找不到渲染器或扩展已经卸载时保留原输出，不留空卡。扩展自己的主页面子树也可使用 `workbenchUi.components.Preview`，参数为 `{ preview: WorkbenchPreview, fallback?: ReactNode }`；该组件复用工作台页面授权的插槽渲染上下文，React portal 中仍可用。工作台之外没有此上下文时使用 fallback。
+
+```tsx
+ctx.workbenchUi.registerPage({
+  id: 'vendor.package.resources', label: '资源', sidebar: 'hidden', component: ResourcePage,
+})
+ctx.workbenchUi.registerPreview({
+  id: 'vendor.package.resource-preview',
+  component: ({ data, openWorkbench, navigate }) => {
+    const resource = parseResource(data)
+    return <ResourcePreview resource={resource} onOpen={() => {
+      openWorkbench()
+      navigate('vendor.package.resources', { route: 'resource', params: { id: resource.id } })
+    }} />
+  },
+})
+```
+
+预览可以提供简短操作和打开完整页的入口。操作由扩展自己的 HTTP 与生命周期负责；核心只提供渲染、注册撤销和导航，不安装业务处理器。
 
 `components` 复用核心组件和设计 token，不另带 React 或跨包导入 CSS。公开属性沿用既有形状：PageShell 的 `maxWidth?`、`header?`、`subnav?`、`banner?`、`children?`；Dialog 的 `title`、`closeLabel`、`onClose`、`children`、`busy?`、`fullScreen?`。组件只在其提供者存活期间使用，扩展卸载时释放组件持有的订阅和资源。
 

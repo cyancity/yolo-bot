@@ -1,5 +1,13 @@
-import { forwardRef, useId, type ChangeEvent, type ReactNode } from 'react'
+import { forwardRef, useId, type ChangeEvent, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import css from './input.module.css'
+
+/** shadcn text controls; native props allow incremental migration of existing forms. */
+export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function TextInput({ className, ...props }, ref) {
+  return <input {...props} ref={ref} className={`${css.control} ${className ?? ''}`} />
+})
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...props }, ref) {
+  return <textarea {...props} ref={ref} className={`${css.control} ${className ?? ''}`} />
+})
 
 export interface InputProps {
   readonly id?: string

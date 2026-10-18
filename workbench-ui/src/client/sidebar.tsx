@@ -1,4 +1,5 @@
 /** Core navigation column: registered page entries, channels, DMs and user identity. */
+import { Button, TextInput } from './ui/primitives.ts'
 import { Icon, type IconName } from './ui/icons.tsx'
 import { useEffect, useDeferredValue, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -34,6 +35,7 @@ import { WorkforceContextMenu, type ContextMenuSection } from './workforce-conte
 import { UserProfileModal, useUserProfile } from './workforce-profile.tsx'
 import { useWorkforcePrefs, type AvatarStyle } from './workforce-prefs.ts'
 import { DSH_AVATAR_DATA_URL } from './dsh-icon.ts'
+import { IndependentSidebarPresentation } from './sidebar-presentation.tsx'
 type NavHandle = EngineStoreHandle<WorkbenchNavState, WorkbenchNavActions>
 
 /** Registrant inject face for the sidebar occupant. */
@@ -43,6 +45,7 @@ export interface WorkbenchSidebarInjected {
   openWorkbench(): void
   openChat(sessionId: string | undefined): void
   toggleColumn(): void
+  sidebarHidden(): boolean
   workforce: WorkforceSource
   chrome: WorkbenchChromeProps
   navigation: { getSnapshot(): number; subscribe(listener: () => void): () => void; entries(): readonly { id: string; order: number }[] }
@@ -103,6 +106,7 @@ function ToggleGlyph({ collapsed }: { readonly collapsed: boolean }) {
 /** Plain-props sidebar body — the testable seam under the slot entry. */
 export interface SidebarBodyProps {
   readonly collapsed: boolean
+  readonly independent?: boolean
   readonly view: WorkbenchView
   /** True while the workbench panel is the selected main panel. */
   readonly workbenchActive: boolean
@@ -127,7 +131,7 @@ function NavRow({ item, active, collapsed, onNavigate }: {
 }) {
   const label = item.label
   return (
-    <button
+    <Button variant="plain"
       type="button"
       className={cx(css.sideItem, active && css.sideItemActive)}
       title={collapsed ? label : undefined}
@@ -137,7 +141,7 @@ function NavRow({ item, active, collapsed, onNavigate }: {
     >
       <span className={css.sideGlyph} aria-hidden="true"><Icon name={item.glyph} /></span>
       {!collapsed && <span className={css.sideLabel}>{item.label}</span>}
-    </button>
+    </Button>
   )
 }
 
@@ -147,10 +151,11 @@ export function SidebarBody(props: SidebarBodyProps) {
   const collapsed = props.collapsed
   return (
     <WorkbenchSurface className={cx(css.side, collapsed && css.sideCollapsed)}>
+      <IndependentSidebarPresentation hidden={props.independent ?? false} />
       <div className={css.sideBrand}>
         <span className={css.sideMark} aria-hidden={collapsed ? undefined : true}>{props.brandMark}</span>
         {!collapsed && <span className={css.sideName}>{props.brandName}</span>}
-        <button
+        <Button variant="plain"
           type="button"
           className={css.sideToggle}
           title={collapsed ? S.nav.expand : S.nav.collapse}
@@ -158,12 +163,12 @@ export function SidebarBody(props: SidebarBodyProps) {
           onClick={props.onToggle}
         >
           <ToggleGlyph collapsed={collapsed} />
-        </button>
+        </Button>
       </div>
       <nav className={css.sideNav} aria-label={S.brand}>
         {NAV_ITEMS.map(item => <NavRow key={item.label} item={item} collapsed={collapsed}
           active={props.workbenchActive && itemActive(props.view, item)} onNavigate={props.onNavigate} />)}
-        <button
+        <Button variant="plain"
           type="button"
           className={`${css.sideItem} ${props.chatActive ? css.sideItemActive : ''}`}
           title={collapsed ? S.nav.chat : undefined}
@@ -173,7 +178,7 @@ export function SidebarBody(props: SidebarBodyProps) {
         >
           <span className={css.sideGlyph} aria-hidden="true"><Icon name="chat" /></span>
           {!collapsed && <span className={css.sideLabel}>{S.nav.chat}</span>}
-        </button>
+        </Button>
       </nav>
       <div className={css.sideFoot}>
         <div className={css.sideSettings}>{props.settings}</div>
@@ -292,8 +297,9 @@ function useSidebarCore(props: SidebarCoreProps, collapsed: boolean) {
     activePageId: view.kind === 'extension' ? view.id : null,
     openWorkbench: props.openWorkbench,
     navigate: (id, location) => {
+      const preservePresentation = props.sidebarHidden()
       props.chrome.navigate(id, location)
-      if (!collapsed && narrowViewport()) props.toggleColumn()
+      if (!collapsed && narrowViewport() && !preservePresentation && !props.sidebarHidden()) props.toggleColumn()
     },
   }
   const navigate = (next: WorkbenchView): void => {
@@ -468,16 +474,16 @@ function SidebarChannelColumn({ core, brandName, context }: {
             }}
           />
           <div className={sub.sectionDivider} role="separator" aria-orientation="horizontal" />
-          <button type="button" className={sub.dmSectionHeadBtn} onClick={core.toggleDmSection} aria-expanded={!core.dmCollapsed}>
+          <Button variant="plain" type="button" className={sub.dmSectionHeadBtn} onClick={core.toggleDmSection} aria-expanded={!core.dmCollapsed}>
             <span className={`${sub.dmChevron} ${core.dmCollapsed ? sub.dmChevronCollapsed : ''}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"/>
               </svg>
             </span>
             {WF.nav.dms}
-          </button>
+          </Button>
           {!core.dmCollapsed && core.activeEmployees.map(employee => (
-            <button
+            <Button variant="plain"
               key={employee.id}
               type="button"
               className={cx(workforceCss.listItem, view.kind === 'dm' && view.id === employee.id && workforceCss.listItemActive)}
@@ -505,10 +511,10 @@ function SidebarChannelColumn({ core, brandName, context }: {
                   </svg>
                 </span>
               )}
-            </button>
+            </Button>
           ))}
           {!core.dmCollapsed && core.deletedThreads.map((thread: Thread) => (
-            <button
+            <Button variant="plain"
               key={thread.id}
               type="button"
               className={cx(
@@ -531,7 +537,7 @@ function SidebarChannelColumn({ core, brandName, context }: {
               </span>
               <span className={workforceCss.listLabel}>{thread.title}</span>
               <span className={workforceCss.employeeLabel}>{WF.common.offline}</span>
-            </button>
+            </Button>
           ))}
         </>}
         {snapshot.error && <div className={workforceCss.streamError} role="alert">{snapshot.error}</div>}
@@ -621,7 +627,7 @@ function RenameBotModal({
         <form className={dialogCss.dialogForm} onSubmit={e => void handleSubmit(e)}>
           <div className={dialogCss.formItem}>
             <label className={dialogCss.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
-            <input
+            <TextInput
               id="rename-bot-name-input"
               ref={inputRef}
               type="text"
@@ -633,8 +639,8 @@ function RenameBotModal({
             />
           </div>
           <div className={dialogCss.dialogFooter}>
-            <button type="button" className={dialogCss.cancelBtn} onClick={onClose} disabled={busy}>{WF.common.cancel}</button>
-            <button type="submit" className={dialogCss.submitBtn} disabled={busy || !val.trim()}>{busy ? WF.models.saving : WF.common.confirm}</button>
+            <Button variant="plain" type="button" className={dialogCss.cancelBtn} onClick={onClose} disabled={busy}>{WF.common.cancel}</Button>
+            <Button variant="plain" type="submit" className={dialogCss.submitBtn} disabled={busy || !val.trim()}>{busy ? WF.models.saving : WF.common.confirm}</Button>
           </div>
         </form>
       </div>
@@ -837,7 +843,7 @@ function SidebarHistorySearch({
               <line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </span>
-          <input
+          <TextInput
             type="text"
             className={searchCss.searchInput}
             placeholder={WF.common.search}
@@ -851,7 +857,7 @@ function SidebarHistorySearch({
             }}
           />
           {isSearching && (
-            <button
+            <Button variant="plain"
               type="button"
               className={searchCss.clearBtn}
               title={WF.common.clearSearch}
@@ -862,11 +868,11 @@ function SidebarHistorySearch({
               }}
             >
               ×
-            </button>
+            </Button>
           )}
         </div>
         {onAddChat && (
-          <button
+          <Button variant="plain"
             type="button"
             className={searchCss.addChatBtn}
             title={WF.common.createGroupChat}
@@ -878,7 +884,7 @@ function SidebarHistorySearch({
               <line x1="12" y1="8" x2="12" y2="16" />
               <line x1="8" y1="12" x2="16" y2="12" />
             </svg>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -888,7 +894,7 @@ function SidebarHistorySearch({
             <div className={searchCss.noResults}>{WF.common.noMatchingMessages}</div>
           ) : (
             results.map(item => (
-              <button
+              <Button variant="plain"
                 key={`${item.threadId}-${item.messageId}`}
                 type="button"
                 className={searchCss.resultItem}
@@ -926,7 +932,7 @@ function SidebarHistorySearch({
                     <HighlightedSnippet text={item.text} query={deferredQuery.trim()} />
                   </div>
                 </div>
-              </button>
+              </Button>
             ))
           )}
         </div>
@@ -942,6 +948,7 @@ function SidebarHistorySearch({
  */
 export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
   const core = useSidebarCore(props, props.collapsed)
+  const independent = core.activePanelId === PANEL_ID && core.view.kind === 'extension' && core.view.sidebar === 'hidden'
   // 侧栏接管开关（workbench.prefs.sidebarTakeover，默认开）：关掉即回退经典导航体。
   const takeover = props.usePrefs(value => value[SIDEBAR_TAKEOVER_FIELD] !== false)
   const brandMark = props.renderSlot('sidebar.brand.mark', { size: 20 }, { fallback: <span>{S.nav.brandGlyph}</span> })
@@ -949,7 +956,8 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
   if (!takeover) {
     return (
       <SidebarBody
-        collapsed={props.collapsed}
+        collapsed={props.collapsed || independent}
+        independent={independent}
         view={core.view}
         workbenchActive={core.activePanelId === PANEL_ID}
         chatActive={core.activePanelId === null}
@@ -965,9 +973,10 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
 
   return (
     <WorkbenchSurface className={workforceCss.sidebar} data-workforce-sidebar data-wb-style={core.prefs.style}>
+      <IndependentSidebarPresentation hidden={independent} />
       <nav className={workforceCss.rail} aria-label={WF.common.workbenchNav}>
         <div className={workforceCss.railUser}>
-          <button
+          <Button variant="plain"
             type="button"
             className={workforceCss.railUserBtn}
             title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
@@ -979,7 +988,7 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
               isUser={true}
               size={36}
             />
-          </button>
+          </Button>
         </div>
         {core.navigation.entries().map(entry => <span key={entry.id}>
           {props.renderSlot('workbench.navigation', core.chrome, { only: entry.id })}
@@ -988,7 +997,7 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
           {props.renderSlot('sidebar.settings', { wide: false })}
         </div>
       </nav>
-      {!props.collapsed && (
+      {!props.collapsed && !independent && (
         <SidebarChannelColumn
           core={core}
           brandName={props.renderSlot('sidebar.brand.name', {}, { fallback: <span>{S.brand}</span> })}
@@ -1009,6 +1018,7 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
 export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
   const takeover = props.usePrefs(value => value[SIDEBAR_TAKEOVER_FIELD] !== false)
   const core = useSidebarCore(props, !props.wide)
+  const independent = core.activePanelId === PANEL_ID && core.view.kind === 'extension' && core.view.sidebar === 'hidden'
   const onReturnToDsh = () => {
     props.patchPrefs({ [SIDEBAR_TAKEOVER_FIELD]: false })
     props.openChat(undefined)
@@ -1023,9 +1033,10 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
   }
   return (
     <WorkbenchSurface className={workforceCss.region} data-workforce-sidebar data-wb-style={core.prefs.style}>
+      <IndependentSidebarPresentation hidden={independent} />
       <nav className={workforceCss.regionRail} aria-label={WF.common.workbenchNav}>
         <div className={workforceCss.railUser}>
-          <button
+          <Button variant="plain"
             type="button"
             className={workforceCss.railUserBtn}
             title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
@@ -1037,13 +1048,13 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
               isUser={true}
               size={36}
             />
-          </button>
+          </Button>
         </div>
         {core.navigation.entries().map(entry => <span key={entry.id}>
           {safeRender(() => props.renderSlot('workbench.navigation', core.chrome, { only: entry.id }))}
         </span>)}
         <div className={workforceCss.railFoot}>
-          <button
+          <Button variant="plain"
             type="button"
             className={workforceCss.railButton}
             title={S.nav.chat}
@@ -1058,10 +1069,10 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
               height={26}
               style={{ borderRadius: '6px', objectFit: 'contain' }}
             />
-          </button>
+          </Button>
         </div>
       </nav>
-      {props.wide && (
+      {props.wide && !independent && (
         <SidebarChannelColumn
           core={core}
           brandName={<span>{S.brand}</span>}

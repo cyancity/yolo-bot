@@ -4,6 +4,7 @@
  * 「全部展开」就地还原成完整气泡序列（复用同一套 MessageRow，不另做渲染）。
  * 高度可控是唯一目的：三条 1000 字回复从 3 屏压到一张卡。
  */
+import { Button } from './ui/primitives.ts'
 import { memo, type ReactNode } from 'react'
 import css from './workforce-reply-group.module.css'
 import { Icon } from './ui/icons.tsx'
@@ -52,14 +53,14 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
           <span className={css.groupStateDot} aria-hidden="true" />
           {stateText}
         </span>
-        <button
+        <Button variant="plain"
           type="button"
           className={css.groupAction}
           aria-expanded={expanded}
           onClick={onToggleExpanded}
         >
           {expanded ? WF.replyGroup.collapse : WF.replyGroup.expand}
-        </button>
+        </Button>
       </div>
       {expanded ? (
         <div>{group.members.map(member => <div key={member.message.id}>{renderMember(member.message)}</div>)}</div>
@@ -73,7 +74,7 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
             const excerpt = replyExcerpt(message.text)
             return (
               <li key={message.id}>
-                <button
+                <Button variant="plain"
                   type="button"
                   className={css.member}
                   onClick={() => onOpenPreview(message.id)}
@@ -103,7 +104,7 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
                     </span>
                   </span>
                   <Icon name="chevronRight" width={16} height={16} className={css.memberArrow} />
-                </button>
+                </Button>
               </li>
             )
           })}

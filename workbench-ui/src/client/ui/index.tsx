@@ -1,3 +1,4 @@
+import { Button } from './button.tsx'
 /**
  * Workbench layout primitives (see docs/design/ui-system.md section 3).
  * Pages are assembled from these; they own spacing, width, hierarchy and
@@ -17,7 +18,7 @@
  */
 import { createContext, useContext, useState, useEffect, useRef, isValidElement } from 'react'
 import { createPortal } from 'react-dom'
-import type { ReactNode, SelectHTMLAttributes } from 'react'
+import type { ReactNode } from 'react'
 import ui from './ui.module.css'
 import { Icon } from './icons.tsx'
 import { Dialog as WbDialog } from './dialog.tsx'
@@ -159,7 +160,7 @@ export function PageHeader({ title, subtitle, crumb, onCrumb, meta, status, lamp
   return (
     <header className={ui.header}>
       {crumb !== undefined && onCrumb !== undefined && (
-        <button type="button" className={ui.crumb} onClick={onCrumb}>{crumb}</button>
+        <Button variant="plain" type="button" className={ui.crumb} onClick={onCrumb}>{crumb}</Button>
       )}
       <div className={ui.titleRow}>
         <h1 className={ui.title}>{title}</h1>
@@ -228,9 +229,9 @@ export function SubNav({ label, items, onSelect }: SubNavProps) {
           >
             {index > 0 && <span className={ui.subnavArrow} aria-hidden="true">›</span>}
             {item.state === 'done' && onSelect !== undefined
-              ? <button type="button" className={classes} onClick={() => onSelect(item.key)}>{inner}</button>
+              ? <Button variant="plain" type="button" className={classes} onClick={() => onSelect(item.key)}>{inner}</Button>
               : item.state === 'todo'
-                ? <button type="button" className={classes} disabled>{inner}</button>
+                ? <Button variant="plain" type="button" className={classes} disabled>{inner}</Button>
                 : <span className={classes}>{inner}</span>}
           </li>
         )
@@ -412,14 +413,8 @@ export function Dialog(props: Parameters<typeof WbDialog>[0]) {
     </ShellContext.Provider>
   )
 }
-export function Switch({ label, checked, disabled = false, onChange }: {
-  readonly label: string; readonly checked: boolean; readonly disabled?: boolean; readonly onChange: (checked: boolean) => void
-}) {
-  return <label className={ui.switch}><input type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)} />{label}</label>
-}
-
-/** Styled native select: preserves keyboard, accessible labels and change events. */
-export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <span className={cx(ui.selectWrap, className)}><select {...props} className={ui.select}>{children}</select><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="m6 9 6 6 6-6" /></svg></span>
-}
+export { Switch } from './switch.tsx'
+export { Select } from './select.tsx'
+export { TextInput, Textarea } from './input.tsx'
+export { Checkbox, RadioGroup } from './choice.tsx'
 

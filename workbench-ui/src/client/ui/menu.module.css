@@ -34,11 +34,11 @@
   cursor: default;
   outline: none;
   user-select: none;
-  min-height: 28px;
+  min-height: var(--wb-control-height-sm);
 }
 
 .item[data-highlighted] { background: var(--wb-hover); }
-.item[data-disabled] { color: var(--wb-disabled-fg); }
+.item[data-disabled] { opacity: var(--wb-opacity-disabled); }
 .item.danger { color: var(--wb-danger); }
 .item.danger[data-highlighted] { background: var(--wb-danger-bg); }
 

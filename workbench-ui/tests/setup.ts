@@ -7,3 +7,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   }
   ;(globalThis as Record<string, unknown>).ResizeObserver = ResizeObserverStub
 }
+
+// Radix Select focuses the active item; jsdom has no layout scrolling implementation.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}

@@ -1,6 +1,6 @@
 .bubble {
   display: inline-block;
-  max-width: min(72%, 640px);
+  max-width: min(72%, var(--wb-thread-max));
   padding: var(--wb-bubble-pad-y) var(--wb-bubble-pad-x);
   border-radius: var(--wb-radius-bubble);
   font-size: var(--wb-type-body-size);
@@ -10,12 +10,12 @@
 }
 
 .peer {
-  background: var(--wb-bubble-peer);
-  border: var(--wb-border-width) solid var(--wb-bubble-line);
+  background: transparent;
+  border: 0;
   color: var(--wb-fg);
 }
 
 .self {
-  background: var(--wb-bubble-self);
-  color: var(--wb-bubble-self-fg);
+  background: var(--wb-surface-sub);
+  color: var(--wb-fg);
 }

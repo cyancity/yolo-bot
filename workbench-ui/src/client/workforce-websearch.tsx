@@ -3,6 +3,7 @@
  * 并用 React.lazy(() => import('./workforce-websearch.tsx')) 包一层 Suspense。
  * 本文件不进主包，直到那次懒加载。
  */
+import { Button } from './ui/primitives.ts'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { SearchSource } from './workforce-types.ts'
 import { WF } from './workforce-strings.ts'
@@ -178,7 +179,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
   const extra = sources.length - ORB_VISIBLE_MAX
   return (
     <div className={css.board} data-expanded={expanded ? 'true' : 'false'}>
-      <button
+      <Button variant="plain"
         type="button"
         className={css.stackBtn}
         aria-expanded={expanded}
@@ -204,7 +205,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
           })}
         </span>
         <span className={css.stackCount}>{WF.websearch.sourcesCount(sources.length)}</span>
-      </button>
+      </Button>
       {expanded ? (
         <ul className={css.trackList}>
           {sources.map((source, index) => (
@@ -238,7 +239,7 @@ export function WorkforceWebSearch({ status, query, sources }: WorkforceWebSearc
   const listed = sources ?? []
   return (
     <div className={css.root} data-websearch="" data-status={status} data-motion={reduced ? 'reduce' : 'full'}>
-      <button type="button" className={css.pill} aria-expanded={open} aria-controls={panelId} title={label} onClick={() => setOpen(value => !value)}>
+      <Button variant="plain" type="button" className={css.pill} aria-expanded={open} aria-controls={panelId} title={label} onClick={() => setOpen(value => !value)}>
         <span className={css.mark} aria-hidden="true">
           <svg className={css.ring} viewBox="0 0 20 20">
             <circle className={css.track} cx="10" cy="10" r={RING_RADIUS} />
@@ -255,7 +256,7 @@ export function WorkforceWebSearch({ status, query, sources }: WorkforceWebSearc
           <Globe />
         </span>
         <span className={status === 'running' && !reduced ? css.labelRunning : css.label}>{label}</span>
-      </button>
+      </Button>
       {open ? (
         <div id={panelId} className={reduced ? css.panel : css.panelMotion}>
           {query ? <p className={css.query}>{WF.websearch.searchPrefix(query)}</p> : null}
@@ -327,10 +328,10 @@ function FailChip({ entry, detailId }: { readonly entry: SearchEntry; readonly d
   const [open, setOpen] = useState(false)
   return (
     <li className={css.trackItem}>
-      <button type="button" className={css.failChip} aria-expanded={open} aria-controls={detailId} onClick={() => setOpen(v => !v)}>
+      <Button variant="plain" type="button" className={css.failChip} aria-expanded={open} aria-controls={detailId} onClick={() => setOpen(v => !v)}>
         <span className={css.failMark} aria-hidden="true">!</span>
         <span className={css.failLabel}>{entry.query ?? WF.websearch.searchNotFinished}</span>
-      </button>
+      </Button>
       {open ? (
         <div id={detailId} className={css.failDetail}>
           {entry.query ? <p className={css.query}>{WF.websearch.searchPrefix(entry.query)}</p> : null}
@@ -353,7 +354,7 @@ export function WebSearchBatch({ entries }: { readonly entries: readonly SearchE
   return (
     <div className={css.root} data-websearch-batch="" data-motion={reduced ? 'reduce' : 'full'}>
       <div className={css.board}>
-        <button
+        <Button variant="plain"
           type="button"
           className={css.stackBtn}
           aria-expanded={expanded}
@@ -364,7 +365,7 @@ export function WebSearchBatch({ entries }: { readonly entries: readonly SearchE
             {entries.map(entry => <BatchOrbs key={entry.id} entry={entry} />)}
           </span>
           <span className={css.stackCount}>{batchCountText(entries)}</span>
-        </button>
+        </Button>
         {expanded ? (
           <div className={css.batchPanel}>
             {queries.map((query, index) => <p key={`${query}${index}`} className={css.query}>{WF.websearch.searchPrefix(query)}</p>)}

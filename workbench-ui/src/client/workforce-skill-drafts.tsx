@@ -5,6 +5,7 @@
  * （默认不勾，有 block 禁用）；安装后显示位置与绑定员工。
  * 编辑按草稿 id 暂存，切换与刷新不清未保存输入；Esc/关闭前确认丢弃。
  */
+import { Button, TextInput, Textarea, Checkbox } from './ui/primitives.ts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Dialog } from './ui/index.tsx'
 import { WorkforceApi } from './workforce-api.ts'
@@ -69,10 +70,10 @@ export function SkillDraftRequest({ task, source, onRequested }: {
   return (
     <div className={css.requestRow}>
       {!open ? (
-        <button type="button" className={css.requestButton} onClick={() => setOpen(true)}>{SD.taskRequest}</button>
+        <Button variant="plain" type="button" className={css.requestButton} onClick={() => setOpen(true)}>{SD.taskRequest}</Button>
       ) : (
         <div className={css.requestForm}>
-          <input
+          <TextInput
             className={css.requestInput}
             value={note}
             placeholder={SD.taskRequestNote}
@@ -80,8 +81,8 @@ export function SkillDraftRequest({ task, source, onRequested }: {
             disabled={busy}
             onChange={event => setNote(event.target.value)}
           />
-          <button type="button" className={css.requestSubmit} disabled={busy} onClick={() => void submit()}>{busy ? SD.taskRequestSending : SD.taskRequestSubmit}</button>
-          <button type="button" className={css.requestButton} disabled={busy} onClick={() => { setOpen(false); setError(undefined) }}>{SD.taskRequestCancel}</button>
+          <Button variant="plain" type="button" className={css.requestSubmit} disabled={busy} onClick={() => void submit()}>{busy ? SD.taskRequestSending : SD.taskRequestSubmit}</Button>
+          <Button variant="plain" type="button" className={css.requestButton} disabled={busy} onClick={() => { setOpen(false); setError(undefined) }}>{SD.taskRequestCancel}</Button>
         </div>
       )}
       {error !== undefined && <span className={css.error} role="alert">{error}</span>}
@@ -256,7 +257,7 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
     <div className={css.listPane}>
       <p className={css.hint}>{SD.intro}</p>
       {pendingCount > 0 && <div className={css.pendingBadge} role="status">{SD.pendingCount(pendingCount)}</div>}
-      {error !== undefined && <div className={css.error} role="alert">{error}<button type="button" disabled={busy} onClick={() => void reload()}>{SD.retry}</button></div>}
+      {error !== undefined && <div className={css.error} role="alert">{error}<Button variant="plain" type="button" disabled={busy} onClick={() => void reload()}>{SD.retry}</Button></div>}
       {drafts === undefined && error === undefined && <div className={css.loading} aria-label={SD.loadError}><span /><span /><span /></div>}
       {drafts !== undefined && drafts.length === 0 && <p className={css.hint}>{SD.empty}</p>}
       <ul className={css.draftList}>
@@ -264,11 +265,11 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
           const dirty = edits[draft.id] !== undefined && !sameEdits(draft, edits[draft.id]!)
           return (
             <li key={draft.id}>
-              <button type="button" className={css.draftRow} onClick={() => selectDraft(draft)}>
+              <Button variant="plain" type="button" className={css.draftRow} onClick={() => selectDraft(draft)}>
                 <span className={css.draftTitle}>{draft.title === '' ? draft.slug : draft.title}{dirty ? ' ·' : ''}</span>
                 <span className={css.draftMeta}>{SD.sourceTask}：{taskTitle(draft.taskId)}</span>
                 <span className={css.badge} data-status={statusTag(draft)}>{STATUS_LABEL[statusTag(draft)]}</span>
-              </button>
+              </Button>
             </li>
           )
         })}
@@ -289,27 +290,27 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
     return (
       <div className={css.editorPane}>
         <div className={css.editorHead}>
-          <button type="button" className={css.backButton} onClick={() => setSelectedId(undefined)}>{SD.backToList}</button>
+          <Button variant="plain" type="button" className={css.backButton} onClick={() => setSelectedId(undefined)}>{SD.backToList}</Button>
           <span className={css.badge} data-status={statusTag(draft)}>{STATUS_LABEL[statusTag(draft)]}</span>
           {draft.editedBy === 'user' && <span className={css.badge} data-status="edited">{SD.editedByUser}</span>}
           <span className={css.draftMeta}>{SD.sourceTask}：{taskTitle(draft.taskId)}</span>
         </div>
         <div className={css.field}>
           <label htmlFor="wf-sd-slug">{SD.fieldSlug}</label>
-          <input id="wf-sd-slug" value={entry.slug} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { slug: event.target.value })} />
+          <TextInput id="wf-sd-slug" value={entry.slug} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { slug: event.target.value })} />
           <span className={css.hint}>{SD.slugHint}</span>
         </div>
         <div className={css.field}>
           <label htmlFor="wf-sd-title">{SD.fieldTitle}</label>
-          <input id="wf-sd-title" value={entry.title} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { title: event.target.value })} />
+          <TextInput id="wf-sd-title" value={entry.title} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { title: event.target.value })} />
         </div>
         <div className={css.field}>
           <label htmlFor="wf-sd-desc">{SD.fieldDescription}</label>
-          <input id="wf-sd-desc" value={entry.description} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { description: event.target.value })} />
+          <TextInput id="wf-sd-desc" value={entry.description} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { description: event.target.value })} />
         </div>
         <div className={css.field}>
           <label htmlFor="wf-sd-body">{SD.fieldBody}</label>
-          <textarea id="wf-sd-body" rows={12} value={entry.body} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { body: event.target.value })} />
+          <Textarea id="wf-sd-body" rows={12} value={entry.body} disabled={!canEdit || busy} onChange={event => patchEdit(draft.id, { body: event.target.value })} />
         </div>
 
         <div className={css.findings} aria-label={SD.findingsTitle}>
@@ -336,7 +337,7 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
               <>
                 <div>{SD.installedPath}：<code>{installedInfo[draft.id]?.path ?? `${draft.slug}/SKILL.md`}</code></div>
                 <div>{SD.boundEmployees}：{bound.length === 0 ? SD.boundNone : bound.map(id => employeeName(employees, id)).join('、')}</div>
-                {inUserRoot(draft) && <div><button type="button" className={css.dangerButton} disabled={busy} onClick={() => setConfirmDisable(draft)}>{SD.disableAction}</button></div>}
+                {inUserRoot(draft) && <div><Button variant="plain" type="button" className={css.dangerButton} disabled={busy} onClick={() => setConfirmDisable(draft)}>{SD.disableAction}</Button></div>}
               </>
             )}
           </div>
@@ -347,20 +348,19 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
             <div className={css.pickList}>
               {employees.map(employee => (
                 <label key={employee.id} className={css.pickItem}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={picks.includes(employee.id)}
                     disabled={busy}
-                    onChange={event => togglePick(draft.id, employee.id, event.target.checked)}
+                    onCheckedChange={checked => togglePick(draft.id, employee.id, checked === true)}
                   />
                   {employee.name}
                 </label>
               ))}
             </div>
             {hasBlock && <div className={css.blockedReason} role="status">{SD.installBlocked}</div>}
-            <button type="button" className={css.primaryButton} disabled={busy || hasBlock} title={hasBlock ? SD.installBlocked : undefined} onClick={() => void install(draft)}>
+            <Button variant="plain" type="button" className={css.primaryButton} disabled={busy || hasBlock} title={hasBlock ? SD.installBlocked : undefined} onClick={() => void install(draft)}>
               {busy ? SD.installing : SD.install}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className={css.hint}>{SD.notReadyToInstall}</div>
@@ -368,17 +368,17 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
 
         {canEdit && (
           <div className={css.editorActions}>
-            <button type="button" className={css.primaryButton} disabled={busy || !dirty} onClick={() => void save(draft)}>{busy ? SD.saving : SD.save}</button>
-            <button type="button" className={css.actionButton} disabled={busy} onClick={() => { setReturnOpen(value => !value); setReturnError(undefined) }}>{SD.returnAction}</button>
-            <button type="button" className={css.dangerButton} disabled={busy} onClick={() => setConfirmDelete(draft)}>{SD.deleteAction}</button>
+            <Button variant="plain" type="button" className={css.primaryButton} disabled={busy || !dirty} onClick={() => void save(draft)}>{busy ? SD.saving : SD.save}</Button>
+            <Button variant="plain" type="button" className={css.actionButton} disabled={busy} onClick={() => { setReturnOpen(value => !value); setReturnError(undefined) }}>{SD.returnAction}</Button>
+            <Button variant="plain" type="button" className={css.dangerButton} disabled={busy} onClick={() => setConfirmDelete(draft)}>{SD.deleteAction}</Button>
           </div>
         )}
         {returnOpen && canEdit && (
           <div className={css.returnBox}>
             <label htmlFor="wf-sd-return">{SD.returnNote}</label>
-            <textarea id="wf-sd-return" rows={2} value={returnNote} disabled={busy} onChange={event => { setReturnNote(event.target.value); setReturnError(undefined) }} />
+            <Textarea id="wf-sd-return" rows={2} value={returnNote} disabled={busy} onChange={event => { setReturnNote(event.target.value); setReturnError(undefined) }} />
             {returnError !== undefined && <span className={css.error} role="alert">{returnError}</span>}
-            <button type="button" className={css.primaryButton} disabled={busy} onClick={() => void doReturn(draft)}>{SD.returnSubmit}</button>
+            <Button variant="plain" type="button" className={css.primaryButton} disabled={busy} onClick={() => void doReturn(draft)}>{SD.returnSubmit}</Button>
           </div>
         )}
         {notice !== '' && <p className={css.notice} role="status">{notice}</p>}
@@ -395,8 +395,8 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
         <Dialog title={SD.deleteTitle} closeLabel={SD.taskRequestCancel} busy={busy} onClose={() => setConfirmDelete(undefined)}>
           <p>{SD.deleteConfirm(confirmDelete.title === '' ? confirmDelete.slug : confirmDelete.title)}</p>
           <div className={css.editorActions}>
-            <button type="button" className={css.dangerButton} disabled={busy} onClick={() => void doDelete()}>{SD.deleteSubmit}</button>
-            <button type="button" className={css.actionButton} disabled={busy} onClick={() => setConfirmDelete(undefined)}>{SD.taskRequestCancel}</button>
+            <Button variant="plain" type="button" className={css.dangerButton} disabled={busy} onClick={() => void doDelete()}>{SD.deleteSubmit}</Button>
+            <Button variant="plain" type="button" className={css.actionButton} disabled={busy} onClick={() => setConfirmDelete(undefined)}>{SD.taskRequestCancel}</Button>
           </div>
         </Dialog>
       )}
@@ -404,8 +404,8 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
         <Dialog title={SD.disableTitle} closeLabel={SD.taskRequestCancel} busy={busy} onClose={() => setConfirmDisable(undefined)}>
           <p>{SD.disableConfirm(confirmDisable.slug)}</p>
           <div className={css.editorActions}>
-            <button type="button" className={css.dangerButton} disabled={busy} onClick={() => void doDisable()}>{busy ? SD.disabling : SD.disableSubmit}</button>
-            <button type="button" className={css.actionButton} disabled={busy} onClick={() => setConfirmDisable(undefined)}>{SD.taskRequestCancel}</button>
+            <Button variant="plain" type="button" className={css.dangerButton} disabled={busy} onClick={() => void doDisable()}>{busy ? SD.disabling : SD.disableSubmit}</Button>
+            <Button variant="plain" type="button" className={css.actionButton} disabled={busy} onClick={() => setConfirmDisable(undefined)}>{SD.taskRequestCancel}</Button>
           </div>
         </Dialog>
       )}
@@ -413,8 +413,8 @@ export function WorkforceSkillDraftsDialog({ source, employees, tasks, api: supp
         <Dialog title={SD.discardTitle} closeLabel={SD.discardNo} onClose={() => setConfirmClose(false)}>
           <p>{SD.discardConfirm}</p>
           <div className={css.editorActions}>
-            <button type="button" className={css.dangerButton} onClick={onClose}>{SD.discardYes}</button>
-            <button type="button" className={css.actionButton} onClick={() => setConfirmClose(false)}>{SD.discardNo}</button>
+            <Button variant="plain" type="button" className={css.dangerButton} onClick={onClose}>{SD.discardYes}</Button>
+            <Button variant="plain" type="button" className={css.actionButton} onClick={() => setConfirmClose(false)}>{SD.discardNo}</Button>
           </div>
         </Dialog>
       )}

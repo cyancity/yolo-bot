@@ -9,10 +9,11 @@ import { AppHeaderProvider, WorkbenchSurface } from './ui/index.tsx'
 import { useZoom, zoomStyle } from './ui/zoom.ts'
 import { GlobalModelAccess } from './workforce-models.tsx'
 import css from './workbench.module.css'
+import { WorkbenchPreviewContext } from './extension-preview.tsx'
 
 type NavHandle = EngineStoreHandle<WorkbenchNavState, WorkbenchNavActions>
 export type WorkbenchPageProps = ComposedProps<'main', string,
-  'workbench.pages' | 'workbench.notice' | 'workbench.overlay', NavHandle,
+  'workbench.pages' | 'workbench.previews' | 'workbench.notice' | 'workbench.overlay', NavHandle,
   WorkbenchFace & { chrome: WorkbenchChromeProps }>
 
 export function WorkbenchPage(props: WorkbenchPageProps) {
@@ -23,7 +24,9 @@ export function WorkbenchPage(props: WorkbenchPageProps) {
   const page: ExtensionPageProps = { ...chrome, location: view.kind === 'extension' ? view.location : { route: '' } }
   return <WorkbenchSurface className={css.root} style={zoomStyle(zoom)} data-workbench-root>
     {props.renderSlot('workbench.notice', chrome)}
-    <AppHeaderProvider><div className={css.body}>{props.renderSlot('workbench.pages', page, { entryKey: pageId })}</div></AppHeaderProvider>
+    <WorkbenchPreviewContext.Provider value={(preview, fallback) => props.renderSlot('workbench.previews', { ...chrome, data: preview.data }, { entryKey: preview.id, fallback })}>
+      <AppHeaderProvider><div className={css.body}>{props.renderSlot('workbench.pages', page, { entryKey: pageId })}</div></AppHeaderProvider>
+    </WorkbenchPreviewContext.Provider>
     {props.renderSlot('workbench.overlay', chrome)}
     <GlobalModelAccess source={props.workforce.models} />
   </WorkbenchSurface>

@@ -2,6 +2,7 @@
  * ReplyPreviewDialog：组卡成员的全文预览，右侧抽屉（复用 Dialog 与 files/memory 的
  * :has(> .drawer) 贴边定位，不新造浮层体系）。不接管发送，不产生第二条回复路径。
  */
+import { Button } from './ui/primitives.ts'
 import { useEffect, useRef, type ReactNode } from 'react'
 import css from './workforce-reply-group.module.css'
 import { Dialog } from './ui/index.tsx'
@@ -30,16 +31,16 @@ export function ReplyPreviewDialog({ title, subtitle, children, footer, onPrevio
         {(onPrevious !== undefined || onNext !== undefined || footer !== undefined) && (
           <div className={css.previewFoot}>
             {onPrevious !== undefined && (
-              <button type="button" className={css.previewNav} onClick={onPrevious}>
+              <Button variant="plain" type="button" className={css.previewNav} onClick={onPrevious}>
                 <Icon name="chevronRight" width={14} height={14} className={css.previewNavPrev} />
                 {WF.replyGroup.previous}
-              </button>
+              </Button>
             )}
             {onNext !== undefined && (
-              <button type="button" className={css.previewNav} onClick={onNext}>
+              <Button variant="plain" type="button" className={css.previewNav} onClick={onNext}>
                 {WF.replyGroup.next}
                 <Icon name="chevronRight" width={14} height={14} />
-              </button>
+              </Button>
             )}
             {footer !== undefined && <span className={css.previewFootExtra}>{footer}</span>}
           </div>

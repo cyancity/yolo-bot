@@ -153,8 +153,7 @@
 }
 
 /* 深色模式下为员工头像外壳增加细描边，保证黑色系机身在深色侧栏下清晰可辨 */
-:global([data-wb-scheme='dark']) .avatarEmployee,
-:global([data-theme='dark']) .avatarEmployee {
+:global([data-wb-scheme='dark']) .avatarEmployee {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wb-line) 60%, transparent),
               0 0 0 1px color-mix(in srgb, var(--wb-fg) 12%, transparent);
 }

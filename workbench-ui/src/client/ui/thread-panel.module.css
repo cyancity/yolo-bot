@@ -1,5 +1,6 @@
 .panel {
-  width: var(--wb-thread-width);
+  width: var(--wb-thread-max);
+  max-width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -7,8 +8,6 @@
   background: var(--wb-surface);
   border-left: var(--wb-border-width) solid var(--wb-line);
 }
-
-[data-wb-style='wechat'] .panel { background: var(--wb-surface); }
 
 .head {
   display: flex;
