@@ -5,13 +5,13 @@
  * WorkforceFilePreview。版本真源在宿主 store，这里只按 workforce-types 契约
  * 展示并调用发布路由；发布返回的整条任务先就地顶替，再让 source 轮询对齐。
  */
-import { useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceApi } from './workforce-api.ts'
 import { WF } from './workforce-strings.ts'
 import { WorkforceFilePreview, WorkforceNativeFileMenu, attachmentOpenMode, openNativeDeliverable, revealNativeFile, gateAttachment } from './workforce-attachments.tsx'
 import type { WorkforceSource } from './workforce-source.ts'
-import type { Employee, Task, TaskDeliverable, TaskDeliverableVersion } from './workforce-types.ts'
+import type { Employee, Task, TaskDeliverable, TaskDeliverableVersion, WorkforceMessage } from './workforce-types.ts'
 import css from './workforce-deliverables.module.css'
 
 const LABELS = {
@@ -217,18 +217,47 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
 }
 
 
-/** 任务成果区：任务下的每个成果一张卡。 */
-export function DeliverableChips({ task, employees, source }: {
+/** 宿主把成果版本挂到产出它那一轮的可见回复上（`attachments` 中 source=deliverable 的行）。 */
+export function messageDeliverableNames(message: WorkforceMessage): ReadonlySet<string> {
+  return new Set((message.attachments ?? []).filter(file => file.source === 'deliverable').map(file => file.name))
+}
+
+/** 当前视图里已挂在产出消息上的成果：threadId → 文件名（任务与线程一一对应）。 */
+export function anchoredDeliverables(messages: readonly WorkforceMessage[]): ReadonlyMap<string, ReadonlySet<string>> {
+  const anchored = new Map<string, Set<string>>()
+  for (const message of messages) {
+    // 只算渲染成消息行的回复；tool/intermediate 行会折进步骤，不承载成果卡。
+    if (message.tool !== undefined || message.intermediate === true) continue
+    for (const name of messageDeliverableNames(message)) {
+      const names = anchored.get(message.threadId) ?? new Set<string>()
+      names.add(name)
+      anchored.set(message.threadId, names)
+    }
+  }
+  return anchored
+}
+
+/** 任务页脚跟随最新回复或进行中的行移动，已有产出消息的成果由那条消息展示，页脚不重复。 */
+export const AnchoredDeliverablesContext = createContext<ReadonlyMap<string, ReadonlySet<string>>>(new Map())
+
+/**
+ * 任务成果区：任务下的每个成果一张卡。
+ * `only` 给定时只展示这些文件（产出消息行）；否则是任务页脚，跳过已挂在产出消息上的成果。
+ */
+export function DeliverableChips({ task, employees, source, only }: {
   readonly task: Task
   readonly employees: readonly Employee[]
   readonly source: WorkforceSource
+  readonly only?: ReadonlySet<string> | undefined
 }) {
   const api = useMemo(() => new WorkforceApi(), [])
   const [published, setPublished] = useState<Task>()
+  const anchored = useContext(AnchoredDeliverablesContext).get(task.threadId)
   // 轮询换上新任务对象后就丢掉本地顶替，以宿主快照为准。
   useEffect(() => { setPublished(undefined) }, [task])
   const effective = published ?? task
-  const visibleDeliverables = effective.deliverables.filter(item => gateAttachment(item.name).visible)
+  const visibleDeliverables = effective.deliverables.filter(item => gateAttachment(item.name).visible
+    && (only !== undefined ? only.has(item.name) : anchored?.has(item.name) !== true))
   if (visibleDeliverables.length === 0) return null
   const onPublished = (next: Task): void => { setPublished(next); source.refresh() }
   return (
