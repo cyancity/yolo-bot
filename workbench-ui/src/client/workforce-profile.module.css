@@ -114,76 +114,7 @@
   background: linear-gradient(135deg, var(--wb-accent), var(--wb-accent-hover));
 }
 
-/* 资料设置模态弹窗 */
-.modalOverlay {
-  position: fixed;
-  /* 从 Windows 标题栏下方开始，避免标题栏变灰而原生窗口按钮仍是原色 */
-  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0;
-  z-index: 10050;
-  background: var(--wb-overlay);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--wb-space-6);
-}
-
-.profileDialog {
-  width: 100%;
-  max-width: 460px;
-  background: var(--wb-surface-raised);
-  border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-lg);
-  box-shadow: var(--wb-shadow-dialog);
-  padding: var(--wb-space-7);
-  color: var(--wb-fg);
-  box-sizing: border-box;
-  animation: modalScaleIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalScaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.modalHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--wb-space-6);
-}
-
-.modalTitle {
-  margin: 0;
-  font-size: var(--wb-type-heading-size);
-  font-weight: 700;
-}
-
-.closeBtn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--wb-radius-md);
-  background: transparent;
-  color: var(--wb-fg-muted);
-  font-size: var(--wb-type-heading-size);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeBtn:hover {
-  background: var(--wb-hover);
-  color: var(--wb-fg);
-}
-
+/* 资料设置表单区 */
 .avatarSection {
   display: flex;
   align-items: center;
@@ -217,42 +148,6 @@
   gap: var(--wb-space-4);
   flex-wrap: wrap;
 }
-
-.uploadBtn {
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--wb-control-height-sm);
-  padding: var(--wb-space-3) var(--wb-space-5);
-  border-radius: var(--wb-radius-md);
-  background: var(--wb-accent);
-  color: var(--wb-on-accent);
-  font-size: var(--wb-type-compact-size);
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.1s ease;
-}
-
-.uploadBtn:hover {
-  opacity: 0.9;
-}
-
-.resetBtn {
-  min-height: var(--wb-control-height-sm);
-  padding: var(--wb-space-3) var(--wb-space-5);
-  border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-md);
-  background: transparent;
-  color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
-  cursor: pointer;
-}
-
-.resetBtn:hover {
-  background: var(--wb-hover);
-}
-
 .avatarHint {
   font-size: var(--wb-type-caption-size);
   color: var(--wb-fg-placeholder);
@@ -327,42 +222,4 @@
 
 .input:focus {
   border-color: var(--wb-accent);
-}
-
-.modalFooter {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--wb-space-4);
-}
-
-.cancelBtn {
-  padding: var(--wb-space-4) var(--wb-space-6);
-  border: none;
-  border-radius: var(--wb-radius-md);
-  background: transparent;
-  color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.cancelBtn:hover {
-  background: var(--wb-hover);
-}
-
-.saveBtn {
-  padding: var(--wb-space-4) var(--wb-space-7);
-  border: none;
-  border-radius: var(--wb-radius-md);
-  background: var(--wb-accent);
-  color: var(--wb-on-accent);
-  font-size: var(--wb-type-compact-size);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.1s ease;
-}
-
-.saveBtn:hover {
-  opacity: 0.9;
 }

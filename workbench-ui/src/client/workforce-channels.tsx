@@ -1,13 +1,13 @@
 import { Button, TextInput } from './ui/primitives.ts'
 import { Select } from './ui/select.tsx'
+import { Dialog } from './ui/index.tsx'
 /**
  * WorkforceChannels：Discord 风格频道列表与分组管理组件。
  * - 支持新建频道、重命名、复制、移动分组、删除（遇到 409 提示「频道里还有执行中的任务」）。
  * - 支持分组折叠/展开、新建分组、重命名/删除分组。
  * - 支持置顶频道与标记已读。
  */
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, type MouseEvent } from 'react'
 import type { HostChannel, HostChannelGroup } from './workforce-api.ts'
 import type { Channel } from './workforce-types.ts'
 import { ConfirmDialog, WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
@@ -725,55 +725,67 @@ function CreateChannelModal({
   const [name, setName] = useState('')
   // 顶部「新建频道」默认落在未分组；只有从某个分组行点「+」才预选该分组。
   const [groupId, setGroupId] = useState(defaultGroupId ?? '')
+  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
-    if (!trimmed) return
-    void onSubmit(trimmed, groupId || undefined)
+    if (!trimmed || busy) return
+    setBusy(true)
+    try {
+      await onSubmit(trimmed, groupId || undefined)
+    } finally {
+      setBusy(false)
+    }
   }
 
-  const modal = (
-    <div className={css.dialogBackdrop} onClick={onClose}>
-      <div className={css.dialogCard} role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-        <h3 className={css.dialogTitle}>{WF.channelUI.createChannel}</h3>
-        <form className={css.dialogForm} onSubmit={handleSubmit}>
-          <div className={css.formItem}>
-            <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
-            <TextInput
-              id="new-channel-name"
-              type="text"
-              className={css.inputField}
-              value={name}
-              placeholder={WF.channelUI.channelNameExamplePlaceholder}
-              maxLength={30}
-              autoFocus
-              onChange={e => setName(e.target.value)}
-            />
-          </div>
-          <div className={css.formItem}>
-            <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
-            <Select
-              id="channel-group-select"
-              className={css.selectField}
-              value={groupId}
-              onChange={e => setGroupId(e.target.value)}
-            >
-              <option value="">{WF.channelUI.ungrouped}</option>
-              {groups.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </Select>
-          </div>
-          <div className={css.dialogFooter}>
-            <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
-            <Button variant="plain" type="submit" className={css.submitBtn} disabled={!name.trim()}>{WF.common.confirm}</Button>
-          </div>
-        </form>
+  return (
+    <Dialog
+      size="sm"
+      title={WF.channelUI.createChannel}
+      closeLabel={WF.common.cancel}
+      onClose={onClose}
+      busy={busy}
+      onSubmit={e => void handleSubmit(e)}
+      secondaryAction={{
+        label: WF.common.cancel,
+        onInvoke: onClose,
+        disabled: busy,
+      }}
+      primaryAction={{
+        label: WF.common.confirm,
+        type: 'submit',
+        disabled: busy || !name.trim(),
+        loading: busy,
+      }}
+    >
+      <div className={css.formItem}>
+        <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
+        <TextInput
+          id="new-channel-name"
+          type="text"
+          value={name}
+          placeholder={WF.channelUI.channelNameExamplePlaceholder}
+          maxLength={30}
+          autoFocus
+          onChange={e => setName(e.target.value)}
+        />
       </div>
-    </div>
+      <div className={css.formItem}>
+        <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
+        <Select
+          id="channel-group-select"
+          value={groupId}
+          onChange={e => setGroupId(e.target.value)}
+        >
+          <option value="">{WF.channelUI.ungrouped}</option>
+          {groups.map(g => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </Select>
+      </div>
+    </Dialog>
   )
-  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
 
 /** 单行文本重命名/输入模态弹窗；allowEmpty 时留空也提交 ''（由调用方决定空语义）。 */
@@ -794,9 +806,6 @@ function RenameModal({
 }) {
   const [val, setVal] = useState(initialValue)
   const [busy, setBusy] = useState(false)
-  // Esc 关闭（autoFocus 输入内也生效）并在关闭后把焦点还给触发点。
-  const previousFocus = useRef<HTMLElement | null>(document.activeElement as HTMLElement | null)
-  useEffect(() => () => previousFocus.current?.focus(), [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -806,31 +815,36 @@ function RenameModal({
     try { await onSubmit(trimmed) } finally { setBusy(false) }
   }
 
-  const modal = (
-    <div className={css.dialogBackdrop} onClick={onClose}>
-      <div className={css.dialogCard} role="dialog" aria-modal="true"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => { if (e.key === 'Escape' && !busy) { e.preventDefault(); e.stopPropagation(); onClose() } }}>
-        <h3 className={css.dialogTitle}>{title}</h3>
-        <form className={css.dialogForm} onSubmit={e => void handleSubmit(e)}>
-          <div className={css.formItem}>
-            <TextInput
-              type="text"
-              className={css.inputField}
-              value={val}
-              placeholder={placeholder || WF.channelUI.defaultNamePlaceholder}
-              maxLength={30}
-              autoFocus
-              onChange={e => setVal(e.target.value)}
-            />
-          </div>
-          <div className={css.dialogFooter}>
-            <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
-            <Button variant="plain" type="submit" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>{WF.common.confirm}</Button>
-          </div>
-        </form>
+  return (
+    <Dialog
+      size="sm"
+      title={title}
+      closeLabel={WF.common.cancel}
+      onClose={onClose}
+      busy={busy}
+      onSubmit={e => void handleSubmit(e)}
+      secondaryAction={{
+        label: WF.common.cancel,
+        onInvoke: onClose,
+        disabled: busy,
+      }}
+      primaryAction={{
+        label: WF.common.confirm,
+        type: 'submit',
+        disabled: busy || (!val.trim() && allowEmpty !== true),
+        loading: busy,
+      }}
+    >
+      <div className={css.formItem}>
+        <TextInput
+          type="text"
+          value={val}
+          placeholder={placeholder || WF.channelUI.defaultNamePlaceholder}
+          maxLength={30}
+          autoFocus
+          onChange={e => setVal(e.target.value)}
+        />
       </div>
-    </div>
+    </Dialog>
   )
-  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }

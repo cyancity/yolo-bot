@@ -4,9 +4,8 @@
  * - 支持修改昵称、挑选预设插画头像、上传本地图片自定义头像。
  * - 本地持久化，全局同步（useSyncExternalStore）。
  */
-import { Button, TextInput } from './ui/primitives.ts'
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
-import { createPortal } from 'react-dom'
+import { Button, TextInput, Dialog } from './ui/index.tsx'
+import { useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
 import css from './workforce-profile.module.css'
 import { WF } from './workforce-strings.ts'
 import { DEFAULT_USER_AVATAR_DATA_URL } from './workforce-user-avatar.ts'
@@ -276,7 +275,6 @@ export function UserProfileModal({
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl || DEFAULT_AVATAR_DATA_URL)
   const [isCustom, setIsCustom] = useState(profile.isCustomAvatar || false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const inputId = useId()
 
   useEffect(() => {
     let active = true
@@ -375,102 +373,91 @@ export function UserProfileModal({
     })
     onClose()
   }
-  const modalContent = (
-    <div className={css.modalOverlay} onClick={onClose}>
-      <div
-        className={css.profileDialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={inputId}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className={css.modalHeader}>
-          <h2 id={inputId} className={css.modalTitle}>{WF.userProfile.title}</h2>
-          <Button variant="plain" type="button" className={css.closeBtn} onClick={onClose} aria-label={WF.common.close}>
-            ✕
-          </Button>
+  return (
+    <Dialog
+      size="sm"
+      title={WF.userProfile.title}
+      closeLabel={WF.common.close}
+      onClose={onClose}
+      secondaryAction={{
+        label: WF.common.cancel,
+        onInvoke: onClose,
+      }}
+      primaryAction={{
+        label: WF.common.save,
+        onInvoke: () => void handleSave(),
+      }}
+    >
+      {/* 头像预览与操作 */}
+      <div className={css.avatarSection}>
+        <div className={css.avatarPreview}>
+          <img src={avatarUrl} alt={WF.userProfile.avatarPreview} className={css.avatarImg} />
         </div>
-
-        {/* 头像预览与操作 */}
-        <div className={css.avatarSection}>
-          <div className={css.avatarPreview}>
-            <img src={avatarUrl} alt={WF.userProfile.avatarPreview} className={css.avatarImg} />
+        <div className={css.avatarControls}>
+          <div className={css.avatarBtnRow}>
+            <Button
+              variant="secondary"
+              size="sm"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {WF.userProfile.uploadCustom}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={handleReset}
+            >
+              {WF.userProfile.reset}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
           </div>
-          <div className={css.avatarControls}>
-            <div className={css.avatarBtnRow}>
-              <Button variant="plain"
-                type="button"
-                className={css.uploadBtn}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {WF.userProfile.uploadCustom}
-              </Button>
-              <Button variant="plain"
-                type="button"
-                className={css.resetBtn}
-                onClick={handleReset}
-              >
-                {WF.userProfile.reset}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                style={{ display: 'none' }}
-                onChange={handleFileUpload}
-              />
-            </div>
-            <div className={css.avatarHint}>{WF.userProfile.avatarFormatHint}</div>
-          </div>
-        </div>
-
-        {/* 预设动漫插画头像选择 */}
-        <div className={css.presetSection}>
-          <div className={css.presetTitle}>{WF.userProfile.featuredAvatars}</div>
-          <div className={css.presetGrid}>
-            {PRESET_AVATARS.map(item => {
-              const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
-              const isActive = avatarUrl === itemUrl
-              return (
-                <Button variant="plain"
-                  key={item.id}
-                  type="button"
-                  className={`${css.presetItem} ${isActive ? css.presetItemActive : ''}`}
-                  title={item.name}
-                  onClick={() => handlePickPreset(item.svg)}
-                >
-                  <img src={itemUrl} alt={item.name} className={css.avatarImg} />
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 名字输入 */}
-        <div className={css.formSection}>
-          <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
-          <TextInput
-            id="user-profile-name-input"
-            type="text"
-            className={css.input}
-            value={name}
-            maxLength={32}
-            placeholder={WF.userProfile.namePlaceholder}
-            onChange={e => setName(e.target.value)}
-          />
-        </div>
-
-        {/* 底部按钮 */}
-        <div className={css.modalFooter}>
-          <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>
-            {WF.common.cancel}
-          </Button>
-          <Button variant="plain" type="button" className={css.saveBtn} onClick={handleSave}>
-            {WF.common.save}
-          </Button>
+          <div className={css.avatarHint}>{WF.userProfile.avatarFormatHint}</div>
         </div>
       </div>
-    </div>
+
+      {/* 预设动漫插画头像选择 */}
+      <div className={css.presetSection}>
+        <div className={css.presetTitle}>{WF.userProfile.featuredAvatars}</div>
+        <div className={css.presetGrid}>
+          {PRESET_AVATARS.map(item => {
+            const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
+            const isActive = avatarUrl === itemUrl
+            return (
+              <Button
+                variant="plain"
+                key={item.id}
+                type="button"
+                className={`${css.presetItem} ${isActive ? css.presetItemActive : ''}`}
+                title={item.name}
+                onClick={() => handlePickPreset(item.svg)}
+              >
+                <img src={itemUrl} alt={item.name} className={css.avatarImg} />
+              </Button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 名字输入 */}
+      <div className={css.formSection}>
+        <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
+        <TextInput
+          id="user-profile-name-input"
+          type="text"
+          value={name}
+          maxLength={32}
+          placeholder={WF.userProfile.namePlaceholder}
+          onChange={e => setName(e.target.value)}
+        />
+      </div>
+    </Dialog>
   )
-  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent
 }

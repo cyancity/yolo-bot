@@ -22,3 +22,4 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 export { Chip } from './chip.tsx'
 export { EmptyState } from './empty-state.tsx'
 export { ListRow } from './list-row.tsx'
+export { ContextMenu } from './context-menu.tsx'

@@ -57,3 +57,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.formItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-2);
+  margin-bottom: var(--wb-space-4);
+}
+
+.formItem:last-child {
+  margin-bottom: 0;
+}
+
+.formLabel {
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
+}
