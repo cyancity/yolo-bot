@@ -33,7 +33,7 @@ export { ui as uiClasses }
 export { tokenRootClass, tokenScopeClass }
 export { WorkbenchSurface, useSurfaceSnapshot, useOverlayTarget, OverlayRootContext, useTokenScopeAttrs } from './root.tsx'
 export type { SurfaceSnapshot } from './root.tsx'
-export { Button, IconButton, Input, Composer, Avatar, MessageItem, Bubble, ChannelItem, Badge, Menu, Tooltip, Tabs, Toast, ToastRegion, Skeleton, ThreadPanel } from './primitives.ts'
+export { Button, IconButton, Input, Composer, Avatar, MessageItem, Bubble, ChannelItem, Badge, Menu, Tooltip, Tabs, Toast, ToastRegion, Skeleton, ThreadPanel, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Chip, EmptyState, ListRow } from './primitives.ts'
 export type { ButtonProps, ButtonVariant, Size } from './button.tsx'
 export type { IconButtonProps } from './icon-button.tsx'
 export type { InputProps } from './input.tsx'
@@ -42,7 +42,7 @@ export type { AvatarProps } from './avatar.tsx'
 export type { MessageItemProps, MessageAction, TaskRef } from './message-item.tsx'
 export type { BubbleProps } from './bubble.tsx'
 export type { ChannelItemProps } from './channel-item.tsx'
-export type { BadgeProps, Tone as BadgeTone } from './badge.tsx'
+export type { BadgeProps, Tone as BadgeTone, BadgeVariant } from './badge.tsx'
 export type { MenuProps, MenuItem, MenuSection } from './menu.tsx'
 export type { DialogProps, DialogAction } from './dialog.tsx'
 export type { TooltipProps } from './tooltip.tsx'
@@ -50,6 +50,10 @@ export type { TabsProps, TabItem } from './tabs.tsx'
 export type { ToastProps, ToastAction } from './toast.tsx'
 export type { SkeletonProps } from './skeleton.tsx'
 export type { ThreadPanelProps } from './thread-panel.tsx'
+export type { CardProps, CardHeaderProps, CardTitleProps, CardDescriptionProps, CardContentProps, CardFooterProps, CardVariant } from './card.tsx'
+export type { ChipProps, ChipTone } from './chip.tsx'
+export type { EmptyStateProps } from './empty-state.tsx'
+export type { ListRowProps, ListRowSize } from './list-row.tsx'
 
 interface HeaderRegistration { host: HTMLElement; header?: ReactNode; subnav?: ReactNode; maxWidth?: number | undefined }
 const AppHeaderContext = createContext<((value: HeaderRegistration | null) => void) | undefined>(undefined)
@@ -247,6 +251,10 @@ export interface PanelProps {
   readonly title?: ReactNode
   /** Right side of the title row: secondary info or a small action. */
   readonly aside?: ReactNode
+  /** Custom header slot overriding or replacing default title/aside row */
+  readonly header?: ReactNode
+  /** Optional footer strip at bottom of panel */
+  readonly footer?: ReactNode
   /** Remove body padding (lists/tables that bleed to the edges; use PanelSections inside). */
   readonly flush?: boolean
   readonly className?: string | undefined
@@ -259,17 +267,24 @@ export interface PanelProps {
  * Panel and divide it with <PanelSection>s so the page background never
  * shows between related blocks.
  */
-export function Panel({ title, aside, flush = false, className, children, ...data }: PanelProps) {
-  const hasHead = title !== undefined || aside !== undefined
+export function Panel({ title, aside, header, footer, flush = false, className, children, ...data }: PanelProps) {
+  const hasHead = header !== undefined || title !== undefined || aside !== undefined
   return (
     <section className={cx(ui.panel, flush && ui.panelFlush, !hasHead && ui.panelBare, className)} {...data}>
       {hasHead && (
         <div className={ui.panelHead}>
-          {title !== undefined && <h3 className={ui.panelTitle}>{title}</h3>}
-          {aside !== undefined && <span className={ui.panelAside}>{aside}</span>}
+          {header !== undefined ? (
+            header
+          ) : (
+            <>
+              {title !== undefined && <h3 className={ui.panelTitle}>{title}</h3>}
+              {aside !== undefined && <span className={ui.panelAside}>{aside}</span>}
+            </>
+          )}
         </div>
       )}
       <div className={ui.panelBody}>{children}</div>
+      {footer !== undefined && <div className={ui.panelFoot}>{footer}</div>}
     </section>
   )
 }

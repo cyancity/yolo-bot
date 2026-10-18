@@ -47,6 +47,7 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 |---|---|
 | `--wb-radius-panel` | 12px |
 | `--wb-radius-control` | 6px |
+| `--wb-radius-card` | 6px |
 | `--wb-radius-bubble` / `--wb-radius-composer` | 16px |
 | `--wb-radius-overlay` | 8px |
 | `--wb-radius-avatar` | 50% |
