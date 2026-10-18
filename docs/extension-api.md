@@ -289,6 +289,16 @@ interface WorkbenchPreferences {
 
 patch 串行浅合并，保留未识别字段；嵌套对象按整个字段替换。Promise 在持久化完成后 resolve；写失败 reject，旧快照不变。快照不可变，变更后订阅通知；取消订阅幂等。扩展卸载不清偏好，不允许独立 whole-object writer 覆盖其他插件字段。独立 draft 的原 key 由其 owner 管理，不纳入此容器。
 
+## 本地开发扩展
+
+扩展先自行构建出 `lib/`，再挂到核心的开发实例上：
+
+```bash
+pnpm dev --port 3184 --data ~/my-extension-dev --extension ../my-extension
+```
+
+`--extension` 可重复，启动器用官方 `dsh plugin add link:<目录>` 把扩展与两个核心包一起链进开发 profile；扩展的 `dsh.bundle.patch` 照常生效。核心包走 HMR，扩展改动后自行重建并重启实例。`--data` 把 profile、运行时和业务数据放到指定目录，默认仍是工作树的 `tmp/dev-web/`。扩展类型检查时，`@cyancity/*` 与它们增强的 `@deepseek-ai/cordis`、`dsh-client-ui-slots` 需解析到同一份文件，否则 `declare module` 不会合并。
+
 ## 验证与兼容边界
 
 类型编译、声明打包与运行时行为必须分别验证。验证覆盖：注册/卸载无死页、完整段最长前缀分派、scope 重组不越权、模板停用不删用户技能、CRUD 拒绝越界、维护门阻止新增工作并回滚失败获取、偏好并发浅合并不丢字段。
