@@ -8,22 +8,33 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const args = process.argv.slice(2)
 let port = 3099
+let dataDir
+const extensionDirs = []
 function invalidArgument(message) {
   console.error(message)
   process.exit(1)
 }
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--help' || args[i] === '-h') {
-    console.log('用法：pnpm dev [--port 3099]\n独立浏览器开发版，数据保存在 tmp/dev-web，按 Ctrl+C 停止。')
+    console.log([
+      '用法：pnpm dev [--port 3099] [--data <目录>] [--extension <扩展包目录>]...',
+      '独立浏览器开发版，按 Ctrl+C 停止。',
+      '  --data       开发数据目录，默认 tmp/dev-web',
+      '  --extension  把本地已构建的扩展包链接进开发 profile，可重复；扩展自行构建，不参与 HMR',
+    ].join('\n'))
     process.exit(0)
   }
   if (args[i] === '--port' && args[i + 1]) port = Number(args[++i])
+  else if (args[i] === '--data' && args[i + 1] && dataDir === undefined) dataDir = args[++i]
+  else if (args[i] === '--extension' && args[i + 1]) extensionDirs.push(args[++i])
   else invalidArgument('未知参数。使用 pnpm dev --help 查看用法。')
 }
 if (!Number.isSafeInteger(port) || port < 1 || port > 65535) invalidArgument('端口必须是 1 到 65535 的整数。')
 
 const repo = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
-const state = path.join(repo, 'tmp', 'dev-web')
+const state = dataDir === undefined
+  ? path.join(repo, 'tmp', 'dev-web')
+  : path.resolve(dataDir.replace(/^~(?=$|[\\/])/, homedir()))
 const runtime = path.join(state, 'runtime')
 const runtimeVersion = '0.2.1-rc.2'
 const home = path.join(state, 'home')
@@ -188,24 +199,42 @@ async function prepareProfile() {
   return overlayPath
 }
 
+async function extensionPackages() {
+  const packages = []
+  for (const directory of extensionDirs) {
+    const target = path.resolve(directory)
+    let manifest
+    try {
+      manifest = JSON.parse(await readFile(path.join(target, 'package.json'), 'utf8'))
+    } catch {
+      throw new Error(`--extension 指定的目录不是包：${directory}`)
+    }
+    if (typeof manifest.name !== 'string' || manifest.name.startsWith('@cyancity/yolo-bot')) {
+      throw new Error(`--extension 的包名无效：${directory}`)
+    }
+    packages.push([manifest.name, target])
+  }
+  return packages
+}
+
 async function linkPlugins() {
   const packages = [
-    ['@cyancity/yolo-bot', 'workbench-host'],
-    ['@cyancity/yolo-bot-ui', 'workbench-ui'],
+    ['@cyancity/yolo-bot', path.join(repo, 'workbench-host')],
+    ['@cyancity/yolo-bot-ui', path.join(repo, 'workbench-ui')],
+    ...await extensionPackages(),
   ]
   let linked = true
   const manifest = JSON.parse(await readFile(path.join(profile, 'package.json'), 'utf8'))
-  for (const [name, directory] of packages) {
-    const target = path.join(repo, directory)
+  for (const [name, target] of packages) {
     const installed = path.join(profile, 'node_modules', ...name.split('/'))
     try {
       if (await realpath(installed) !== await realpath(target) || !manifest.dsh?.profile?.bundles?.includes(name)) linked = false
     } catch { linked = false }
   }
-  if (!linked) await run('link', cli, ['plugin', '--profile', 'web', 'add', ...packages.map(([, directory]) => `link:${path.join(repo, directory)}`)])
-  for (const [name, directory] of packages) {
-    if (await realpath(path.join(profile, 'node_modules', ...name.split('/'))) !== await realpath(path.join(repo, directory))) {
-      throw new Error(`开发插件 ${name} 没有链接到本工作树。`)
+  if (!linked) await run('link', cli, ['plugin', '--profile', 'web', 'add', ...packages.map(([, target]) => `link:${target}`)])
+  for (const [name, target] of packages) {
+    if (await realpath(path.join(profile, 'node_modules', ...name.split('/'))) !== await realpath(target)) {
+      throw new Error(`开发插件 ${name} 没有链接到指定目录。`)
     }
   }
 }
@@ -239,7 +268,7 @@ async function stop(code = 0) {
 
 function fail(error) {
   console.error(redact(error.message))
-  if (log) console.error('详细诊断保存在 tmp/dev-web/dev.log。')
+  if (log) console.error(`详细诊断保存在 ${path.join(state, 'dev.log')}。`)
   void stop(1).catch(() => { process.exitCode = 1 })
 }
 
