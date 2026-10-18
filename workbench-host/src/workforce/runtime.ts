@@ -464,7 +464,7 @@ export function titleFromPrompt(prompt: string): string {
 interface MemoryAgent {
   session: { id: string; header: { cwd?: string; createdAt?: number }; readonly seq?: number }
   ctx: {
-    get(name: 'tools'): Pick<ToolRuntime, 'guard'> | undefined
+    get(name: 'tools'): Pick<ToolRuntime, 'guard' | 'get' | 'restrict'> | undefined
     on: EmployeeScopeContext['on']
     get(name: 'systemPrompt'): {
       section(section: { name: string; order: number; text: string }): unknown
@@ -640,6 +640,12 @@ export class WorkforceRuntime {
       const denied = childEmployee ? CHILD_DENIED_TOOLS : dm ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS
       const release = this.operation()
       try {
+        if (childEmployee) {
+          const tools = child.ctx.get('tools')
+          if (!tools) throw new WorkforceError('unavailable', '员工工具授权服务不可用')
+          const deny = this.deniedTools(tools, child, CHILD_DENIED_TOOLS)
+          if (deny.length) tools.restrict({ deny })
+        }
         await this.installEmployeeTools(child, threadId, employee.id, binding, denied)
         const memory = await this.store.frozenMemory(threadId, employee.id, child.session.id)
         const project = await this.projectContext(state.threads.find(thread => thread.id === threadId)?.channelId)
@@ -993,7 +999,7 @@ export class WorkforceRuntime {
       if (agent && (agent.status !== 'idle' || agent.inbox?.hasPending) || counts && (counts.running || counts.stopping)) throw new WorkforceError('conflict', '旧共享工作目录仍在执行，请先取消任务再继续')
     }
     const root = this.get('agents')?.get(binding.rootId) ?? this.handles.get(binding.rootId)?.agent
-    if (root) await (root.ctx.get('subagents') ?? this.get('subagents'))?.drainContinuableDescendants([root])
+    if (root) await (root.ctx.get('subagents') ?? this.get('subagents'))?.drainDescendants([root])
     for (const [, sessionId] of entries) {
       const handle = this.handles.get(sessionId)
       if (handle) { await handle.dispose(); this.handles.delete(sessionId) }
@@ -1036,7 +1042,7 @@ export class WorkforceRuntime {
     if (retained) {
       const childrenActive = Object.values(binding.children).some(id => this.get('agents')?.get(id))
       if (this.compositions.get(binding.rootId) === composition || retained.agent.status !== 'idle' || childrenActive) return retained.agent
-      await (retained.agent.ctx.get('subagents') ?? this.get('subagents'))?.drainContinuableChildren(retained.agent, Object.values(binding.children))
+      await (retained.agent.ctx.get('subagents') ?? this.get('subagents'))?.drainChildren(retained.agent, Object.values(binding.children))
       await retained.dispose()
       this.handles.delete(binding.rootId)
     }
@@ -1585,9 +1591,6 @@ export class WorkforceRuntime {
         throw new WorkforceError('conflict', `员工「${employee.name}」已由系统直接收到用户的本条消息并会自行回复用户；不要再把本条消息转发给 ta，也不要代替、复述或汇总其回复。若用户明确要求你另行派不同任务，请向用户说明，由用户确认后再发送新消息`)
       const service = parent.ctx.get('subagents') ?? this.get('subagents')
       if (!service) throw new WorkforceError('unavailable', '原生子员工服务不可用')
-      // 子级摘除相邻 agent 工具，只经结算通知回投。
-      const tools = parent.ctx.get('tools') ?? this.get('tools')
-      const deny = this.deniedTools(tools, parent, CHILD_DENIED_TOOLS)
       this.assertCurrent(address.threadId, generation)
       let childId: string | undefined = binding.children[employeeId], messageId: string
       const activeChild = childId && this.get('agents')?.get(childId)
@@ -1598,16 +1601,13 @@ export class WorkforceRuntime {
         const descriptor = events.find((event: any) => event.type === 'subagent/descriptor')?.data
         const model = this.model(employee)
         // MCP assignment/config edits never mutate a live scope: a child mounted
-        // under a different signature is archived like a model/persona change.
+        // under a different signature is archived like a model change.
         const mountedSig = activeChild ? this.mcpSignatureOf?.(activeChild) : undefined
         const mcpStale = mountedSig !== undefined && mountedSig !== mcpSignature(state, employee)
-        // 旧持久化子级的 descriptor 没有 toolFilter：下一次派工归档重建，迁移到摘除组合。
-        const filterStale = deny.length > 0
-          && !(Array.isArray(descriptor?.toolFilter?.deny) && deny.every(name => descriptor.toolFilter.deny.includes(name)))
-        if ((mcpStale || filterStale || (lastEnd && (!lastStart || lastEnd.seq > lastStart.seq) && ['error', 'blocked', 'interrupted', 'max-tokens', 'aborted'].includes(lastEnd.data.reason.kind)
-          && descriptor && (descriptor.agentProvider !== model.provider || descriptor.agentModel !== model.model || descriptor.persona !== this.persona(employee, address.threadId, state.employees, false, false, activeChild?.session.header?.createdAt))))) {
+        if ((mcpStale || (lastEnd && (!lastStart || lastEnd.seq > lastStart.seq) && ['error', 'blocked', 'interrupted', 'max-tokens', 'aborted'].includes(lastEnd.data.reason.kind)
+          && descriptor && (descriptor.agentProvider !== model.provider || descriptor.agentModel !== model.model)))) {
           const previous = childId
-          if (activeChild) await service.drainContinuableChildren(parent, [previous])
+          if (activeChild) await service.drainChildren(parent, [previous])
           await this.store.change(state => {
             this.assertCurrent(address.threadId, generation)
             const target = state.bindings[address.threadId]!
@@ -1638,7 +1638,7 @@ export class WorkforceRuntime {
         try {
           await this.prepareWorkspace(address.threadId, childId, binding)
           this.assertCurrent(address.threadId, generation)
-          const receipt = await service.startContinuable({ provider: 'spawn', childId, label: employee.name, signal: deliverySignal, request: { parent, prompt: text(task), persona: this.persona(employee, address.threadId, state.employees), agentOptions: this.model(employee), maxDepth: 1, ...(deny.length ? { toolFilter: { deny } } : {}) } })
+          const receipt = await service.startActivation({ provider: 'spawn', childId, label: employee.name, signal: deliverySignal, delivery: 'parent', request: { parent, prompt: text(task), agentOptions: this.model(employee), maxDepth: 1 } })
           messageId = receipt.messageId
         } catch (error) { await this.store.change(state => { delete state.bindings[address.threadId]!.children[employeeId] }); throw error }
       }
@@ -1652,7 +1652,7 @@ export class WorkforceRuntime {
   }
   /**
    * 用户直接 @ 员工的投递：直达会话是顶层 agent，不挂在负责人会话下面——dsh 只对
-   * continuable 子级在 startContinuable 首投里追加「send_message 回投父级」指引、并在
+   * continuable 子级在 startActivation 首投里追加「send_message 回投父级」指引、并在
    * 其激活空闲结算时向父会话投递结算通知；顶层会话两条路都不存在，负责人不会被唤醒，
    * 也就不会代答或复述。负责人派发的子任务仍走 deliverChild 的 continuable 链路不变。
    * 投递由 send 的 deliveries 串行覆盖，会话按 binding.directChildren 每员工一份。
@@ -3131,7 +3131,7 @@ export class WorkforceRuntime {
       const binding = (await this.store.read()).bindings[threadId]!
       const parent = this.get('agents')?.get(binding.rootId)
       parent?.cancel({ kind: 'user' })
-      if (parent) await (parent.ctx.get('subagents') ?? this.get('subagents'))?.drainContinuableChildren(parent, Object.values(binding.children))
+      if (parent) await (parent.ctx.get('subagents') ?? this.get('subagents'))?.drainChildren(parent, Object.values(binding.children))
       // 直达会话不属于负责人的 continuable 子级，drain 管不到——逐个取消其当前 turn。
       for (const sessionId of Object.values(binding.directChildren ?? {})) this.get('agents')?.get(sessionId)?.cancel({ kind: 'user' })
       parent?.cancel({ kind: 'user' })
@@ -3229,10 +3229,10 @@ export class WorkforceRuntime {
     }
     for (const binding of Object.values(state?.bindings ?? {})) {
       const root = ownedAgents.get(binding.rootId)
-      if (root && !this.handles.has(binding.rootId)) await (root.ctx.get('subagents') ?? this.get('subagents'))?.drainContinuableDescendants([root])
+      if (root && !this.handles.has(binding.rootId)) await (root.ctx.get('subagents') ?? this.get('subagents'))?.drainDescendants([root])
     }
     for (const handle of this.handles.values()) {
-      await (handle.agent.ctx.get('subagents') ?? this.get('subagents'))?.drainContinuableDescendants([handle.agent])
+      await (handle.agent.ctx.get('subagents') ?? this.get('subagents'))?.drainDescendants([handle.agent])
       await handle.dispose()
     }
     this.handles.clear()

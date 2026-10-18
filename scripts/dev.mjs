@@ -25,7 +25,7 @@ if (!Number.isSafeInteger(port) || port < 1 || port > 65535) invalidArgument('ç«
 const repo = path.resolve(fileURLToPath(new URL('..', import.meta.url)))
 const state = path.join(repo, 'tmp', 'dev-web')
 const runtime = path.join(state, 'runtime')
-const runtimeVersion = '0.2.0-rc.2'
+const runtimeVersion = '0.2.1-rc.2'
 const home = path.join(state, 'home')
 const profile = path.join(home, 'profiles', 'web')
 const descriptor = {

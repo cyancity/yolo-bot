@@ -44,9 +44,9 @@ beforeEach(async () => {
     agents: { get: (id: string) => agents.get(id), create: vi.fn(make), resume: vi.fn(make) },
     sessionQuery: { observeSession: vi.fn(async (id: string) => { if (!logs.has(id)) throw missing(); return { header: headers.get(id), events: [...logs.get(id)!], [Symbol.dispose]: () => {} } }) },
     subagents: {
-      startContinuable: vi.fn(async (spec: { childId: string; cwd?: string; request: { parent: { session: { header: { cwd: string } } } } }) => { headers.set(spec.childId, { id: spec.childId, cwd: spec.cwd ?? spec.request.parent.session.header.cwd }); logs.set(spec.childId, end()); return { childId: spec.childId, messageId: 'initial-child-message' } }),
+      startActivation: vi.fn(async (spec: { childId: string; delivery: 'parent'; request: { cwd?: string; parent: { session: { header: { cwd: string } } } } }) => { headers.set(spec.childId, { id: spec.childId, cwd: spec.request.cwd ?? spec.request.parent.session.header.cwd }); logs.set(spec.childId, end()); return { childId: spec.childId, messageId: 'initial-child-message', result: Promise.resolve({ output: [], stopReason: 'completed' }), dispose: async () => {} } }),
       sendMessage: vi.fn(async () => 'delegated-message'), prompt: vi.fn(async () => ({ messageId: 'human-child-message' })),
-      drainContinuableChildren: vi.fn(async () => {}), drainContinuableDescendants: vi.fn(async () => {}),
+      drainChildren: vi.fn(async () => {}), drainDescendants: vi.fn(async () => {}),
     },
   }
   runtime = new WorkforceRuntime(store, name => services[name])
@@ -323,7 +323,7 @@ it('频道显式 @ 创建的独立任务仍在途时，停止旧任务不取消�
   expect(direct.followup).toHaveBeenCalledTimes(1)
   expect(direct.followup.mock.calls[0][0].content[0].text).toContain('@执行员 独立写稿')
   expect(state.sendReceipts['channel-explicit-independent']!.deliveredTo).toEqual(['writer'])
-  expect(services.subagents.startContinuable).not.toHaveBeenCalled()
+  expect(services.subagents.startActivation).not.toHaveBeenCalled()
 })
 
 it('任务标题跳过材料引用，原始prompt保留供员工读取', async () => {
@@ -455,7 +455,7 @@ it('并发派给同员工只建一个child，人类@续问走直达会话不再�
   const signal = new AbortController().signal
   const ids = await Promise.all([runtime.delegate(parent, 'analyst', '分析一', signal), runtime.delegate(parent, 'analyst', '分析二', signal)])
   expect(ids[0]).toBe(ids[1])
-  expect(services.subagents.startContinuable).toHaveBeenCalledTimes(1)
+  expect(services.subagents.startActivation).toHaveBeenCalledTimes(1)
   expect(services.subagents.sendMessage).toHaveBeenCalledTimes(1)
   await runtime.send(sent.thread.id, '@分析员 补充核对', 'analyst')
   // 用户直达投递不碰 continuable 链路：无 prompt/sendMessage，负责人会话不新增输入
@@ -476,8 +476,8 @@ it('取消释放child而不封闭parent，随后追问可继续；DM不接受其
   const { sent, parent } = await task()
   await runtime.delegate(parent, 'analyst', '分析', new AbortController().signal)
   await runtime.cancel(sent.taskId!)
-  expect(services.subagents.drainContinuableChildren).toHaveBeenCalledTimes(1)
-  expect(services.subagents.drainContinuableDescendants).not.toHaveBeenCalled()
+  expect(services.subagents.drainChildren).toHaveBeenCalledTimes(1)
+  expect(services.subagents.drainDescendants).not.toHaveBeenCalled()
   expect((await store.read()).tasks[0]?.status).toBe('cancelled')
   await runtime.send(sent.thread.id, '继续核对')
   expect(parent.followup).toHaveBeenCalledTimes(2)
@@ -590,7 +590,7 @@ it('取消截断待完成child派工，新追问等待取消收尾后继续', as
   const aborting = new Promise<void>(resolve => { cancellationEntered = resolve })
   const barrier = new Promise<void>(resolve => { release = resolve })
   let admissionSignal!: AbortSignal
-  services.subagents.startContinuable.mockImplementationOnce(async (spec: any) => {
+  services.subagents.startActivation.mockImplementationOnce(async (spec: any) => {
     admissionSignal = spec.signal
     captured()
     await barrier
@@ -615,9 +615,8 @@ it.each(['error', 'aborted'])('失败child(%s)更正模型后同线程恢复，�
   const { sent, parent, binding } = await task()
   await store.saveEmployee({ model: 'invalid' }, 'analyst')
   const previous = await runtime.delegate(parent, 'analyst', '首次分析', new AbortController().signal)
-  const request = services.subagents.startContinuable.mock.calls[0][0].request
   logs.set(previous, [
-    { type: 'subagent/descriptor', seq: 0, time: 1, data: { version: 3, mode: 'continuable', provider: 'spawn', label: '分析员', agentProvider: 'native', agentModel: 'invalid', persona: request.persona } },
+    { type: 'subagent/descriptor', seq: 0, time: 1, data: { version: 3, mode: 'continuable', provider: 'spawn', label: '分析员', agentProvider: 'native', agentModel: 'invalid' } },
     { type: 'turn/start', seq: 1, time: 3, data: {} },
     { type: 'turn/end', seq: 2, time: 4, data: { reason: { kind, error: { message: '错误模型' } } } },
   ])
@@ -628,7 +627,7 @@ it.each(['error', 'aborted'])('失败child(%s)更正模型后同线程恢复，�
   const current = (await store.read()).bindings[sent.thread.id]!
   expect(current.children.analyst).not.toBe(previous)
   expect(current.archivedChildren).toEqual([{ employeeId: 'analyst', sessionId: previous }])
-  expect(services.subagents.startContinuable.mock.calls[1][0].request.agentOptions).toEqual({ provider: 'native', model: 'model' })
+  expect(services.subagents.startActivation.mock.calls[1][0].request.agentOptions).toEqual({ provider: 'native', model: 'model' })
   const view = await runtime.messages(sent.thread.id)
   expect(view.messages.some(item => item.error === '错误模型')).toBe(true)
   expect(view.thread.status).toBe('idle')
@@ -636,7 +635,7 @@ it.each(['error', 'aborted'])('失败child(%s)更正模型后同线程恢复，�
   await store.saveEmployee({ model: 'another-model' }, 'analyst')
   // 用户直接 @ 投递到直达顶层会话：委派 child 保持原样，不再有 prompt 续投
   await runtime.send(sent.thread.id, '成功会话继续固定配置', 'analyst')
-  expect(services.subagents.startContinuable).toHaveBeenCalledTimes(2)
+  expect(services.subagents.startActivation).toHaveBeenCalledTimes(2)
   expect(services.subagents.prompt).not.toHaveBeenCalled()
   expect((await store.read()).bindings[sent.thread.id]!.directChildren!['analyst']).toBeTruthy()
 })
@@ -1256,7 +1255,7 @@ it('一条消息@多员工：负责人收到带系统说明的一份，直达员
   expect(ownerText).toContain('分析、执行')
   expect(ownerText).toContain('本批对这些员工的派工会被系统拒绝')
   expect(services.subagents.prompt).not.toHaveBeenCalled()
-  expect(services.subagents.startContinuable).not.toHaveBeenCalled()
+  expect(services.subagents.startActivation).not.toHaveBeenCalled()
   expect(Object.keys(binding.directChildren ?? {}).sort()).toEqual(['analyst', 'writer'])
   for (const employeeId of ['analyst', 'writer']) {
     const direct = agents.get(binding.directChildren![employeeId]!)!
@@ -2087,8 +2086,8 @@ it('闸门：thread 先 running 但 handles 尚未登记时不发布 root；登�
 
 it('闸门：delegate 未 resolve 且 child 无 registry active 不发布；registry 登记后才发布', async () => {
   const { sent, parent, binding } = await task()
-  const gate = asyncGate(), start = services.subagents.startContinuable.getMockImplementation()!
-  services.subagents.startContinuable.mockImplementationOnce(async (spec: any) => {
+  const gate = asyncGate(), start = services.subagents.startActivation.getMockImplementation()!
+  services.subagents.startActivation.mockImplementationOnce(async (spec: any) => {
     gate.enter(); await gate.waiting
     return start(spec)
   })

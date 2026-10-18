@@ -16,7 +16,7 @@ export default async (ctx: { env?: Record<string, unknown> }) => {
   const vendored = new URL('../build-support/tsdown.client.ts', import.meta.url)
   const preset = existsSync(fileURLToPath(vendored)) ? vendored : new URL('../../client/tsdown.client.ts', import.meta.url)
   const { clientBundle } = await import(preset.href)
-  const bundle = clientBundle('@cyancity/yolo-bot-ui', ['src/index.ts'])
+  const bundle = clientBundle(import.meta.dirname, ['src/index.ts'])
   const configs = (bundle(ctx) as UserConfig[]).map(config => config.name === '@cyancity/yolo-bot-ui/client'
     ? {
       ...config,

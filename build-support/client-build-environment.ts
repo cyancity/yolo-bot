@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.0-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
 // (scripts/client-build-environment.ts); sync on dsh pin bump.
 import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -20,8 +20,7 @@ export const CLIENT_BUILD_PROFILE_SELECTOR = 'DSH_BUILD_CLIENT_PROFILE'
 
 /** Public client environment required by official DSH artifacts. */
 const OFFICIAL_CLIENT_BUILD_ENVIRONMENT = {
-  // Distro builds override both values through the build environment, so the
-  // artifacts, the client build record, and release verification all agree.
+  // Distro builds override both values so their artifacts and build record agree.
   DSH_CLIENT_BUILD_PROFILE: process.env.DSH_DISTRO_CLIENT_PROFILE ?? 'official',
   DSH_CLIENT_TITLE: process.env.DSH_DISTRO_CLIENT_TITLE ?? 'DeepSeek Harness',
 } as const
@@ -269,7 +268,19 @@ export function assertClientBuildEnvironment(
 export function clientBuildEnvironmentDefines(
   environment: NodeJS.ProcessEnv,
 ): Record<string, string> {
-  const defines: Record<string, string> = { 'process.env': '{}' }
+  return { 'process.env': '{}', ...clientBuildValueDefines(environment) }
+}
+
+/**
+ * Create Node-face substitutions that fix each public client build value into the artifact.
+ * `process.env` itself stays untouched, so Host code keeps reading its other variables at runtime.
+ * @param environment - environment inherited by the build process.
+ * @returns one deterministic tsdown `define` expression per public value the build sets.
+ */
+export function clientBuildValueDefines(
+  environment: NodeJS.ProcessEnv,
+): Record<string, string> {
+  const defines: Record<string, string> = {}
   for (const [name, value] of Object.entries(clientBuildEnvironment(environment))) {
     defines[`process.env.${name}`] = JSON.stringify(value)
   }
@@ -335,7 +346,7 @@ export function readClientBuildRecord(
 function clientArtifactDigest(root: string): ClientArtifactDigest {
   const paths = globSync([...CLIENT_ARTIFACT_PATTERNS], { cwd: root })
     .map(path => path.replaceAll('\\', '/'))
-    .filter(path => statSync(resolve(root, path)).isFile())
+    .filter(path => !/\/lib\/client\.node(?:\.|$)/.test(path) && statSync(resolve(root, path)).isFile())
     .sort()
   if (paths.length === 0) throw new Error('complete client build produced no Vite or dynamic client artifacts')
 
