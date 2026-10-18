@@ -105,6 +105,7 @@ html[data-wb-style],
   /* assistant-ui's default thread and shadcn control geometry. */
   --wb-radius-panel: 12px;
   --wb-radius-control: var(--wb-radius-md);
+  --wb-radius-card: var(--wb-radius-control);
   --wb-radius-bubble: 16px;
   --wb-radius-composer: 16px;
   --wb-radius-overlay: var(--wb-radius-lg);

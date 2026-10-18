@@ -204,6 +204,15 @@ button.stepDone:hover { background: var(--wb-hover); }
   min-width: 0;
 }
 
+.panelFoot {
+  display: flex;
+  align-items: center;
+  gap: var(--wb-space-3);
+  padding: var(--wb-space-4) var(--wb-space-5);
+  border-top: var(--wb-border-width) solid var(--wb-line-soft);
+  background: var(--wb-surface-sub);
+}
+
 .panelBody > .section:last-child { margin-bottom: calc(-1 * var(--panel-pad)); }
 
 .section {
@@ -375,3 +384,9 @@ button.stepDone:hover { background: var(--wb-hover); }
 .scroll::-webkit-scrollbar-track { background: transparent; }
 .scroll::-webkit-scrollbar-thumb { border-radius: var(--wb-radius-sm); background: color-mix(in srgb, var(--wb-fg-placeholder) 35%, transparent); }
 .scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--wb-fg-placeholder) 60%, transparent); }
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

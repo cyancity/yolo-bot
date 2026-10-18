@@ -832,6 +832,7 @@ const WF_zh = {
   },
   ui: {
     unreadCount: (n: number) => `${n} 条未读`,
+    remove: '移除',
     mentionCount: (n: number) => `${n} 条提及`,
     attachmentsAria: '附件',
     uploadingState: '上传中',
@@ -1692,6 +1693,7 @@ const WF_en = {
   },
   ui: {
     unreadCount: (n: number) => `${n} unread`,
+    remove: 'Remove',
     mentionCount: (n: number) => `${n} mentions`,
     attachmentsAria: 'Attachments',
     uploadingState: 'Uploading',

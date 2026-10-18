@@ -1,0 +1,79 @@
+.card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  border-radius: var(--wb-radius-card);
+  border: var(--wb-border-width) solid var(--wb-line);
+  background: var(--wb-surface);
+  color: var(--wb-fg);
+  overflow: hidden;
+  transition: background-color var(--wb-motion-fast) var(--wb-motion-ease), border-color var(--wb-motion-fast) var(--wb-motion-ease), box-shadow var(--wb-motion-fast) var(--wb-motion-ease);
+}
+
+.default {
+  background: var(--wb-surface);
+  border-color: var(--wb-line);
+}
+
+.subtle {
+  background: var(--wb-surface-sub);
+  border-color: transparent;
+}
+
+.interactive {
+  cursor: pointer;
+}
+
+.interactive:hover {
+  background: var(--wb-hover);
+  border-color: var(--wb-line-control);
+}
+
+.selected {
+  border-color: var(--wb-accent);
+  background: var(--wb-selected-bg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-2);
+  padding: var(--wb-space-4) var(--wb-space-5);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--wb-type-label-size);
+  font-weight: var(--wb-type-section-weight);
+  line-height: var(--wb-type-label-leading);
+  color: var(--wb-fg);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--wb-type-caption-size);
+  line-height: var(--wb-type-caption-leading);
+  color: var(--wb-fg-muted);
+}
+
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--wb-space-4) var(--wb-space-5);
+}
+
+.header + .content {
+  padding-top: 0;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--wb-space-3);
+  padding: var(--wb-space-4) var(--wb-space-5);
+  border-top: var(--wb-border-width) solid var(--wb-line-soft);
+  background: var(--wb-surface-sub);
+}
