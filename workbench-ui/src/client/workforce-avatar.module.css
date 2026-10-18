@@ -9,7 +9,7 @@
   --tone: var(--wb-accent);
   width: var(--sz);
   height: var(--sz);
-  /* 外框形状随 preset：Discord 圆形，WeChat 4px 圆角矩形（D2 判据）。 */
+  /* 头像外框形状由 --wb-radius-avatar 定义。 */
   border-radius: var(--wb-radius-avatar);
   flex: none;
   display: inline-flex;

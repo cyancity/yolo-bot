@@ -21,7 +21,7 @@ export interface HostChannel extends Channel {
   readonly unread?: boolean | undefined
   /** 分组（Discord 式）侧栏显示名覆盖；缺省回落到 name。 */
   readonly groupName?: string | undefined
-  /** 群聊（微信式）会话列表标题；缺省回落到成员名串再到 name。 */
+  /** 群聊会话列表标题；缺省回落到成员名串再到 name。 */
   readonly groupChatName?: string | undefined
   /** 群聊成员员工 id；缺省=全员。 */
   readonly memberIds?: readonly string[] | undefined

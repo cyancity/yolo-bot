@@ -1,7 +1,7 @@
 import { Button } from './button.tsx'
 /**
- * MessageItem：语义 article 行。Discord = 全左对齐署名行；WeChat = 员工左 /
- * 自己右气泡。分组连续消息省略头像与署名。body 是 renderer 产物；
+ * MessageItem：语义 article 行。全左对齐署名行，
+ * 分组连续消息省略头像与署名。body 是 renderer 产物；
  * children 放工具/成果等已获准组合。
  */
 import type { HTMLAttributes, ReactNode } from 'react'
@@ -42,7 +42,7 @@ export interface MessageItemProps extends Omit<HTMLAttributes<HTMLElement>, 'id'
   /** 行尾操作入口（弱操作）；如复制。 */
   readonly actions?: readonly MessageAction[]
   readonly children?: ReactNode
-  /** WeChat 气泡模式由 style 决定；此标记只表示作者侧。 */
+  /** 标记作者侧（用户消息/对方消息）。 */
   readonly self?: boolean
 }
 
@@ -118,7 +118,7 @@ export function MessageItem({
   )
 }
 
-/** WeChat 布局下由调用方把 body 包进 Bubble 后传入；这里只是便捷包装。 */
+/** 便捷气泡包装。 */
 export function MessageBubbleBody({ self, children }: { self: boolean; children: ReactNode }) {
   return <Bubble side={self ? 'self' : 'peer'}>{children}</Bubble>
 }

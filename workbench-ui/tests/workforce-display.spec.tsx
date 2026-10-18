@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * 数字员工消息流展示：slack/wechat 布局切换、👀/✅ 表情回应、@你 引用、
+ * 数字员工消息流展示：👀/✅ 表情回应、@你 引用、
  * 正在输入指示、工具与过程消息默认隐藏且开启后按 turn 折叠成一行。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -116,16 +116,6 @@ describe('数字员工消息展示', () => {
     expect(screen.queryByText(/web_search/)).toBeNull()
   })
 
-  it('设置菜单切换导航结构，data-wb-style 跟随偏好', () => {
-    const { container } = renderMain(dmSnapshot([msg({ id: 'h1', role: 'user', senderId: 'user', senderName: '你', text: 'hi' })]))
-    expect(container.querySelector('[data-wb-style="discord"]')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: '聊天设置' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: '偏好设置' }))
-    fireEvent.click(screen.getByRole('radio', { name: /会话列表/ }))
-    expect(container.querySelector('[data-wb-style="wechat"]')).toBeTruthy()
-    fireEvent.click(screen.getByRole('radio', { name: /分组频道/ }))
-    expect(container.querySelector('[data-wb-style="discord"]')).toBeTruthy()
-  })
 
   it('role=system 提醒不占气泡位：折叠条挂在前条消息下，点开展开详情', () => {
     const { container } = renderMain(dmSnapshot([

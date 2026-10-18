@@ -39,11 +39,11 @@ describe('数字员工显示偏好', () => {
 
   it('读取已存偏好；非法与缺省字段归一化（V1 chatLayout/theme 迁移）', async () => {
     backing.set(KEY, JSON.stringify({ chatLayout: 'wechat', showSteps: true }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat', showSteps: true })
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, showSteps: true })
     backing.set(KEY, JSON.stringify({ chatLayout: 'bogus', showSteps: 'yes' }))
     expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
     backing.set(KEY, JSON.stringify({ chatLayout: 'wechat' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat' })
+    expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
     // 具名主题迁移为 scheme：深色三件套 → dark，浅色两件套 → light，host/缺失 → system
     backing.set(KEY, JSON.stringify({ chatLayout: 'slack', theme: 'dracula' }))
     expect((await fresh()).getWorkforcePrefs().scheme).toBe('dark')
@@ -53,7 +53,7 @@ describe('数字员工显示偏好', () => {
     expect((await fresh()).getWorkforcePrefs().scheme).toBe('system')
     // V2 直写 style/scheme
     backing.set(KEY, JSON.stringify({ style: 'wechat', scheme: 'light' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat', scheme: 'light' })
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, scheme: 'light' })
     backing.set(KEY, JSON.stringify({ style: 'bogus', scheme: 'bogus' }))
     expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
     // 头像风格：只有显式 circle 才是圆形，缺省与非法值都归一化为终端屏
@@ -71,7 +71,7 @@ describe('数字员工显示偏好', () => {
     expect((await fresh()).getWorkforcePrefs().typingEffect).toBe('hash')
     // V2 不再存 sidebarMode / bubbleRadius：风格即结构，圆角由 token 定
     backing.set(KEY, JSON.stringify({ sidebarMode: 'chat', bubbleRadius: 25, style: 'wechat' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat' })
+    expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
     // 多人回复呈现方式：只有两个显式值才改写，缺省/非法回落摘要卡片
     backing.set(KEY, JSON.stringify({ replyGrouping: 'expanded' }))
     expect((await fresh()).getWorkforcePrefs().replyGrouping).toBe('expanded')
@@ -92,12 +92,12 @@ describe('数字员工显示偏好', () => {
     const prefs = await fresh()
     const listener = vi.fn()
     prefs.subscribeWorkforcePrefs(listener)
-    prefs.setWorkforcePrefs({ style: 'wechat' })
+    prefs.setWorkforcePrefs({ showSteps: true })
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(backing.get(KEY) ?? '')).toEqual({ ...DEFAULTS, style: 'wechat' })
-    prefs.setWorkforcePrefs({ style: 'wechat' })
+    expect(JSON.parse(backing.get(KEY) ?? '')).toEqual({ ...DEFAULTS, showSteps: true })
+    prefs.setWorkforcePrefs({ showSteps: true })
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(prefs.getWorkforcePrefs().style).toBe('wechat')
+    expect(prefs.getWorkforcePrefs().showSteps).toBe(true)
     prefs.setWorkforcePrefs({ scheme: 'dark' })
     expect(listener).toHaveBeenCalledTimes(2)
     expect(prefs.getWorkforcePrefs().scheme).toBe('dark')

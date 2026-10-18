@@ -1,18 +1,18 @@
 /**
  * 数字员工 UI 显示偏好 V2（持久化到浏览器 localStorage，键不变）。
- * style（历史键 discord/wechat，仅选择导航结构）与 scheme（system/light/dark）是两个独立维度，
- * 外观统一使用 assistant-ui 官方默认语义主题。导航和深浅各自切换；不写 document 级主题属性（由 token 根的 data-wb-*
+ * 导航结构固定为 discord（分组频道加私信）；配色 scheme（system/light/dark）支持深浅切换，
+ * 外观统一使用 assistant-ui 官方默认语义主题。不写 document 级主题属性（由 token 根的 data-wb-*
  * 属性承接）。showSteps、avatarStyle、typingEffect 沿用。
  *
- * V1 → V2 迁移：
- * - chatLayout 'wechat' → style 'wechat'，其余（slack/缺失）→ 'discord'
+ * 历史迁移：
+ * - style / chatLayout 无论之前为何值，均归一化为唯一保留的 'discord'
  * - theme 具名深色（catppuccin-mocha/dracula/rose-pine-main）→ scheme 'dark'
  *   具名浅色（catppuccin-latte/rose-pine-dawn）→ scheme 'light'
  *   'host'/缺失 → scheme 'system'
  */
 import { useSyncExternalStore } from 'react'
 
-export type WorkforceStyle = 'discord' | 'wechat'
+export type WorkforceStyle = 'discord'
 export type WorkforceScheme = 'system' | 'light' | 'dark'
 export type ResolvedScheme = 'light' | 'dark'
 export type AvatarStyle = 'circle' | 'terminal'
@@ -68,7 +68,7 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
   const raw = parsed as Record<string, unknown>
   if ('style' in raw || 'scheme' in raw) {
     return {
-      style: raw.style === 'wechat' ? 'wechat' : 'discord',
+      style: 'discord',
       scheme: raw.scheme === 'light' || raw.scheme === 'dark' ? raw.scheme : 'system',
       showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
       avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
@@ -77,10 +77,10 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
       replyGrouping: migrateReplyGrouping(raw.replyGrouping),
     }
   }
-  // V1 迁移：chatLayout=wechat 进 style；具名主题进 scheme；sidebarMode 不再使用
-  // （WeChat=会话列表，Discord=分组频道，风格即结构）。bubbleRadius 不再使用。
+  // V1 迁移：chatLayout / 缺失落到 discord；具名主题进 scheme；sidebarMode 不再使用。
+  // bubbleRadius 不再使用。
   return {
-    style: raw.chatLayout === 'wechat' ? 'wechat' : 'discord',
+    style: 'discord',
     scheme: migrateThemeToScheme(raw.theme),
     showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
     avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
@@ -116,7 +116,7 @@ export function getWorkforcePrefs(): WorkforcePrefs {
 
 export function setWorkforcePrefs(patch: Partial<WorkforcePrefs>): void {
   const next: WorkforcePrefs = {
-    style: patch.style === 'wechat' || patch.style === 'discord' ? patch.style : cachedPrefs.style,
+    style: 'discord',
     scheme: patch.scheme === 'light' || patch.scheme === 'dark' || patch.scheme === 'system' ? patch.scheme : cachedPrefs.scheme,
     showSteps: patch.showSteps ?? cachedPrefs.showSteps,
     avatarStyle: patch.avatarStyle === 'circle' || patch.avatarStyle === 'terminal' ? patch.avatarStyle : cachedPrefs.avatarStyle,

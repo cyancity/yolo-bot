@@ -122,9 +122,6 @@ const WF_zh = {
   },
   settings: {
     menuLabel: '聊天设置',
-    layoutTitle: '导航布局',
-    layoutDiscord: '分组频道',
-    layoutWechat: '会话列表',
     schemeTitle: '配色',
     schemeSystem: '跟随系统',
     schemeLight: '浅色',
@@ -1007,9 +1004,6 @@ const WF_en = {
   },
   settings: {
     menuLabel: 'Chat Settings',
-    layoutTitle: 'Navigation Layout',
-    layoutDiscord: 'Grouped Channels',
-    layoutWechat: 'Conversation List',
     schemeTitle: 'Theme',
     schemeSystem: 'System',
     schemeLight: 'Light',

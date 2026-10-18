@@ -10,7 +10,7 @@ import { ZOOM_CHOICES, normalizeZoom, normalizeLocale, LOCALE_FIELD, SIDEBAR_TAK
 import { Select, Switch, RadioGroup, WorkbenchSurface } from './ui/index.tsx'
 import { useZoom } from './ui/zoom.ts'
 import { S } from './strings.ts'
-import { useWorkforcePrefs, type WorkforceScheme, type WorkforceStyle } from './workforce-prefs.ts'
+import { useWorkforcePrefs, type WorkforceScheme } from './workforce-prefs.ts'
 import css from './settings.module.css'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -62,15 +62,6 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
     </section>
     <section className={css.group}>
       <h3 className={css.groupTitle}>{S.settings.appearance}</h3>
-      <fieldset className={css.radioGroup}>
-        <legend className={css.rowLabel}>{S.settings.styleLabel}</legend>
-        <RadioGroup label={S.settings.styleLabel} value={prefs.style}
-        onValueChange={value => setPrefs({ style: value as WorkforceStyle })}
-        items={[
-          { value: 'discord', label: S.settings.styleDiscord },
-          { value: 'wechat', label: S.settings.styleWechat },
-        ]} />
-      </fieldset>
       <fieldset className={css.radioGroup}>
         <legend className={css.rowLabel}>{S.settings.schemeLabel}</legend>
         <RadioGroup label={S.settings.schemeLabel} value={prefs.scheme}
