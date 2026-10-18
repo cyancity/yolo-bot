@@ -3,20 +3,22 @@
  * 数据来自 WorkforceSource（Host 轮询 API），组件不感知 ctx；消息左对齐
  * 署名+头像+时间（不做两方气泡）；工具调用/产物折叠可开。
  */
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { FileTypeIcon, IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Icon } from './ui/icons.tsx'
 import { useUserProfile } from './workforce-profile.tsx'
 import { WF } from './workforce-strings.ts'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
+import { ReplyGroupCard } from './workforce-reply-group.tsx'
+import { ReplyPreviewDialog } from './workforce-reply-preview.tsx'
 import { WorkforceQuestionCard } from './workforce-question-card.tsx'
 import type { Employee, SkillSummary, Task, WorkforceActivity, WorkforceMessage, WorkforceSkillDraft, WorkforceSnapshot } from './workforce-types.ts'
 import type { HostChannel } from './workforce-api.ts'
 import type { PendingReply, WorkforceSource } from './workforce-source.ts'
-import { channelStream, threadTask, threadView, visibleReplyCounts } from './workforce-source.ts'
+import { channelStream, replyGroups, threadTask, threadView, visibleReplyCounts } from './workforce-source.ts'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import type { AvatarMotionState } from './workforce-avatar-motion.ts'
-import { useWorkforcePrefs, type AvatarStyle, type TypingEffect } from './workforce-prefs.ts'
+import { useWorkforcePrefs, type AvatarStyle, type ReplyGrouping, type TypingEffect } from './workforce-prefs.ts'
 import css from './workforce.module.css'
 import { attachmentKind, formatFileSize, AttachmentBar, gateAttachment } from './workforce-attachments.tsx'
 import { DeliverableChips } from './workforce-deliverables.tsx'
@@ -1073,6 +1075,29 @@ const MessageRow = memo(function MessageRow({
   } else if (message.delivery === 'sending') {
     resolvedState = 'listening'
   }
+  // 单条超长正文限高：阈值只有 tokens 里一份（--wb-message-clamp-height）；
+  // 流式输出中不折叠，输出结束后按自然高度判定。
+  const [expandedText, setExpandedText] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+  const clampRef = useRef<HTMLDivElement>(null)
+  const streamFinished = message.running !== true && message.delivery !== 'sending'
+  const clamped = overflowing && !expandedText && streamFinished
+  const clampable = streamFinished && overflowing && message.tool === undefined
+    && message.question === undefined && message.approval === undefined && message.intermediate !== true
+  useEffect(() => {
+    const node = clampRef.current
+    if (node === null) return
+    const measure = () => {
+      const limit = Number.parseFloat(getComputedStyle(node).getPropertyValue('--wb-message-clamp-height')) || 0
+      if (limit <= 0) { setOverflowing(false); return }
+      setOverflowing(node.scrollHeight > limit + 1)
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [message.text, message.running, message.delivery, expandedText])
   const [copied, setCopied] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [actionError, setActionError] = useState<string>()
@@ -1168,15 +1193,22 @@ const MessageRow = memo(function MessageRow({
           )
         )}
         {hasText && (
-          <div className={css.msgBubble}>
-            <WorkforceMessageText
-              text={formatErrorReason(message.text)}
-              employees={employees}
-              onDm={onDm}
-              tasks={tasks}
-              hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
-              hasDeliverables={task !== undefined && task.deliverables.length > 0}
-            />
+          <div className={css.msgBubble} data-clamped={clamped || undefined}>
+            <div className={css.msgClamp} ref={clampRef}>
+              <WorkforceMessageText
+                text={formatErrorReason(message.text)}
+                employees={employees}
+                onDm={onDm}
+                tasks={tasks}
+                hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
+                hasDeliverables={task !== undefined && task.deliverables.length > 0}
+              />
+            </div>
+            {clampable && (
+              <button type="button" className={css.msgClampToggle} aria-expanded={!clamped} onClick={() => setExpandedText(value => !value)}>
+                {clamped ? WF.message.expandFull : WF.message.collapseFull}
+              </button>
+            )}
             {actionBar}
           </div>
         )}
@@ -2612,6 +2644,49 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
     return roots
   }, [messages])
   const replies = useMemo(() => visibleReplyCounts(messages), [messages])
+  // 同一句人类消息的多条员工回复（频道 @所有人 时每人各回一条）合成一张组卡：
+  // 默认每人两行摘要，点开右侧预览看全文，不再让三条长回复各占一整屏。
+  const groups = useMemo(() => replyGroups(messages, employees.map(e => e.id)), [messages, employees])
+  const groupOfMessage = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const group of groups.values()) for (const member of group.members) map.set(member.message.id, group.parentId)
+    return map
+  }, [groups])
+  // 手动展开/收起：默认态由偏好决定，用户这一次的点击优先。
+  const [toggledGroups, setToggledGroups] = useState<ReadonlySet<string>>(() => new Set())
+  const [previewTarget, setPreviewTarget] = useState<{ readonly groupId: string; readonly messageId: string } | undefined>()
+  const groupMode = useCallback((groupId: string): ReplyGrouping => {
+    const base = prefs.replyGrouping ?? 'summary'
+    const toggled = toggledGroups.has(groupId)
+    if (base === 'expanded') return toggled ? 'collapsed' : 'expanded'
+    if (base === 'collapsed') return toggled ? 'expanded' : 'collapsed'
+    return toggled ? 'expanded' : 'summary'
+  }, [prefs.replyGrouping, toggledGroups])
+  const toggleGroup = useCallback((groupId: string) => {
+    setToggledGroups(current => {
+      const next = new Set(current)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
+      return next
+    })
+  }, [])
+  // 预览抽屉：上一条/下一条在组内循环。
+  const previewGroup = previewTarget === undefined ? undefined : groups.get(previewTarget.groupId)
+  const previewIndex = previewTarget === undefined || previewGroup === undefined
+    ? -1
+    : previewGroup.members.findIndex(member => member.message.id === previewTarget.messageId)
+  const previewMember = previewIndex >= 0 ? previewGroup!.members[previewIndex] : undefined
+  const movePreview = useCallback((delta: number) => {
+    setPreviewTarget(current => {
+      if (current === undefined) return current
+      const group = groups.get(current.groupId)
+      if (group === undefined) return undefined
+      const index = group.members.findIndex(member => member.message.id === current.messageId)
+      if (index < 0) return undefined
+      const next = group.members[(index + delta + group.members.length) % group.members.length]
+      return next === undefined ? current : { groupId: current.groupId, messageId: next.message.id }
+    })
+  }, [groups])
   // 渲染窗口只切尾部最新一段；窗口外条目不挂载但分页数据仍在。
   const visibleItems = useMemo(() => hidden > 0 ? displayItems.slice(hidden) : displayItems, [displayItems, hidden])
   // 行级稳定 props：快照轮询每次都换数组/函数引用，memo 全靠这一层保住。
@@ -2742,6 +2817,41 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
               )}
               {settingsOpen && (
                 <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>
+                  <div className={css.settingsSection}>
+                    <div className={css.settingsSectionTitle}>{WF.replyGroup.settingsTitle}</div>
+                    <label className={css.settingsRadio}>
+                      <input
+                        type="radio"
+                        name="wf-reply-grouping"
+                        value="summary"
+                        checked={(prefs.replyGrouping ?? 'summary') === 'summary'}
+                        onChange={() => setPrefs({ replyGrouping: 'summary' })}
+                      />
+                      <span>{WF.replyGroup.summary}</span>
+                    </label>
+                    <label className={css.settingsRadio}>
+                      <input
+                        type="radio"
+                        name="wf-reply-grouping"
+                        value="expanded"
+                        checked={prefs.replyGrouping === 'expanded'}
+                        onChange={() => setPrefs({ replyGrouping: 'expanded' })}
+                      />
+                      <span>{WF.replyGroup.expanded}</span>
+                    </label>
+                    <label className={css.settingsRadio}>
+                      <input
+                        type="radio"
+                        name="wf-reply-grouping"
+                        value="collapsed"
+                        checked={prefs.replyGrouping === 'collapsed'}
+                        onChange={() => setPrefs({ replyGrouping: 'collapsed' })}
+                      />
+                      <span>{WF.replyGroup.collapsed}</span>
+                    </label>
+                    <div className={css.settingsHint}>{WF.replyGroup.summaryDesc}</div>
+                  </div>
+                  <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
                     <label className={css.settingsCheckbox}>
@@ -2947,6 +3057,10 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                 return <div key={item.id} className={css.systemTip}>{item.text}</div>
               }
               const message = item.message
+              // 组内成员统一由组卡渲染（摘要态不渲染、展开态由组卡注入真实行），主循环跳过，
+              // 否则同一行会出现两次。
+              if (groupOfMessage.has(message.id)) return null
+              const messageGroup = groups.get(message.id)
               const isUser = message.role === 'user'
               const isRoot = surface.kind === 'channel' && taskRoots.get(message.threadId) === message.id
               const task = footers.get(message.id)
@@ -2961,13 +3075,13 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                 Math.abs(new Date(message.ts).getTime() - new Date(prevMsg.ts).getTime()) < 5 * 60 * 1000
               )
               const working = !isUser && activeEmployeeIds.has(message.senderId)
-              return (
+              const messageRow = (
                 <div key={message.clientId ?? message.streamKey ?? message.id} className={isRoot ? css.taskStart : undefined}>
                   <MessageRow
                     message={message}
                     employees={employeesStable}
                     onDm={stableDm}
-                    replyCount={replies.get(message.id)}
+                    replyCount={messageGroup !== undefined ? undefined : replies.get(message.id)}
                     onJumpToReply={replyJump.jumpTo}
                     openThreadId={surface.kind === 'channel' && threadTaskIds.has(message.threadId) ? message.threadId : undefined}
                     onOpenThread={surface.kind === 'channel' ? stableOpenThread : undefined}
@@ -2992,6 +3106,63 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
                   />
                 </div>
               )
+              if (messageGroup !== undefined) {
+                const groupTask = messageGroup.members
+                  .map(member => footers.get(member.message.id))
+                  .find(item => item !== undefined)
+                return (
+                  <Fragment key={`group:${messageGroup.parentId}`}>
+                    {messageRow}
+                    <ReplyGroupCard
+                      group={messageGroup}
+                      mode={groupMode(messageGroup.parentId)}
+                      employees={employeesStable}
+                      avatarStyle={prefs.avatarStyle}
+                      typingEffect={prefs.typingEffect}
+                      activities={activities}
+                      onToggleExpanded={() => toggleGroup(messageGroup.parentId)}
+                      onOpenPreview={messageId => setPreviewTarget({ groupId: messageGroup.parentId, messageId })}
+                      footer={groupTask === undefined ? undefined : (
+                        <TaskFooter
+                          task={groupTask}
+                          employees={employeesStable}
+                          source={source}
+                          quiet={quietTaskIds.has(groupTask.id)}
+                          onSelectContinuation={surface.kind === 'channel' ? (t => setSelectedContinuationTaskId(t.id)) : undefined}
+                          isCurrentContinuation={surface.kind === 'channel' && activeContinuationTask?.id === groupTask.id}
+                        />
+                      )}
+                      renderMember={member => (
+                        <MessageRow
+                          key={member.clientId ?? member.streamKey ?? member.id}
+                          message={member}
+                          employees={employeesStable}
+                          onDm={stableDm}
+                          working={activeEmployeeIds.has(member.senderId)}
+                          activityState={activities.find(a => a.employeeId === member.senderId)?.state}
+                          repliedSnippet={member.replyTo !== undefined ? replySnippetOf(messagesById, member.replyTo) : undefined}
+                          isLatest={member.id === latestAgentMessageId}
+                          isConsecutive={false}
+                          avatarStyle={prefs.avatarStyle}
+                          typingEffect={prefs.typingEffect}
+                          source={source}
+                          task={footers.get(member.id)}
+                          taskQuiet={footers.get(member.id) !== undefined && quietTaskIds.has(footers.get(member.id)!.id)}
+                          tasks={tasksStable}
+                          onSelectContinuation={surface.kind === 'channel' ? (t => setSelectedContinuationTaskId(t.id)) : undefined}
+                          isCurrentContinuation={surface.kind === 'channel' && footers.get(member.id) !== undefined && activeContinuationTask?.id === footers.get(member.id)!.id}
+                          notices={[]}
+                          onJumpToReply={replyJump.jumpTo}
+                          resolveRetryTarget={resolveRetryTarget}
+                          onOpenKeyModal={openKey}
+                          onOpenModelsModal={openModels}
+                        />
+                      )}
+                    />
+                  </Fragment>
+                )
+              }
+              return messageRow
             })
           )}
           {skeletons.map(sk => (
@@ -3043,6 +3214,25 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           />
         )}
       </section>
+      {previewMember !== undefined && previewGroup !== undefined && (
+        <ReplyPreviewDialog
+          title={previewMember.message.senderName}
+          subtitle={`${WF.replyGroup.title(previewGroup.members.length)} · ${fmtTime(previewMember.message.ts)}`}
+          onClose={() => setPreviewTarget(undefined)}
+          onPrevious={previewGroup.members.length > 1 ? () => movePreview(-1) : undefined}
+          onNext={previewGroup.members.length > 1 ? () => movePreview(1) : undefined}
+          footer={previewGroup.members.length > 1 ? <span>{previewIndex + 1} / {previewGroup.members.length}</span> : undefined}
+        >
+          <WorkforceMessageText
+            text={formatErrorReason(previewMember.message.text)}
+            employees={employees}
+            onDm={stableDm}
+            tasks={tasksStable}
+            hasAttachments={previewMember.message.attachments !== undefined && previewMember.message.attachments.length > 0}
+            hasDeliverables={false}
+          />
+        </ReplyPreviewDialog>
+      )}
       {openThread !== undefined && (
         <ThreadPanel
           source={source}

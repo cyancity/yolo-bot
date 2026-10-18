@@ -1,0 +1,298 @@
+/* 回复组卡：同一句人类消息的多条员工回复（频道 @所有人 时每人各回一条）。
+   默认每人一行摘要，点开右侧预览看全文；「全部展开」就地还原成完整气泡。
+   高度可控是这个组件的唯一目的，所以每条成员行都是两行摘要。 */
+
+.group {
+  /* 与 .stepsGroup / .webSearchRow 同口径：左侧让开头像列（头像 + 元素间隙）。 */
+  margin: var(--wb-space-2) var(--wb-space-5) var(--wb-space-2) calc(var(--wb-space-5) + var(--wb-avatar-message-size) + var(--wb-space-6));
+  min-width: 0;
+  max-width: min(100%, 780px);
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-panel);
+  background: var(--wb-surface);
+  overflow: hidden;
+}
+
+/* WeChat：组卡跟着员工气泡放宽，不再缩进到头像列右侧。 */
+:global([data-wb-style='wechat']) .group {
+  margin: var(--wb-space-2) var(--wb-space-5);
+  max-width: min(100%, 640px);
+  border-radius: var(--wb-radius-bubble);
+  background: var(--wb-bubble-peer);
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: var(--wb-space-4);
+  padding: var(--wb-space-4) var(--wb-space-5);
+  border-bottom: 1px solid var(--wb-line-soft);
+  min-width: 0;
+}
+
+.groupTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wb-space-3);
+  min-width: 0;
+  font-size: var(--wb-type-caption-size);
+  font-weight: 650;
+  color: var(--wb-fg);
+}
+
+.groupState {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wb-space-3);
+  font-size: var(--wb-type-micro-size);
+  color: var(--wb-fg-muted);
+  white-space: nowrap;
+}
+
+.groupStateDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--wb-radius-dot);
+  background: var(--wb-success);
+  flex: none;
+}
+
+.groupState[data-running='true'] .groupStateDot {
+  background: var(--wb-accent);
+}
+
+.groupAction {
+  margin-left: auto;
+  flex: none;
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control);
+  background: transparent;
+  color: var(--wb-fg-muted);
+  font: inherit;
+  font-size: var(--wb-type-caption-size);
+  line-height: 1;
+  min-height: var(--wb-control-height-sm);
+  padding: 0 var(--wb-space-4);
+  cursor: pointer;
+}
+
+.groupAction:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+
+.groupAction:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.member {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--wb-space-4);
+  width: 100%;
+  min-width: 0;
+  padding: var(--wb-space-4) var(--wb-space-5);
+  border: 0;
+  border-top: 1px solid var(--wb-line-soft);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.memberList > li:first-child > .member {
+  border-top: 0;
+}
+
+.member:hover {
+  background: var(--wb-hover);
+}
+
+.member:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.memberBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-2);
+}
+
+.memberTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--wb-space-4);
+  min-width: 0;
+}
+
+.memberName {
+  font-size: var(--wb-type-label-size);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memberMeta {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wb-space-3);
+  font-size: var(--wb-type-micro-size);
+  color: var(--wb-fg-placeholder);
+  white-space: nowrap;
+}
+
+.memberExcerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--wb-type-compact-size);
+  line-height: var(--wb-type-compact-leading);
+  color: var(--wb-fg-muted);
+  overflow-wrap: anywhere;
+}
+
+.memberExcerpt[data-running='true'] {
+  color: var(--wb-fg-placeholder);
+  font-style: italic;
+}
+
+.memberArrow {
+  flex: none;
+  align-self: center;
+  color: var(--wb-fg-placeholder);
+}
+
+.member:hover .memberArrow {
+  color: var(--wb-accent);
+}
+
+/* 组卡底部：任务页脚与成果卡挂在组上，不按员工重复三份。 */
+.groupFoot {
+  padding: 0 var(--wb-space-5) var(--wb-space-4);
+}
+
+/* 折叠态：只留标题行，成员整段隐藏。 */
+.group[data-mode='collapsed'] .memberList,
+.group[data-mode='collapsed'] .groupFoot {
+  display: none;
+}
+
+/* ---------- 预览抽屉：沿用 files/memory 的 :has(> .drawer) 贴右定位 ---------- */
+:global(dialog):has(.previewDrawer) {
+  box-sizing: border-box;
+  position: fixed;
+  inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom, 1)) 0 0 auto;
+  margin: 0;
+  width: min(var(--wb-preview-width), 100vw);
+  height: calc((100dvh - var(--dsh-frame-chrome-top, 0px)) / var(--wb-zoom, 1));
+  max-width: 100vw;
+  max-height: none;
+  border-radius: 0;
+  border-width: 0 0 0 1px;
+  box-shadow: var(--wb-shadow-popover);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:global(dialog):has(.previewDrawer) > div:has(.previewDrawer) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 var(--wb-space-6) var(--wb-space-5);
+}
+
+.previewDrawer {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-4);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.previewSubtitle {
+  margin: 0;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
+}
+
+.previewBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-inline-end: var(--wb-space-2);
+}
+
+.previewFoot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--wb-space-4);
+  padding-top: var(--wb-space-4);
+  border-top: 1px solid var(--wb-line-soft);
+}
+
+.previewFootExtra {
+  margin-left: auto;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
+}
+
+.previewNav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wb-space-2);
+  border: 1px solid var(--wb-line);
+  border-radius: var(--wb-radius-control);
+  background: transparent;
+  color: var(--wb-fg-muted);
+  font: inherit;
+  font-size: var(--wb-type-caption-size);
+  min-height: var(--wb-control-height-sm);
+  padding: 0 var(--wb-space-4);
+  cursor: pointer;
+}
+
+.previewNav:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+
+.previewNav:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.previewNavPrev {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 900px) {
+  .group,
+  :global([data-wb-style='wechat']) .group {
+    margin-left: var(--wb-space-4);
+    margin-right: var(--wb-space-4);
+  }
+}

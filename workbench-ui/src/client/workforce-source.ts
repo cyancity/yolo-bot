@@ -1034,6 +1034,117 @@ export function visibleReplyCounts(messages: readonly WorkforceMessage[]): Reado
   return counts
 }
 
+/** 组卡摘要用：把 Markdown 正文压成一行纯文本，尽量保留可读信息。 */
+export function replyExcerpt(text: string, limit = 160): string {
+  const flat = text
+    .replace(/```[\s\S]*?```/g, ' [code] ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' [image] ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
+    .replace(/[*_~`|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (flat === '') return ''
+  return flat.length > limit ? `${flat.slice(0, limit)}…` : flat
+}
+
+/** 组卡成员字数：只算可见字符，不把代码块算成几百字。 */
+export function replyCharCount(text: string): number {
+  return text.replace(/\s/g, '').length
+}
+
+export interface ReplyGroupMember {
+  readonly message: WorkforceMessage
+  readonly employeeId: string
+  /** 该成员这条回复是否仍在生成/执行（组内状态点与「执行中 N/M」用）。 */
+  readonly running: boolean
+}
+
+/** 同一句人类消息的多条员工回复（频道 @所有人 时每人各回一条）。 */
+export interface ReplyGroup {
+  readonly parentId: string
+  readonly members: readonly ReplyGroupMember[]
+  readonly running: number
+}
+
+/**
+ * 按 replyTo 聚合「同一句人类消息的多条员工回复」：只收可见员工正文
+ * （无工具、非过程文字、非提问/审批、非空），同一父 ≥2 条才成组。
+ * 已结束的员工正文仍然只按 replyTo 归组；没有 replyTo 的 running === true 员工正文
+ * 归到同一 thread 里 ts 不晚于它的最近一条人类消息。父消息须是同 thread 的人类行。
+ */
+export function replyGroups(messages: readonly WorkforceMessage[], order?: readonly string[]): ReadonlyMap<string, ReplyGroup> {
+  const humans = new Map<string, WorkforceMessage>()
+  const humansByThread = new Map<string, WorkforceMessage[]>()
+  for (const message of messages) {
+    if (message.role === 'user') {
+      humans.set(message.id, message)
+      const list = humansByThread.get(message.threadId)
+      if (list === undefined) humansByThread.set(message.threadId, [message])
+      else list.push(message)
+    }
+  }
+  for (const list of humansByThread.values()) {
+    list.sort((a, b) => a.ts.localeCompare(b.ts))
+  }
+  const grouped = new Map<string, WorkforceMessage[]>()
+  const seen = new Set<string>()
+  for (const message of messages) {
+    if (message.role !== 'agent') continue
+    if (message.tool !== undefined || message.intermediate === true || message.tip === true) continue
+    if (message.question !== undefined || message.approval !== undefined) continue
+    if (message.text.trim() === '') continue
+
+    let parentId: string | undefined = undefined
+    if (message.replyTo !== undefined) {
+      const parent = humans.get(message.replyTo)
+      if (parent !== undefined && parent.threadId === message.threadId) {
+        parentId = parent.id
+      }
+    } else if (message.running === true) {
+      const list = humansByThread.get(message.threadId) ?? []
+      for (let i = list.length - 1; i >= 0; i--) {
+        if (list[i]!.ts <= message.ts) {
+          parentId = list[i]!.id
+          break
+        }
+      }
+    }
+
+    if (parentId === undefined) continue
+
+    const key = message.streamKey ?? message.id
+    if (seen.has(key)) continue
+    seen.add(key)
+    const bucket = grouped.get(parentId)
+    if (bucket === undefined) grouped.set(parentId, [message])
+    else bucket.push(message)
+  }
+  const orderMap = order !== undefined && order.length > 0
+    ? new Map(order.map((id, index) => [id, index]))
+    : undefined
+  const result = new Map<string, ReplyGroup>()
+  for (const [parentId, bucket] of grouped) {
+    if (bucket.length < 2) continue
+    const members = [...bucket].sort((a, b) => {
+      if (orderMap !== undefined) {
+        const idxA = orderMap.get(a.senderId) ?? Number.MAX_SAFE_INTEGER
+        const idxB = orderMap.get(b.senderId) ?? Number.MAX_SAFE_INTEGER
+        if (idxA !== idxB) return idxA - idxB
+        const senderCmp = a.senderId.localeCompare(b.senderId)
+        if (senderCmp !== 0) return senderCmp
+      }
+      return a.ts.localeCompare(b.ts)
+    }).map(message => ({
+      message,
+      employeeId: message.senderId,
+      running: message.running === true || message.delivery === 'sending',
+    }))
+    result.set(parentId, { parentId, members, running: members.filter(member => member.running).length })
+  }
+  return result
+}
+
 function mergedReply(messages: readonly WorkforceMessage[], user: WorkforceMessage, employeeId: string): boolean {
   return messages.some(message => message.role === 'agent' && message.senderId === employeeId
     && message.ts >= user.ts && (message.text.trim() !== '' || message.tool !== undefined))

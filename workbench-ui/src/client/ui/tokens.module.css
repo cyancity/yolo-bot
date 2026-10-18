@@ -102,6 +102,10 @@ html[data-wb-style],
   --wb-avatar-message-size: 36px;
   --wb-rail-width: 56px;
   --wb-thread-width: 360px;
+  /* 回复预览抽屉：比线程面板宽，够读完整 markdown 回复。 */
+  --wb-preview-width: 560px;
+  /* 单条正文超长时的折叠高度（≈14 行），「展开全文」按此判定。 */
+  --wb-message-clamp-height: 320px;
   --wb-zoom: 1;
 
   /* 图层（插件局部） */

@@ -17,6 +17,8 @@ export type WorkforceScheme = 'system' | 'light' | 'dark'
 export type ResolvedScheme = 'light' | 'dark'
 export type AvatarStyle = 'circle' | 'terminal'
 export type TypingEffect = 'hash' | 'binary' | 'cli'
+/** 同一句人类消息的多条员工回复（@所有人 时每人各回一条）如何呈现。 */
+export type ReplyGrouping = 'summary' | 'expanded' | 'collapsed'
 
 export interface WorkforcePrefs {
   readonly style: WorkforceStyle
@@ -25,6 +27,7 @@ export interface WorkforcePrefs {
   readonly avatarStyle: AvatarStyle
   readonly typingEffect: TypingEffect
   readonly showTokenStats: boolean
+  readonly replyGrouping: ReplyGrouping
 }
 
 /** 回复卡片圆角取值范围（历史滑块常量，仅保留迁移期工具函数）。 */
@@ -49,6 +52,7 @@ const DEFAULT_PREFS: WorkforcePrefs = {
   avatarStyle: 'circle',
   typingEffect: 'hash',
   showTokenStats: false,
+  replyGrouping: 'summary',
 }
 
 function migrateThemeToScheme(theme: unknown): WorkforceScheme {
@@ -70,6 +74,7 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
       avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
       typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
       showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
+      replyGrouping: migrateReplyGrouping(raw.replyGrouping),
     }
   }
   // V1 迁移：chatLayout=wechat 进 style；具名主题进 scheme；sidebarMode 不再使用
@@ -81,7 +86,13 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
     avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
     typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
     showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
+    replyGrouping: migrateReplyGrouping(raw.replyGrouping),
   }
+}
+
+/** 老数据没有 replyGrouping：落到默认摘要卡片，不因新增字段改写既有偏好。 */
+function migrateReplyGrouping(value: unknown): ReplyGrouping {
+  return value === 'expanded' || value === 'collapsed' ? value : 'summary'
 }
 
 let cachedPrefs: WorkforcePrefs = readInitial()
@@ -111,6 +122,9 @@ export function setWorkforcePrefs(patch: Partial<WorkforcePrefs>): void {
     avatarStyle: patch.avatarStyle === 'circle' || patch.avatarStyle === 'terminal' ? patch.avatarStyle : cachedPrefs.avatarStyle,
     typingEffect: patch.typingEffect === 'binary' || patch.typingEffect === 'cli' || patch.typingEffect === 'hash' ? patch.typingEffect : cachedPrefs.typingEffect,
     showTokenStats: patch.showTokenStats ?? cachedPrefs.showTokenStats,
+    replyGrouping: patch.replyGrouping === 'expanded' || patch.replyGrouping === 'collapsed' || patch.replyGrouping === 'summary'
+      ? patch.replyGrouping
+      : cachedPrefs.replyGrouping,
   }
   if (
     next.style === cachedPrefs.style &&
@@ -118,7 +132,8 @@ export function setWorkforcePrefs(patch: Partial<WorkforcePrefs>): void {
     next.showSteps === cachedPrefs.showSteps &&
     next.avatarStyle === cachedPrefs.avatarStyle &&
     next.typingEffect === cachedPrefs.typingEffect &&
-    next.showTokenStats === cachedPrefs.showTokenStats
+    next.showTokenStats === cachedPrefs.showTokenStats &&
+    next.replyGrouping === cachedPrefs.replyGrouping
   ) {
     return
   }
