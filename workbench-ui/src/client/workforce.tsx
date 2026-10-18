@@ -1512,6 +1512,8 @@ export interface ComposerProps {
   readonly employees: readonly Employee[]
   /** @ 浮层候选：群聊限定成员名单；缺省 = 全部员工。正文里手写 @ 仍按全员工解析，由宿主校验成员范围。 */
   readonly mentionable?: readonly Employee[] | undefined
+  /** 频道输入框支持 @所有人，发送时展开为当前频道成员。私信和任务线程不启用。 */
+  readonly allowMentionAll?: boolean
   readonly onSend: (text: string, employeeIds: readonly string[]) => Promise<void>
   /** 限定当前会话/私信目标员工的可用技能；undefined 表示不限制（如公共频道）。 */
   readonly allowedSkills?: readonly string[] | undefined
@@ -1713,13 +1715,24 @@ export function WorkforceComposer(props: ComposerProps) {
     if (trigger === undefined) return []
     const q = trigger.query.toLowerCase()
     if (trigger.kind === 'at') {
-      return (props.mentionable ?? props.employees)
+      const members = props.mentionable ?? props.employees
+      const matchEveryone = '所有人'.includes(q) || 'everyone'.includes(q) || 'all'.includes(q)
+      const everyone: TriggerItem[] = props.allowMentionAll && members.length > 0 && matchEveryone
+        ? [{
+            key: 'mention:all',
+            label: WF.composer.atEveryone,
+            insert: `${WF.composer.atEveryone} `,
+            meta: WF.composer.atEveryoneMeta(members.length),
+            icon: <Icon name="users" width={22} height={22} />,
+          }]
+        : []
+      return [...everyone, ...members
         .filter(employee => employee.name.toLowerCase().includes(q) || employee.title.toLowerCase().includes(q))
         .map(employee => ({
           key: employee.id, label: `@${employee.name}`, insert: `@${employee.name} `,
           meta: employee.title,
           icon: <WorkforceAvatar name={employee.name} isUser={false} color={employee.avatarColor} role={employee.role} style={prefs.avatarStyle} typingEffect={prefs.typingEffect} size={22} state="listening" live={true} />,
-        }))
+        }))]
     }
     // /name 走 dsh 原生 skill 手势：若指定了 allowedSkills，严格限制在当前员工绑定的技能范围内
     const allowed = props.allowedSkills !== undefined ? new Set(props.allowedSkills) : undefined
@@ -1729,7 +1742,7 @@ export function WorkforceComposer(props: ComposerProps) {
       .filter(skill => skill.name.toLowerCase().includes(q) || skill.description.toLowerCase().includes(q))
       .slice(0, 12)
       .map(skill => ({ key: skill.name, label: `/${skill.name}`, insert: `/${skill.name} `, meta: skill.description }))
-  }, [trigger, props.employees, props.mentionable, props.allowedSkills, skills, prefs.avatarStyle, prefs.typingEffect])
+  }, [trigger, props.employees, props.mentionable, props.allowMentionAll, props.allowedSkills, skills, prefs.avatarStyle, prefs.typingEffect])
 
   const applyTrigger = (item: TriggerItem): void => {
     const input = inputRef.current
@@ -1751,16 +1764,27 @@ export function WorkforceComposer(props: ComposerProps) {
       || (text === '' && sentAttachments.length === 0)) return
     // 收集全部 @ 提及：按在正文中的出现位置排序去重成收件人列表（正文仍带 "@名字"）。
     const boundary = /[\s,，。;；:：!！?？()（）]/
-    const mentionedIds = [...new Set(props.employees
-      .map(employee => {
-        const marker = `@${employee.name}`
-        for (let at = text.indexOf(marker); at >= 0; at = text.indexOf(marker, at + 1)) {
-          const next = text[at + marker.length]
-          if (next === undefined || boundary.test(next)) return { id: employee.id, at }
-        }
-        return undefined
-      })
-      .filter((item): item is { id: string; at: number } => item !== undefined)
+    const mentionPosition = (name: string, caseInsensitive = false): number => {
+      const marker = `@${name}`
+      const target = caseInsensitive ? text.toLowerCase() : text
+      const search = caseInsensitive ? marker.toLowerCase() : marker
+      for (let at = target.indexOf(search); at >= 0; at = target.indexOf(search, at + 1)) {
+        const next = text[at + marker.length]
+        if (next === undefined || boundary.test(next)) return at
+      }
+      return -1
+    }
+    const posZh = mentionPosition('所有人')
+    const posEn = mentionPosition('everyone', true)
+    const everyoneAt = props.allowMentionAll
+      ? (posZh >= 0 && posEn >= 0 ? Math.min(posZh, posEn) : Math.max(posZh, posEn))
+      : -1
+    const everyoneRecipients = everyoneAt >= 0
+      ? (props.mentionable ?? props.employees).map(employee => ({ id: employee.id, at: everyoneAt }))
+      : []
+    const mentionedIds = [...new Set([...props.employees
+      .map(employee => ({ id: employee.id, at: mentionPosition(employee.name) }))
+      .filter(item => item.at >= 0), ...everyoneRecipients]
       .sort((a, b) => a.at - b.at)
       .map(item => item.id))]
     const sentRevision = draftRevision.current
@@ -3192,6 +3216,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
               : WF.composer.messageDm(dmEmployee?.name || title)}
             employees={employees}
             mentionable={mentionable}
+            allowMentionAll={surface.kind === 'channel'}
             allowedSkills={surface.kind === 'dm' ? employees.find(e => e.id === surface.employeeId)?.skills : undefined}
             onSend={(text, employeeIds) => source.send(activeThreadId, text, employeeIds)}
             continuationTask={surface.kind === 'channel' ? activeContinuationTask : undefined}

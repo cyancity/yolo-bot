@@ -497,7 +497,8 @@
 }
 /* 消息内 @ 提及：员工名可点（路由到 DM），保持左对齐文本流。 */
 .mention {
-  vertical-align: middle;
+  display: inline-block;
+  vertical-align: baseline;
   border: none;
   background: var(--wb-accent-soft);
   color: var(--wb-accent-fg-sm);
@@ -509,6 +510,8 @@
 }
 
 .mention:hover { text-decoration: underline; }
+.mentionAll { cursor: default; }
+.mentionAll:hover { text-decoration: none; }
 
 /* 深色消息行 hover 时 accent-soft 复合底变深（Mocha 实测 63,71,97），
    纯 accent 小字掉到 4.36:1；混入白提亮至 ≥4.5，rest/focus 5.66:1 不动。 */
