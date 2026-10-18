@@ -1,7 +1,7 @@
 import { TextInput } from './ui/primitives.ts'
 import { useState, useRef } from 'react'
 import css from './workforce-question-card.module.css'
-import { Button, IconButton, Menu } from './ui/index.tsx'
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, IconButton, Menu } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
 
@@ -130,11 +130,14 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
     const isApprovalAnswered = done !== undefined || approval.status === 'answered'
     const disabled = submitting || inactive || isApprovalAnswered
     return (
-      <div className={css.card} data-ask-card="approval">
-        <div className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</div>
-        <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
-        {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
-        {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
+      <Card className={css.card} data-ask-card="approval">
+        <CardHeader className={css.cardHeader}>
+          <CardTitle className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</CardTitle>
+        </CardHeader>
+        <CardContent className={css.cardContent}>
+          <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
+          {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
+          {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
         {approval.reason && !approval.displayReason ? <div className={css.detail}>{approval.reason}</div> : null}
         {approval.detail ? (
           <details className={css.detailDisclosure}>
@@ -144,9 +147,13 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
         ) : (
           <div className={css.detailMissing}>{WF.questions.detailUnavailable}</div>
         )}
-        {done !== undefined ? (
-          <div className={css.answeredTag}>{approvalLabel(done)}</div>
-        ) : (
+          {done !== undefined ? (
+            <div className={css.answeredWrap}>
+              <Badge variant="pill" tone={done === 'allowed-once' ? 'success' : 'neutral'} className={css.answeredTag}>
+                {approvalLabel(done)}
+              </Badge>
+            </div>
+          ) : (
           <div className={css.approvalActions}>
             {/* 单主按钮：本卡唯一实底动作是「允许一次」，拒绝收进更多菜单（danger）。 */}
             <Button
@@ -165,8 +172,9 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
             />
           </div>
         )}
-        {error ? <div className={css.error}>{error}</div> : null}
-      </div>
+          {error ? <div className={css.error}>{error}</div> : null}
+        </CardContent>
+      </Card>
     )
   }
   if (!question) return null
@@ -193,9 +201,12 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
   }))
 
   return (
-    <div className={css.card} data-ask-card="question">
-      <div className={css.title}>{inactive ? WF.questions.questionEnded : isContinued ? WF.questions.additionalQuestion : WF.questions.askQuestion}</div>
-      {question.items.map(item => {
+    <Card className={css.card} data-ask-card="question">
+      <CardHeader className={css.cardHeader}>
+        <CardTitle className={css.title}>{inactive ? WF.questions.questionEnded : isContinued ? WF.questions.additionalQuestion : WF.questions.askQuestion}</CardTitle>
+      </CardHeader>
+      <CardContent className={css.cardContent}>
+        {question.items.map(item => {
         const answeredItem = done?.find(answer => answer.id === item.id)
         return (
           <div className={css.item} key={item.id}>
@@ -204,9 +215,17 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
             {item.detail ? <div className={css.detail}>{item.detail}</div> : null}
             {done !== undefined ? (
               <div className={css.answeredList}>
-                {(answeredItem?.selected ?? []).map(label => <span className={css.answeredTag} key={label}>{label}</span>)}
+                {(answeredItem?.selected ?? []).map(label => (
+                  <Badge variant="pill" tone="neutral" className={css.answeredTag} key={label}>
+                    {label}
+                  </Badge>
+                ))}
                 {answeredItem?.custom ? <span className={css.answeredCustom}>{answeredItem.custom}</span> : null}
-                {answeredItem !== undefined && answeredItem.selected.length === 0 && !answeredItem.custom ? <span className={css.answeredTag}>{WF.questions.skipped}</span> : null}
+                {answeredItem !== undefined && answeredItem.selected.length === 0 && !answeredItem.custom ? (
+                  <Badge variant="pill" tone="neutral" className={css.answeredTag}>
+                    {WF.questions.skipped}
+                  </Badge>
+                ) : null}
               </div>
             ) : (
               <>
@@ -254,7 +273,8 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
           </Button>
         </div>
       ) : null}
-      {error ? <div className={css.error}>{error}</div> : null}
-    </div>
+        {error ? <div className={css.error}>{error}</div> : null}
+      </CardContent>
+    </Card>
   )
 }

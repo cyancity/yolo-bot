@@ -5,7 +5,7 @@
  * WorkforceFilePreview。版本真源在宿主 store，这里只按 workforce-types 契约
  * 展示并调用发布路由；发布返回的整条任务先就地顶替，再让 source 轮询对齐。
  */
-import { Button } from './ui/primitives.ts'
+import { Badge, Button, Card, CardContent, Chip } from './ui/index.tsx'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceApi } from './workforce-api.ts'
@@ -124,9 +124,9 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
 
   const hasMultipleVersions = view.versions.length > 1
   const versionPill = hasMultipleVersions ? (
-    <Button variant="plain"
-      type="button"
-      className={css.versionTag}
+    <Chip
+      tone={view.published ? 'success' : 'neutral'}
+      className={css.versionChip}
       data-published={view.published}
       aria-expanded={open}
       aria-label={WF.deliverables.versionAria(view.published, view.shownVersion, open)}
@@ -139,23 +139,23 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
         <line x1="3" y1="12" x2="21" y2="12" />
         <line x1="3" y1="18" x2="21" y2="18" />
       </svg>
-    </Button>
+    </Chip>
   ) : (
-    <span className={css.versionTag} data-published={view.published}>
+    <Badge variant="pill" tone={view.published ? 'success' : 'neutral'} className={css.versionTag} data-published={view.published}>
       {view.published ? '✓ ' : ''}v{view.shownVersion}
-    </span>
+    </Badge>
   )
 
   const head = <>
     <span className={css.fileIcon} data-extension={extension}><FileTypeIcon path={item.name} size={22} /></span>
     <Button variant="plain" type="button" className={css.fileName} title={WF.deliverables.openFileTitle(item.name)} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</Button>
     {versionPill}
-    <span className={css.authorTag}>{authorName(view.authorId, employees)}</span>
-    {view.newDraftVersion !== undefined && <span className={css.draftMark}>{WF.deliverables.newDraftVersion(view.newDraftVersion)}</span>}
+    <Badge variant="pill" tone="neutral" className={css.authorTag}>{authorName(view.authorId, employees)}</Badge>
+    {view.newDraftVersion !== undefined && <Badge variant="pill" tone="accent" className={css.draftMark}>{WF.deliverables.newDraftVersion(view.newDraftVersion)}</Badge>}
   </>
 
   return (
-    <div className={css.card} data-deliverable={item.name}>
+    <Card className={css.card} data-deliverable={item.name}>
       <div className={css.head}>
         <span className={css.headMain}>{head}</span>
         <WorkforceNativeFileMenu
@@ -167,7 +167,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
         />
       </div>
       {open && (
-        <div className={css.versions}>
+        <CardContent className={css.versions}>
           <div className={css.publishNote}>{LABELS.publishNote}</div>
           {view.versions.map(version => (
             <div key={version.version} className={css.versionRow} data-current={version.version === item.publishedVersion}>
@@ -203,7 +203,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </Button>
-        </div>
+        </CardContent>
       )}
       {error && <span className={css.error} role="alert">{error}</span>}
       {previewVersion !== undefined && (
@@ -213,7 +213,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
           onClose={() => setPreviewVersion(undefined)}
         />
       )}
-    </div>
+    </Card>
   )
 }
 
