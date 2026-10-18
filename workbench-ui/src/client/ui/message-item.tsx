@@ -1,10 +1,6 @@
+import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
+import { MessagePrimitive } from '@assistant-ui/react'
 import { Button } from './button.tsx'
-/**
- * MessageItem：语义 article 行。全左对齐署名行，
- * 分组连续消息省略头像与署名。body 是 renderer 产物；
- * children 放工具/成果等已获准组合。
- */
-import type { HTMLAttributes, ReactNode } from 'react'
 import css from './message-item.module.css'
 import { Bubble } from './bubble.tsx'
 import { Icon } from './icons.tsx'
@@ -24,33 +20,55 @@ export interface MessageAction {
   readonly loading?: boolean
   readonly tone?: 'neutral' | 'danger'
 }
+export interface QuoteAction {
+  readonly label: string
+  readonly onJump: () => void
+}
+
+export interface ThreadAction {
+  readonly replyCount: number
+  readonly onOpen: () => void
+}
+
+function isQuoteAction(value: unknown): value is QuoteAction {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return typeof record.label === 'string' && typeof record.onJump === 'function'
+}
+
+function isThreadAction(value: unknown): value is ThreadAction {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return typeof record.replyCount === 'number' && typeof record.onOpen === 'function'
+}
 
 export interface MessageItemProps extends Omit<HTMLAttributes<HTMLElement>, 'id'> {
   readonly id: string
-  readonly author: { readonly id: string; readonly name: string }
-  readonly role: 'user' | 'agent' | 'system'
+  readonly author?: { readonly id?: string; readonly name: string } | string
+  readonly role?: 'user' | 'agent' | 'system'
   readonly timestamp?: string
   /** 与上一条同作者同 thread 的连续消息：省略署名/头像区。 */
   readonly grouped?: boolean
   readonly avatar?: ReactNode
-  readonly body: ReactNode
+  readonly body?: ReactNode
   readonly task?: TaskRef
-  readonly quote?: { readonly label: string; readonly onJump: () => void }
-  readonly thread?: { readonly replyCount: number; readonly onOpen: () => void }
+  readonly quote?: QuoteAction | ReactNode
+  readonly thread?: ThreadAction | ReactNode
   readonly delivery?: 'sending' | 'waiting' | 'failed'
   readonly error?: string
   /** 行尾操作入口（弱操作）；如复制。 */
   readonly actions?: readonly MessageAction[]
+  readonly actionSlot?: ReactNode
   readonly children?: ReactNode
-  /** 标记作者侧（用户消息/对方消息）。 */
   readonly self?: boolean
 }
-
-export function MessageItem({
-  id, author, role, timestamp, grouped, avatar, body, task, quote, thread, delivery, error, actions, children, self, className, ...rest
-}: MessageItemProps) {
+export const MessageItem = forwardRef<HTMLElement, MessageItemProps>(function MessageItem({
+  id, author, role, timestamp, grouped, avatar, body, task, quote, thread, delivery, error, actions, actionSlot, children, self, className, ...rest
+}: MessageItemProps, ref) {
+  const authorName = typeof author === 'string' ? author : author?.name
   return (
     <article
+      ref={ref}
       {...rest}
       className={`${css.item} ${grouped ? css.grouped : ''} ${self ? css.self : ''} ${className ?? ''}`}
       data-message-id={id}
@@ -59,24 +77,28 @@ export function MessageItem({
     >
       {!grouped && <span className={css.avatarCol} aria-hidden="true">{avatar}</span>}
       <div className={css.main}>
-        {!grouped && (
+        {!grouped && authorName && (
           <div className={css.meta}>
-            <span className={css.author}>{author.name}</span>
+            <span className={css.author}>{authorName}</span>
             {timestamp && <time className={css.time}>{timestamp}</time>}
             {delivery === 'sending' && <span className={css.delivery}>{WF.ui.sendingDelivery}</span>}
             {delivery === 'waiting' && <span className={css.delivery}>{WF.ui.waitingDelivery}</span>}
           </div>
         )}
         {quote && (
-          <Button variant="plain" type="button" className={css.quote} onClick={quote.onJump}>
-            {quote.label}
-          </Button>
+          isQuoteAction(quote) ? (
+            <Button variant="plain" type="button" className={css.quote} onClick={quote.onJump}>
+              {quote.label}
+            </Button>
+          ) : (
+            quote
+          )
         )}
         {role === 'system' ? (
           <div className={css.systemBody}>{body}</div>
         ) : (
           <div className={css.bodyRow}>
-            <div className={css.body}>{body}</div>
+            {body !== undefined && <div className={css.body}>{body}</div>}
             {actions && actions.length > 0 && (
               <span className={css.actions}>
                 {actions.map(a => (
@@ -93,6 +115,7 @@ export function MessageItem({
                 ))}
               </span>
             )}
+            {actionSlot}
           </div>
         )}
         {delivery === 'failed' && (
@@ -100,6 +123,11 @@ export function MessageItem({
             <span className={css.failedText}>{error ?? WF.common.failed}</span>
           </div>
         )}
+        <MessagePrimitive.Error>
+          <div className={css.failedRow} role="alert">
+            <span className={css.failedText}>{error ?? WF.common.failed}</span>
+          </div>
+        </MessagePrimitive.Error>
         {task && (
           <div className={css.taskLine}>
             <Icon name="task" />
@@ -108,15 +136,19 @@ export function MessageItem({
           </div>
         )}
         {thread && (
-          <Button variant="plain" type="button" className={css.threadBtn} onClick={thread.onOpen}>
-            {WF.ui.viewTask(thread.replyCount)}
-          </Button>
+          isThreadAction(thread) ? (
+            <Button variant="plain" type="button" className={css.threadBtn} onClick={thread.onOpen}>
+              {WF.ui.viewTask(thread.replyCount)}
+            </Button>
+          ) : (
+            thread
+          )
         )}
         {children}
       </div>
     </article>
   )
-}
+})
 
 /** 便捷气泡包装。 */
 export function MessageBubbleBody({ self, children }: { self: boolean; children: ReactNode }) {

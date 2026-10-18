@@ -7,6 +7,7 @@ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { FileTypeIcon, IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Icon } from './ui/icons.tsx'
 import {
+  ActionBarPrimitive,
   AssistantRuntimeProvider,
   AttachmentPrimitive,
   ComposerPrimitive,
@@ -24,6 +25,7 @@ import {
 import { WorkforceAssistantRuntime, AssistantMessageScope, AssistantMessageParts, AssistantToolParts, dshAttachmentAdapter } from './assistant-runtime.tsx'
 import { WorkbenchExtensionPreview, readExtensionPreview } from './extension-preview.tsx'
 import { Button } from './ui/button.tsx'
+import { Bubble } from './ui/bubble.tsx'
 import { Checkbox, RadioGroup } from './ui/choice.tsx'
 import { useUserProfile } from './workforce-profile.tsx'
 import { WF } from './workforce-strings.ts'
@@ -1163,20 +1165,51 @@ const MessageRow = memo(function MessageRow({
     {notices !== undefined && notices.length > 0 && <div className={css.msgNoticeOrphan}><MessageNotices notices={notices} anchor={message} resolveRetryTarget={resolveRetryTarget} source={source} onOpenKeyModal={onOpenKeyModal} onOpenModelsModal={onOpenModelsModal} /></div>}
   </div>
   const actionBar = canAct ? (
-    <div className={css.messageActions} role="group" aria-label={WF.message.actions}>
-      <Button variant="plain" type="button" title={copied ? WF.message.copied : WF.message.copy} aria-label={copied ? WF.message.copied : WF.message.copy} onClick={() => void copy()}>
-        <svg viewBox="0 0 20 20" aria-hidden="true">{copied ? <path d="m4 10 4 4 8-9" /> : <><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h2" /></>}</svg>
-      </Button>
-      <Button variant="plain" type="button" title={regenerating ? WF.message.regenerating : WF.message.regenerate} aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate} disabled={regenerating || message.running === true} onClick={() => void regenerate()}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
-      </Button>
+    <ActionBarPrimitive.Root
+      hideWhenRunning
+      className={css.messageActions}
+      role="group"
+      aria-label={WF.message.actions}
+    >
+      <ActionBarPrimitive.Copy asChild copiedDuration={1600}>
+        <Button
+          variant="plain"
+          type="button"
+          title={copied ? WF.message.copied : WF.message.copy}
+          aria-label={copied ? WF.message.copied : WF.message.copy}
+          onClick={() => void copy()}
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            {copied ? (
+              <path d="m4 10 4 4 8-9" />
+            ) : (
+              <>
+                <rect x="7" y="7" width="10" height="10" rx="2" />
+                <path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h2" />
+              </>
+            )}
+          </svg>
+        </Button>
+      </ActionBarPrimitive.Copy>
+      <ActionBarPrimitive.Reload asChild>
+        <Button
+          variant="plain"
+          type="button"
+          title={regenerating ? WF.message.regenerating : WF.message.regenerate}
+          aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate}
+          disabled={regenerating || message.running === true}
+          onClick={() => void regenerate()}
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
+        </Button>
+      </ActionBarPrimitive.Reload>
       <Button variant="plain" type="button" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M7 5V3h6v2M5 5l1 12h8l1-12M8 8v6M12 8v6" /></svg>
       </Button>
       <Button variant="plain" type="button" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5-5 5 5M5 12l5 5 5-5" /></svg>
       </Button>
-    </div>
+    </ActionBarPrimitive.Root>
   ) : undefined
   return (
     <AssistantMessageScope message={message}><MessagePrimitive.Root className={`${css.msg} ${isConsecutive ? css.msgConsecutive : ''} ${message.running === true || message.delivery === 'sending' ? css.msgPending : ''}`} data-msg-role={message.role} data-message-id={message.id} data-delivery={message.delivery}>
@@ -1229,7 +1262,7 @@ const MessageRow = memo(function MessageRow({
           )
         )}
         {hasText && (
-          <div className={css.msgBubble} data-clamped={clamped || undefined}>
+          <Bubble side={isUser ? 'self' : 'peer'} className={css.msgBubble} data-clamped={clamped || undefined}>
             <div className={css.msgClamp} ref={clampRef}>
               <AssistantMessageParts renderText={text => {
                 const fallback = <WorkforceMessageText assistant text={formatErrorReason(text)} employees={employees} onDm={onDm} tasks={tasks}
@@ -1244,7 +1277,7 @@ const MessageRow = memo(function MessageRow({
               </Button>
             )}
             {actionBar}
-          </div>
+          </Bubble>
         )}
         {message.attachments !== undefined && message.attachments.length > 0 && (
           <AttachmentBar
@@ -1267,6 +1300,11 @@ const MessageRow = memo(function MessageRow({
         )}
         {!hasText && actionBar}
         {actionError && <div className={css.msgFailed} role="alert">{actionError}</div>}
+        <MessagePrimitive.Error>
+          <div className={css.msgFailed} role="alert">
+            {message.error ? formatErrorReason(message.error) : WF.common.failed}
+          </div>
+        </MessagePrimitive.Error>
         {isUser ? (
           <div className={css.userMsgMeta}>
             {(replyCount ?? 0) > 0 ? (
