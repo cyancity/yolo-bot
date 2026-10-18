@@ -55,7 +55,9 @@ npx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add <yolo-bot-ui.tgz 绝对
 npx @deepseek-ai/dsh@0.2.1-rc.2 web
 ```
 
-命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
+命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
+
+升级 DSH 或拉取新源码都不会更新已装的插件。更新时把后端包和界面包换成同一版本一起装。
 
 **3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析、执行。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
 

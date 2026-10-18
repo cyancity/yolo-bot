@@ -1,7 +1,7 @@
 {
   "name": "@cyancity/yolo-bot-ui",
   "description": "Core bot UI for channels, direct messages, employees and extensible workbench surfaces",
-  "version": "0.2.0-rc.3",
+  "version": "0.2.0-rc.4",
   "type": "module",
   "engines": {
     "dsh": "0.2.1-rc.2"

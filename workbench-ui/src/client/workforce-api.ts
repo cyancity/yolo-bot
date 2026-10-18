@@ -108,7 +108,17 @@ export class WorkforceApi {
       headers: { 'content-type': 'application/json' },
       ...init,
     })
-    const body = (await response.json()) as Envelope<T>
+    let body: Envelope<T>
+    try {
+      body = (await response.json()) as Envelope<T>
+    } catch {
+      throw new WorkbenchApiError({
+        code: response.status === 404 ? 'host_unavailable' : 'invalid_response',
+        message: response.status === 404
+          ? '工作台接口不可用（HTTP 404），请检查后端插件是否已启用且与 DSH 版本兼容。'
+          : '工作台接口未返回有效数据，请重试或检查后端插件。',
+      }, response.status)
+    }
     if (!body.ok) throw new WorkbenchApiError(body.error, response.status)
     if (response.ok === false) throw new WorkbenchApiError({ code: 'invalid_response', message: '请求未完成，请重试' }, response.status)
     return body.data
