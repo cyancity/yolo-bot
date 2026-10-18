@@ -30,7 +30,7 @@ import { SidebarListSkeleton, useDelayedLoading } from './workforce-skeleton.tsx
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { WorkforceChannels } from './workforce-channels.tsx'
-import { CreateChatModal } from './workforce-chat-list.tsx'
+import { CreateChatModal } from './workforce-create-chat.tsx'
 import { WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
 import { UserProfileModal, useUserProfile } from './workforce-profile.tsx'
 import { useWorkforcePrefs, type AvatarStyle } from './workforce-prefs.ts'
