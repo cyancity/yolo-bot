@@ -3,10 +3,24 @@
  * 数据来自 WorkforceSource（Host 轮询 API），组件不感知 ctx；消息左对齐
  * 署名+头像+时间（不做两方气泡）；工具调用/产物折叠可开。
  */
-import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type ComponentProps } from 'react'
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps } from 'react'
 import { FileTypeIcon, IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Icon } from './ui/icons.tsx'
-import { AssistantRuntimeProvider, ComposerPrimitive, MessagePrimitive, useExternalStoreRuntime, type CreateAttachment, type ThreadMessageLike } from '@assistant-ui/react'
+import {
+  AssistantRuntimeProvider,
+  AttachmentPrimitive,
+  ComposerPrimitive,
+  MessagePrimitive,
+  unstable_useMentionAdapter,
+  unstable_useSlashCommandAdapter,
+  useExternalStoreRuntime,
+  type CreateAttachment,
+  type DirectiveFormatter,
+  type ThreadMessageLike,
+  type TriggerMatcher,
+  type Unstable_Mention,
+  type Unstable_SlashCommand,
+} from '@assistant-ui/react'
 import { WorkforceAssistantRuntime, AssistantMessageScope, AssistantMessageParts, AssistantToolParts, dshAttachmentAdapter } from './assistant-runtime.tsx'
 import { WorkbenchExtensionPreview, readExtensionPreview } from './extension-preview.tsx'
 import { Button } from './ui/button.tsx'
@@ -1479,57 +1493,6 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
   )
 }
 
-/** Composer 触发词状态：@ 员工与 / skill 共用一套浮层、键盘与失焦规则。 */
-type ComposerTrigger = { readonly kind: 'at' | 'slash'; readonly query: string }
-
-/** 浮层一行候选：label 是展示文本，insert 是回填到输入框的 token。 */
-interface TriggerItem {
-  readonly key: string
-  readonly label: string
-  readonly insert: string
-  readonly meta?: string
-  readonly icon?: ReactNode
-}
-
-/** @ 与 / 共用的候选浮层；loading/empty 也在同一壳内呈现。 */
-function TriggerMenu({ items, activeIndex, loading, onPick }: {
-  readonly items: readonly TriggerItem[]
-  readonly activeIndex: number
-  readonly loading: boolean
-  readonly onPick: (item: TriggerItem) => void
-}) {
-  const activeItemRef = useRef<HTMLButtonElement | null>(null)
-
-  useEffect(() => {
-    if (typeof activeItemRef.current?.scrollIntoView === 'function') {
-      activeItemRef.current.scrollIntoView({
-        block: 'nearest',
-      })
-    }
-  }, [activeIndex])
-
-  if (loading) return <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}><div className={css.atItem}>{WF.common.loading}</div></div>
-  if (items.length === 0) return <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}><div className={css.atItem}>{WF.composer.atEmpty}</div></div>
-  return (
-    <div className={css.atMenu} role="listbox" aria-label={WF.composer.atPlaceholder}>
-      {items.map((item, index) => (
-        <Button variant="plain"
-          key={item.key}
-          ref={index === activeIndex ? activeItemRef : null}
-          type="button"
-          role="option"
-          aria-selected={index === activeIndex}
-          className={`${css.atItem} ${index === activeIndex ? css.atItemActive : ''}`}
-          onMouseDown={event => { event.preventDefault(); onPick(item) }}
-        >
-          {item.icon}
-          <span className={css.atItemName}>{item.label}</span>
-          <span className={css.atItemRole}>{item.meta}</span>
-        </Button>
-      ))}
-    </div>
-  )
-}
 
 export interface ComposerProps {
   readonly employees: readonly Employee[]
@@ -1595,7 +1558,6 @@ interface ComposerAttachment {
  * 发送失败保留正文和附件；发送期间新增的草稿与附件不随旧消息清空。
  */
 export function WorkforceComposer(props: ComposerProps) {
-  const [prefs] = useWorkforcePrefs()
   const isContinuationActive = props.continuationTask !== undefined && props.onContinueThread !== undefined
   const [continuationMode, setContinuationMode] = useState<'continue' | 'new'>(() =>
     resolveDefaultContinuationMode(props.continuationTask, props.continuationHasPendingQuestion)
@@ -1623,6 +1585,14 @@ export function WorkforceComposer(props: ComposerProps) {
   const [draft, setDraft] = useState(() => {
     try { return localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? '' } catch { return props.initialDraft ?? '' }
   })
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? ''
+      setDraft(saved)
+    } catch {
+      setDraft(props.initialDraft ?? '')
+    }
+  }, [props.draftKey, props.initialDraft])
   useEffect(() => { try { localStorage.setItem(`workforce.draft.${props.draftKey}`, draft) } catch {} }, [draft, props.draftKey])
   useEffect(() => {
     const handler = (e: Event) => {
@@ -1637,9 +1607,6 @@ export function WorkforceComposer(props: ComposerProps) {
   }, [props.draftKey])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | undefined>()
-  const [trigger, setTrigger] = useState<ComposerTrigger | undefined>()
-  const [triggerIndex, setTriggerIndex] = useState(0)
-  const [skills, setSkills] = useState<readonly SkillSummary[] | undefined>()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const sendRef = useRef(props.onSend)
   const retrySendRef = useRef<ComposerProps['onSend'] | undefined>(undefined)
@@ -1648,10 +1615,8 @@ export function WorkforceComposer(props: ComposerProps) {
   const [attachments, setAttachments] = useState<readonly ComposerAttachment[]>([])
   const attachmentsRef = useRef<readonly ComposerAttachment[]>([])
   const nextAttachmentKey = useRef(0)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const sendingRef = useRef(false)
   const mountedRef = useRef(true)
-  const [dragging, setDragging] = useState(false)
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -1713,73 +1678,6 @@ export function WorkforceComposer(props: ComposerProps) {
   const sendDisabled = sending || attachments.some(attachment => attachment.uploaded === undefined)
     || (draft.trim() === '' && attachments.length === 0)
 
-  // @ 与 / 共用同一触发词状态机：取光标前最近的触发词，两种候选共用一套导航。
-  // / 只在词首（行首或空白后）生效，URL、路径与分数里的斜杠不触发。
-  const refreshTrigger = (value: string, caret: number): void => {
-    const before = value.slice(0, caret)
-    const at = /@([^\s@]*)$/.exec(before)
-    const slash = props.listSkills === undefined ? null : /(?:^|\s)\/([a-z0-9-]*)$/.exec(before)
-    const atIndex = at === null ? -1 : before.length - (at[1] ?? '').length - 1
-    const slashIndex = slash === null ? -1 : before.length - (slash[1] ?? '').length - 1
-    if (slash !== null && slashIndex > atIndex) setTrigger({ kind: 'slash', query: slash[1] ?? '' })
-    else if (at !== null && props.employees.length > 0) setTrigger({ kind: 'at', query: at[1] ?? '' })
-    else setTrigger(undefined)
-    setTriggerIndex(0)
-  }
-
-  useEffect(() => {
-    if (trigger?.kind !== 'slash' || skills !== undefined || props.listSkills === undefined) return
-    let alive = true
-    void props.listSkills().then(list => { if (alive) setSkills(list) }).catch(() => { if (alive) setSkills([]) })
-    return () => { alive = false }
-  }, [trigger?.kind, skills, props.listSkills])
-
-  const candidates = useMemo<TriggerItem[]>(() => {
-    if (trigger === undefined) return []
-    const q = trigger.query.toLowerCase()
-    if (trigger.kind === 'at') {
-      const members = props.mentionable ?? props.employees
-      const matchEveryone = '所有人'.includes(q) || 'everyone'.includes(q) || 'all'.includes(q)
-      const everyone: TriggerItem[] = props.allowMentionAll && members.length > 0 && matchEveryone
-        ? [{
-            key: 'mention:all',
-            label: WF.composer.atEveryone,
-            insert: `${WF.composer.atEveryone} `,
-            meta: WF.composer.atEveryoneMeta(members.length),
-            icon: <Icon name="users" width={22} height={22} />,
-          }]
-        : []
-      return [...everyone, ...members
-        .filter(employee => employee.name.toLowerCase().includes(q) || employee.title.toLowerCase().includes(q))
-        .map(employee => ({
-          key: employee.id, label: `@${employee.name}`, insert: `@${employee.name} `,
-          meta: employee.title,
-          icon: <WorkforceAvatar name={employee.name} isUser={false} color={employee.avatarColor} role={employee.role} style={prefs.avatarStyle} typingEffect={prefs.typingEffect} size={22} state="listening" live={true} />,
-        }))]
-    }
-    // /name 走 dsh 原生 skill 手势：若指定了 allowedSkills，严格限制在当前员工绑定的技能范围内
-    const allowed = props.allowedSkills !== undefined ? new Set(props.allowedSkills) : undefined
-    return (skills ?? [])
-      .filter(skill => skill.invocation?.userInvocable !== false)
-      .filter(skill => allowed === undefined || allowed.has(skill.name))
-      .filter(skill => skill.name.toLowerCase().includes(q) || skill.description.toLowerCase().includes(q))
-      .slice(0, 12)
-      .map(skill => ({ key: skill.name, label: `/${skill.name}`, insert: `/${skill.name} `, meta: skill.description }))
-  }, [trigger, props.employees, props.mentionable, props.allowMentionAll, props.allowedSkills, skills, prefs.avatarStyle, prefs.typingEffect])
-
-  const applyTrigger = (item: TriggerItem): void => {
-    const input = inputRef.current
-    if (input === null || trigger === undefined) return
-    const caret = input.selectionStart ?? draft.length
-    const before = trigger.kind === 'at'
-      ? draft.slice(0, caret).replace(/@[^\s@]*$/, item.insert)
-      : draft.slice(0, caret).replace(/\/[a-z0-9-]*$/, item.insert)
-    draftRevision.current += 1
-    setDraft(before + draft.slice(caret))
-    setTrigger(undefined)
-    requestAnimationFrame(() => { input.focus(); const pos = before.length; input.setSelectionRange(pos, pos) })
-  }
-
   const doSend = async (continueThread = false, retry = false, propagate = false): Promise<void> => {
     const text = draft.trim()
     const sentAttachments = attachmentsRef.current
@@ -1829,7 +1727,6 @@ export function WorkforceComposer(props: ComposerProps) {
       updateAttachments(attachmentsRef.current.filter(attachment => !sentKeys.has(attachment.key)))
       if (draftRevision.current === sentRevision) {
         setDraft('')
-        setTrigger(undefined)
       }
     } catch (e) {
       // 发送失败：draft 和附件原样保留，可重试。
@@ -1840,6 +1737,7 @@ export function WorkforceComposer(props: ComposerProps) {
       if (mountedRef.current) setSending(false)
     }
   }
+
   // The composer keeps the host's draft/upload transaction and delegates sending through assistant-ui.
   const runtimeAttachments = useMemo(() => props.onUploadFile ? dshAttachmentAdapter(props.onUploadFile) : undefined, [props.onUploadFile])
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
@@ -1847,27 +1745,192 @@ export function WorkforceComposer(props: ComposerProps) {
     onNew: async () => { await doSend(continuationMode === 'continue' && isContinuationActive, false, true) },
     ...(runtimeAttachments ? { adapters: { attachments: runtimeAttachments } } : {}),
   })
+
   useLayoutEffect(() => {
     const composer = runtime.thread.composer
     if (composer.getState().text !== draft) composer.setText(draft)
-    const ready = attachments.filter(attachment => attachment.uploaded !== undefined)
-    const nextIds = new Set(ready.map(attachment => `wb-upload-${attachment.key}`))
+    const nextIds = new Set(attachments.map(attachment => `wb-upload-${attachment.key}`))
     for (const attachment of composer.getState().attachments) {
       if (!nextIds.has(attachment.id)) void composer.getAttachmentByIndex(composer.getState().attachments.findIndex(item => item.id === attachment.id)).remove()
     }
     const ids = new Set(composer.getState().attachments.map(attachment => attachment.id))
-    for (const attachment of ready) {
+    for (const attachment of attachments) {
       const id = `wb-upload-${attachment.key}`
       if (!ids.has(id)) void composer.addAttachment({
         id, name: attachment.name, type: attachment.mime.startsWith('image/') ? 'image' : 'file',
-        contentType: attachment.mime, content: [{ type: 'text', text: attachmentMessage('', [attachment.uploaded!]) }],
+        contentType: attachment.mime, content: attachment.uploaded ? [{ type: 'text', text: attachmentMessage('', [attachment.uploaded]) }] : [],
       } satisfies CreateAttachment)
     }
   }, [runtime, draft, attachments, error])
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <WorkforceComposerInner
+        props={props}
+        draft={draft}
+        setDraft={setDraft}
+        draftRevision={draftRevision}
+        sending={sending}
+        uploading={uploading}
+        error={error}
+        attachments={attachments}
+        addFiles={addFiles}
+        removeAttachment={removeAttachment}
+        continuationMode={continuationMode}
+        setContinuationMode={setContinuationMode}
+        isContinuationActive={isContinuationActive}
+        doSend={doSend}
+        sendDisabled={sendDisabled}
+        inputRef={inputRef}
+      />
+    </AssistantRuntimeProvider>
+  )
+}
+
+interface WorkforceComposerInnerProps {
+  readonly props: ComposerProps
+  readonly draft: string
+  readonly setDraft: (updater: string | ((prev: string) => string)) => void
+  readonly draftRevision: { current: number }
+  readonly sending: boolean
+  readonly uploading: boolean
+  readonly error: string | undefined
+  readonly attachments: readonly ComposerAttachment[]
+  readonly addFiles: (files: FileList | readonly File[] | null) => void
+  readonly removeAttachment: (key: number) => void
+  readonly continuationMode: 'continue' | 'new'
+  readonly setContinuationMode: (mode: 'continue' | 'new') => void
+  readonly isContinuationActive: boolean
+  readonly doSend: (continueThread?: boolean, retry?: boolean, propagate?: boolean) => Promise<void>
+  readonly sendDisabled: boolean
+  readonly inputRef: React.RefObject<HTMLTextAreaElement>
+}
+
+function WorkforceComposerInner({
+  props,
+  draft,
+  setDraft,
+  draftRevision,
+  sending,
+  uploading,
+  error,
+  attachments,
+  addFiles,
+  removeAttachment,
+  continuationMode,
+  setContinuationMode,
+  isContinuationActive,
+  doSend,
+  sendDisabled,
+  inputRef,
+}: WorkforceComposerInnerProps) {
+  const [prefs] = useWorkforcePrefs()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [skills, setSkills] = useState<readonly SkillSummary[] | undefined>()
+
+  const atMatcher = useMemo<TriggerMatcher>(() => (text, _triggerChar, cursorPosition) => {
+    const before = text.slice(0, cursorPosition)
+    const at = /@([^\s@]*)$/.exec(before)
+    if (!at) return null
+    const offset = before.length - at[0].length
+    return {
+      query: at[1] ?? '',
+      offset,
+      endOffset: cursorPosition,
+    }
+  }, [])
+
+  const mentionItems = useMemo<Unstable_Mention[]>(() => {
+    const members = props.mentionable ?? props.employees
+    const everyone: Unstable_Mention[] = props.allowMentionAll && members.length > 0
+      ? [{
+          id: 'everyone',
+          type: 'mention',
+          label: WF.composer.atEveryone,
+          description: `${WF.composer.atEveryoneMeta(members.length)} all 所有人`,
+        }]
+      : []
+    const empMentions: Unstable_Mention[] = members.map(emp => ({
+      id: emp.id,
+      type: 'mention',
+      label: `@${emp.name}`,
+      description: emp.title,
+      metadata: {
+        name: emp.name,
+        ...(emp.avatarColor ? { avatarColor: emp.avatarColor } : {}),
+        ...(emp.role ? { role: emp.role } : {}),
+      },
+    }))
+    return [...everyone, ...empMentions]
+  }, [props.employees, props.mentionable, props.allowMentionAll])
+
+  const mentionFormatter = useMemo<DirectiveFormatter>(() => ({
+    serialize: item => (item.label.startsWith('@') ? item.label : `@${item.label}`),
+    parse: text => [{ kind: 'text', text }],
+  }), [])
+
+  const mention = unstable_useMentionAdapter({
+    items: mentionItems,
+    formatter: mentionFormatter,
+    includeModelContextTools: false,
+    onInserted: item => {
+      const insert = item.label.startsWith('@') ? `${item.label} ` : `@${item.label} `
+      setDraft(prev => {
+        const next = prev.replace(/@[^\s@]*$/, insert)
+        draftRevision.current += 1
+        return next
+      })
+    },
+  })
+
+  const slashMatcher = useMemo<TriggerMatcher>(() => (text, _triggerChar, cursorPosition) => {
+    if (props.listSkills === undefined) return null
+    const before = text.slice(0, cursorPosition)
+    const slash = /(?:^|\s)\/([a-z0-9-]*)$/.exec(before)
+    if (!slash) return null
+    if (skills === undefined) {
+      void props.listSkills().then(list => setSkills(list)).catch(() => setSkills([]))
+    }
+    const matchStr = slash[0]
+    const slashIndexInMatch = matchStr.indexOf('/')
+    const offset = before.length - matchStr.length + slashIndexInMatch
+    return {
+      query: slash[1] ?? '',
+      offset,
+      endOffset: cursorPosition,
+    }
+  }, [props.listSkills, skills])
+
+  const slashCommands = useMemo<Unstable_SlashCommand[]>(() => {
+    if (props.listSkills === undefined) return []
+    const allowed = props.allowedSkills !== undefined ? new Set(props.allowedSkills) : undefined
+    return (skills ?? [])
+      .filter(skill => skill.invocation?.userInvocable !== false)
+      .filter(skill => allowed === undefined || allowed.has(skill.name))
+      .map(skill => ({
+        id: skill.name,
+        label: `/${skill.name}`,
+        description: skill.description,
+        execute: () => {},
+      }))
+  }, [skills, props.listSkills, props.allowedSkills])
+
+  const slash = unstable_useSlashCommandAdapter({
+    commands: slashCommands,
+    removeOnExecute: false,
+  })
+
+  const slashFormatter = useMemo<DirectiveFormatter>(() => ({
+    serialize: item => (item.label?.startsWith('/') ? item.label : `/${item.id}`),
+    parse: text => [{ kind: 'text', text }],
+  }), [])
+
   const continuationPrompt = props.continuationTask?.prompt?.trim() || props.continuationTask?.title || WF.taskStatus.currentTask
   const continuationFirstLine = continuationPrompt.split(/\r?\n/)[0]?.trim() || continuationPrompt
+
   return (
-    <AssistantRuntimeProvider runtime={runtime}><div
+    <div
       className={`${css.composerWrap}${dragging ? ` ${attachmentCss.dropActive}` : ''}`}
       onDragOver={event => {
         if (props.onUploadFile === undefined || !Array.from(event.dataTransfer.types).includes('Files')) return
@@ -1937,110 +2000,195 @@ export function WorkforceComposer(props: ComposerProps) {
           </div>
         )
       )}
-      {trigger !== undefined && (
-        <TriggerMenu
-          items={candidates}
-          activeIndex={Math.min(Math.max(0, triggerIndex), Math.max(0, candidates.length - 1))}
-          loading={trigger.kind === 'slash' && skills === undefined}
-          onPick={applyTrigger}
-        />
-      )}
-      <ComposerPrimitive.Root className={css.composer} data-section="composer">
-        {attachments.length > 0 && (
-          <div className={attachmentCss.attachments} aria-label={WF.taskStatus.attachmentsToSendAria}>
-            {attachments.map(attachment => {
-              const kind = attachmentKind(attachment.name, attachment.mime)
-              const label = kind === 'image' ? WF.taskStatus.typeImage : kind === 'video' ? WF.taskStatus.typeVideo : kind === 'audio' ? WF.taskStatus.typeAudio
-                : attachment.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? WF.taskStatus.typeFile
-              return (
-                <div key={attachment.key} className={attachmentCss.chip} data-attachment-name={attachment.name}>
-                  {attachment.previewUrl !== undefined
-                    ? <img className={attachmentCss.preview} src={attachment.previewUrl} alt={attachment.name} />
-                    : <span className={attachmentCss.kind} title={label}><FileTypeIcon path={attachment.name} size={24} /></span>}
-                  <div className={attachmentCss.details}>
-                    <span className={attachmentCss.name} title={attachment.name}>{attachment.name}</span>
-                    <span className={attachmentCss.meta}>{formatFileSize(attachment.sizeBytes)} · {attachment.mime}</span>
-                    {attachment.error !== undefined
-                      ? <span className={attachmentCss.error} role="alert">{WF.taskStatus.uploadFailedPrefix}{attachment.error}</span>
-                      : <span className={attachmentCss.meta} role="status">{attachment.uploaded === undefined ? WF.ui.uploadingState : WF.taskStatus.uploadSuccess}</span>}
-                  </div>
-                  <Button variant="plain" type="button" className={attachmentCss.remove} aria-label={WF.ui.removeAttachmentAria(attachment.name)} onClick={() => removeAttachment(attachment.key)}>×</Button>
-                </div>
+
+      <ComposerPrimitive.TriggerPopoverRoot>
+        <ComposerPrimitive.TriggerPopover
+          char="@"
+          matcher={atMatcher}
+          adapter={mention.adapter}
+          className={css.atMenu}
+          aria-label={WF.composer.atPlaceholder}
+        >
+          <ComposerPrimitive.TriggerPopover.Directive
+            formatter={mention.directive.formatter}
+            onInserted={mention.directive.onInserted}
+          />
+          <ComposerPrimitive.TriggerPopoverItems>
+            {(items) => (
+              items.length === 0 ? (
+                <div className={css.atItem}>{WF.composer.atEmpty}</div>
+              ) : (
+                items.map((item, index) => {
+                  const emp = props.employees.find(e => e.id === item.id)
+                  const isEveryone = item.id === 'everyone'
+                  const icon = isEveryone
+                    ? <Icon name="users" width={22} height={22} />
+                    : emp
+                      ? <WorkforceAvatar name={emp.name} isUser={false} color={emp.avatarColor} role={emp.role} style={prefs.avatarStyle} typingEffect={prefs.typingEffect} size={22} state="listening" live={true} />
+                      : null
+                  return (
+                    <ComposerPrimitive.TriggerPopoverItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      className={css.atItem}
+                    >
+                      {icon}
+                      <span className={css.atItemName}>{item.label}</span>
+                      <span className={css.atItemRole}>{isEveryone ? WF.composer.atEveryoneMeta((props.mentionable ?? props.employees).length) : item.description}</span>
+                    </ComposerPrimitive.TriggerPopoverItem>
+                  )
+                })
               )
-            })}
-          </div>
+            )}
+          </ComposerPrimitive.TriggerPopoverItems>
+        </ComposerPrimitive.TriggerPopover>
+
+        {props.listSkills !== undefined && (
+          <ComposerPrimitive.TriggerPopover
+            char="/"
+            matcher={slashMatcher}
+            adapter={slash.adapter}
+            isLoading={skills === undefined}
+            className={css.atMenu}
+            aria-label={WF.composer.placeholder}
+          >
+            <ComposerPrimitive.TriggerPopover.Action
+              onExecute={item => {
+                slash.action.onExecute(item)
+                const insert = item.label?.startsWith('/') ? `${item.label} ` : `/${item.id} `
+                setDraft(prev => {
+                  const next = prev.replace(/\/[a-z0-9-]*$/, insert)
+                  draftRevision.current += 1
+                  return next
+                })
+              }}
+              removeOnExecute={false}
+              formatter={slashFormatter}
+            />
+            <ComposerPrimitive.TriggerPopoverItems>
+              {(items) => (
+                items.length === 0 ? (
+                  <div className={css.atItem}>{skills === undefined ? WF.common.loading : WF.composer.atEmpty}</div>
+                ) : (
+                  items.slice(0, 12).map((item, index) => (
+                    <ComposerPrimitive.TriggerPopoverItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      className={css.atItem}
+                    >
+                      <span className={css.atItemName}>{item.label}</span>
+                      <span className={css.atItemRole}>{item.description}</span>
+                    </ComposerPrimitive.TriggerPopoverItem>
+                  ))
+                )
+              )}
+            </ComposerPrimitive.TriggerPopoverItems>
+          </ComposerPrimitive.TriggerPopover>
         )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          hidden
-          onChange={event => { addFiles(event.target.files); event.target.value = '' }}
-        />
-        <ComposerPrimitive.Input
-          ref={inputRef}
-          submitMode="none"
-          addAttachmentOnPaste={false}
-          cancelOnEscape={false}
-          className={css.composerInput}
-          aria-label={WF.composer.placeholder}
-          placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.composer.replyToTask : WF.composer.startNewTaskHint) : WF.composer.placeholder)}
-          value={draft}
-          minRows={2}
-          autoFocus={props.autoFocus === true}
-          onChange={event => { draftRevision.current += 1; setDraft(event.target.value); refreshTrigger(event.target.value, event.target.selectionStart ?? 0) }}
-          onFocus={event => { refreshTrigger(event.target.value, event.target.selectionStart ?? 0) }}
-          onBlur={() => { setTrigger(undefined) }}
-          onClick={event => { refreshTrigger(event.currentTarget.value, event.currentTarget.selectionStart ?? 0) }}
-          onKeyUp={event => {
-            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
-              refreshTrigger(event.currentTarget.value, event.currentTarget.selectionStart ?? 0)
-            }
-          }}
-          onKeyDown={event => {
-            if (event.nativeEvent.isComposing || event.keyCode === 229) return
-            if (trigger !== undefined && candidates.length > 0) {
-              if (event.key === 'ArrowDown') { event.preventDefault(); setTriggerIndex(i => (i + 1) % candidates.length); return }
-              if (event.key === 'ArrowUp') { event.preventDefault(); setTriggerIndex(i => (i - 1 + candidates.length) % candidates.length); return }
-              if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); applyTrigger(candidates[Math.min(triggerIndex, candidates.length - 1)]!); return }
-              if (event.key === 'Escape') {
-                if (draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
-                  event.preventDefault()
-                  setContinuationMode('new')
-                  props.onResetContinuation?.()
-                  return
-                }
-                event.preventDefault()
-                setTrigger(undefined)
-                return
-              }
-            }
-            if (event.key === 'Escape' && draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
-              event.preventDefault()
-              setContinuationMode('new')
-              props.onResetContinuation?.()
-              return
-            }
-            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); runtime.thread.composer.send() }
-          }}
-        />
-        <div className={css.composerTools}>
-          {props.onUploadFile !== undefined && (
-            <Button variant="ghost" type="button" className={css.composerAttach} aria-label={WF.ui.attachmentsAria} title={WF.ui.attachmentsAria} onClick={() => fileInputRef.current?.click()}><Icon name="plus" /></Button>
+
+        <ComposerPrimitive.Root className={css.composer} data-section="composer">
+          {attachments.length > 0 && (
+            <div className={attachmentCss.attachments} aria-label={WF.taskStatus.attachmentsToSendAria}>
+              <ComposerPrimitive.Attachments>
+                {({ attachment }) => {
+                  const item = attachments.find(a => `wb-upload-${a.key}` === attachment.id)
+                  if (!item) return null
+                  const kind = attachmentKind(item.name, item.mime)
+                  const label = kind === 'image' ? WF.taskStatus.typeImage : kind === 'video' ? WF.taskStatus.typeVideo : kind === 'audio' ? WF.taskStatus.typeAudio
+                    : item.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? WF.taskStatus.typeFile
+                  return (
+                    <AttachmentPrimitive.Root key={item.key} className={attachmentCss.chip} data-attachment-name={item.name}>
+                      {item.previewUrl !== undefined ? (
+                        <img className={attachmentCss.preview} src={item.previewUrl} alt={item.name} />
+                      ) : (
+                        <span className={attachmentCss.kind} title={label}>
+                          <FileTypeIcon path={item.name} size={24} />
+                        </span>
+                      )}
+                      <div className={attachmentCss.details}>
+                        <span className={attachmentCss.name} title={item.name}>
+                          <AttachmentPrimitive.Name />
+                        </span>
+                        <span className={attachmentCss.meta}>
+                          {formatFileSize(item.sizeBytes)} · {item.mime}
+                        </span>
+                        {item.error !== undefined ? (
+                          <span className={attachmentCss.error} role="alert">
+                            {WF.taskStatus.uploadFailedPrefix}{item.error}
+                          </span>
+                        ) : (
+                          <span className={attachmentCss.meta} role="status">
+                            {item.uploaded === undefined ? WF.ui.uploadingState : WF.taskStatus.uploadSuccess}
+                          </span>
+                        )}
+                      </div>
+                      <AttachmentPrimitive.Remove
+                        className={attachmentCss.remove}
+                        aria-label={WF.ui.removeAttachmentAria(item.name)}
+                        onClick={() => removeAttachment(item.key)}
+                      >
+                        ×
+                      </AttachmentPrimitive.Remove>
+                    </AttachmentPrimitive.Root>
+                  )
+                }}
+              </ComposerPrimitive.Attachments>
+            </div>
           )}
-          <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
-          <ComposerPrimitive.Send asChild><Button variant="primary" className={css.composerSend} disabled={sendDisabled} aria-label={sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send} title={WF.composer.send}>
-            <Icon name={sending || uploading ? 'refresh' : 'send'} />
-          </Button></ComposerPrimitive.Send>
-        </div>
-      </ComposerPrimitive.Root>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            onChange={event => { addFiles(event.target.files); event.target.value = '' }}
+          />
+
+          <ComposerPrimitive.Input
+            ref={inputRef}
+            addAttachmentOnPaste={false}
+            cancelOnEscape={false}
+            className={css.composerInput}
+            aria-label={WF.composer.placeholder}
+            placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.composer.replyToTask : WF.composer.startNewTaskHint) : WF.composer.placeholder)}
+            value={draft}
+            minRows={2}
+            autoFocus={props.autoFocus === true}
+            onChange={event => {
+              draftRevision.current += 1
+              setDraft(event.target.value)
+            }}
+            onKeyDown={event => {
+              if (event.nativeEvent.isComposing || event.keyCode === 229) return
+              if (event.key === 'Escape' && draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
+                event.preventDefault()
+                setContinuationMode('new')
+                props.onResetContinuation?.()
+              }
+            }}
+          />
+
+          <div className={css.composerTools}>
+            {props.onUploadFile !== undefined && (
+              <Button variant="ghost" type="button" className={css.composerAttach} aria-label={WF.ui.attachmentsAria} title={WF.ui.attachmentsAria} onClick={() => fileInputRef.current?.click()}><Icon name="plus" /></Button>
+            )}
+            <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
+            <ComposerPrimitive.Send asChild><Button variant="primary" className={css.composerSend} disabled={sendDisabled} aria-label={sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send} title={WF.composer.send}>
+              <Icon name={sending || uploading ? 'refresh' : 'send'} />
+            </Button></ComposerPrimitive.Send>
+          </div>
+        </ComposerPrimitive.Root>
+      </ComposerPrimitive.TriggerPopoverRoot>
+
       {error !== undefined && (
         <div className={css.composerError} role="alert">
           <span>{WF.composer.sendFailed}：{error}</span>
           <Button variant="plain" type="button" className={css.composerErrorRetry} disabled={sendDisabled} onClick={() => void doSend(false, true)}>{WF.composer.retry}</Button>
         </div>
       )}
-    </div></AssistantRuntimeProvider>
+    </div>
   )
 }
 
