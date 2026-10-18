@@ -908,7 +908,11 @@ div.msgNoticeLine { cursor: default; }
   box-sizing: border-box;
 }
 
-.atItem:hover, .atItemActive { background: var(--wb-hover); }
+.atItem:hover,
+.atItem[data-highlighted],
+.atItemActive {
+  background: var(--wb-hover);
+}
 
 /* skillname 和 skill desc 的宽度占比 3 : 7 */
 .atItemName {
