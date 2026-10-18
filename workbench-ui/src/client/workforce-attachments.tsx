@@ -1,3 +1,4 @@
+import { Button } from './ui/primitives.ts'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { FileTypeIcon, IconCloseOutlineRegular, ImageLightbox, Modal, ReadBlock, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -121,7 +122,7 @@ export function WorkforceNativeFileMenu({
   return <>
     <span className={showFolderButton ? css.nativeActionGroup : css.nativeActions}>
       {showFolderButton && (
-        <button
+        <Button variant="plain"
           type="button"
           className={css.nativeFolderBtn}
           aria-label={WF.attachments.showInFolderAria(name)}
@@ -132,7 +133,7 @@ export function WorkforceNativeFileMenu({
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
-        </button>
+        </Button>
       )}
       <Menu
         label={WF.attachments.moreActionsAria(name)}
@@ -140,14 +141,14 @@ export function WorkforceNativeFileMenu({
         onOpenChange={setOpen}
         align="end"
         trigger={
-          <button
+          <Button variant="plain"
             type="button"
             className={css.nativeTrigger}
             aria-label={WF.attachments.moreActionsAria(name)}
             disabled={busy || items.length === 0}
           >
             {busy ? '…' : '⋯'}
-          </button>
+          </Button>
         }
         items={items.map(item => ({ ...item, onSelect: () => onSelect(item.id) }))}
       />
@@ -510,7 +511,7 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
             <h2 className={css.previewTitle} title={name}>{name}</h2>
             {isMarkdown && <span className={css.previewBadge}>Markdown</span>}
           </div>
-          <button
+          <Button variant="plain"
             type="button"
             className={css.previewCloseBtn}
             aria-label={WF.attachments.closeFilePreview}
@@ -518,7 +519,7 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
             onClick={close}
           >
             <IconCloseOutlineRegular size={16} />
-          </button>
+          </Button>
         </div>
         <div className={css.previewBody} data-kind={kind} tabIndex={0}>
           {kind === 'pdf' ? (
@@ -543,9 +544,9 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
               {WF.attachments.downloadFile}
             </a>
           </div>
-          <button type="button" className={css.previewFooterCloseBtn} onClick={close}>
+          <Button variant="plain" type="button" className={css.previewFooterCloseBtn} onClick={close}>
             {WF.common.close}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
@@ -823,9 +824,9 @@ export function WorkforceImageGallery({ images, initialIndex, onClose }: {
   return <>
     <ImageLightbox src={image.src} alt={image.alt} labels={LIGHTBOX_LABELS} onClose={onClose} />
     {images.length > 1 && createPortal(<div className={`${tokenScopeClass} ${css.galleryControls}`}>
-      <button type="button" aria-label={WF.attachments.prevImage} onClick={() => move(-1)}>‹</button>
+      <Button variant="plain" type="button" aria-label={WF.attachments.prevImage} onClick={() => move(-1)}>‹</Button>
       <span aria-live="polite">{index + 1} / {images.length}</span>
-      <button type="button" aria-label={WF.attachments.nextImage} onClick={() => move(1)}>›</button>
+      <Button variant="plain" type="button" aria-label={WF.attachments.nextImage} onClick={() => move(1)}>›</Button>
     </div>, document.body)}
   </>
 }
@@ -966,7 +967,7 @@ export function WorkforceFileLink({
 
   return (
     <span className={css.fileLinkWrapper}>
-      <button
+      <Button variant="plain"
         type="button"
         className={css.fileLink}
         data-file-link="true"
@@ -979,7 +980,7 @@ export function WorkforceFileLink({
           <FileTypeIcon path={filename} size={15} />
         </span>
         <span className={css.fileLinkText}>{label}</span>
-      </button>
+      </Button>
       {actionError && (
         <span className={css.fileLinkError} role="alert">
           ({actionError})
@@ -1065,9 +1066,9 @@ export function WorkforceAttachment({
   }
 
   const media = !compact && !mediaError && url && gate.canPreview ? (kind === 'image'
-    ? <button type="button" className={css.thumbnail} aria-label={`${WF.attachments.previewImage} ${filename}`} onClick={openImage}>
+    ? <Button variant="plain" type="button" className={css.thumbnail} aria-label={`${WF.attachments.previewImage} ${filename}`} onClick={openImage}>
       <img src={url} alt={filename} loading="lazy" data-message-image onError={() => setMediaError(true)} />
-    </button>
+    </Button>
     : kind === 'video'
       ? <video className={css.video} src={`${url}${url.includes('#') ? '' : '#t=0.1'}`} controls preload="metadata" playsInline aria-label={filename} onError={() => setMediaError(true)} />
       : kind === 'audio'
@@ -1099,18 +1100,18 @@ export function WorkforceAttachment({
   }
 
   const mainAction = mode === 'preview' && url ? (
-    <button
+    <Button variant="plain"
       type="button"
       className={css.mainActionBtn}
       aria-label={kind === 'image' ? `${WF.attachments.previewImage} ${filename}` : `${WF.attachments.preview} ${filename}`}
       onClick={() => (kind === 'image' && onImageOpen ? onImageOpen(url) : setPreview(true))}
     >
       {kind === 'image' ? WF.attachments.previewImage : WF.attachments.preview}
-    </button>
+    </Button>
   ) : mode === 'native' && url ? (
-    <button type="button" className={css.mainActionBtn} disabled={actionBusy} onClick={() => void handleAction('open')}>{WF.deliverables.open}</button>
+    <Button variant="plain" type="button" className={css.mainActionBtn} disabled={actionBusy} onClick={() => void handleAction('open')}>{WF.deliverables.open}</Button>
   ) : (
-    <button
+    <Button variant="plain"
       type="button"
       className={css.mainActionBtn}
       disabled={actionBusy || !canReveal}
@@ -1119,7 +1120,7 @@ export function WorkforceAttachment({
       onClick={() => void handleAction('reveal')}
     >
       {WF.attachments.folder}
-    </button>
+    </Button>
   )
 
   return <span className={css.attachment} data-attachment-kind={kind}>
@@ -1136,11 +1137,11 @@ export function WorkforceAttachment({
       </span>
       {gate.note && deliverableInfo === undefined && (
         <Tooltip content={gate.note} side="top" align="end" openOnClick maxWidth={240}>
-          <button type="button" className={css.infoIcon} aria-label={gate.note}>
+          <Button variant="plain" type="button" className={css.infoIcon} aria-label={gate.note}>
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.01" />
             </svg>
-          </button>
+          </Button>
         </Tooltip>
       )}
       {deliverableInfo !== undefined && (
@@ -1148,11 +1149,11 @@ export function WorkforceAttachment({
           content={`v${deliverableInfo.version}\n${deliverableInfo.authorName}\n${deliverableInfo.published ? WF.deliverables.final : WF.deliverables.draft}\n${deliverableInfo.charCount}\n${fmtInfoTime(deliverableInfo.createdAt)}`}
           side="top" align="end" openOnClick maxWidth={240}
         >
-          <button type="button" className={css.infoIcon} aria-label={WF.deliverables.infoAria(deliverableInfo.version)}>
+          <Button variant="plain" type="button" className={css.infoIcon} aria-label={WF.deliverables.infoAria(deliverableInfo.version)}>
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
               <circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.01" />
             </svg>
-          </button>
+          </Button>
         </Tooltip>
       )}
       <span className={css.cardActions}>
@@ -1207,7 +1208,7 @@ export function AttachmentBar({
 
   return (
     <div className={css.attachmentBarWrapper}>
-      <button
+      <Button variant="plain"
         type="button"
         className={css.attachmentBarToggle}
         aria-expanded={open}
@@ -1241,7 +1242,7 @@ export function AttachmentBar({
           )}
         </span>
         <span className={css.attachmentBarAction}>{open ? WF.deliverables.toggleVersions(true) : WF.deliverables.toggleVersions(false)}</span>
-      </button>
+      </Button>
 
       {open && (
         <div

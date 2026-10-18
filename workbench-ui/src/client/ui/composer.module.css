@@ -3,18 +3,15 @@
   display: flex;
   flex-direction: column;
   gap: var(--wb-space-3);
+  width: 100%;
+  max-width: var(--wb-thread-max);
+  margin-inline: auto;
   padding: var(--wb-space-4) var(--wb-space-5);
   background: var(--wb-surface);
   border-top: var(--wb-border-width) solid var(--wb-line);
   min-height: var(--wb-composer-min-height);
   container-type: inline-size;
   container-name: composer;
-}
-
-[data-wb-style='discord'] .composer {
-  border-top: 0;
-  padding-top: 0;
-  background: transparent;
 }
 
 .inputRow {
@@ -49,27 +46,20 @@
   color: var(--wb-fg);
   background: var(--wb-surface);
   border: var(--wb-border-width) solid var(--wb-line-control);
-  border-radius: var(--wb-radius-control);
+  border-radius: var(--wb-radius-composer);
   padding: var(--wb-space-4) var(--wb-control-pad-x);
 }
-
-[data-wb-style='discord'] .textarea {
-  background: var(--wb-surface);
-  border-color: transparent;
-}
-[data-wb-style='discord'] .textarea:hover { border-color: var(--wb-line); }
 
 .textarea::placeholder { color: var(--wb-fg-placeholder); }
 
 .textarea:focus-visible {
-  outline: var(--wb-focus-width) solid var(--wb-focus);
-  outline-offset: var(--wb-focus-offset);
+  outline: var(--wb-border-width) solid var(--wb-focus-ring);
+  outline-offset: var(--wb-space-2);
 }
 
 .textarea:disabled {
-  background: var(--wb-disabled-bg);
-  color: var(--wb-disabled-fg);
-  border-color: var(--wb-disabled-line);
+  opacity: var(--wb-opacity-disabled);
+  cursor: not-allowed;
 }
 
 .attachments {
@@ -86,7 +76,7 @@
   align-items: center;
   gap: var(--wb-space-3);
   padding: var(--wb-space-2) var(--wb-space-4);
-  border-radius: var(--wb-radius-badge);
+  border-radius: var(--wb-radius-control);
   background: var(--wb-surface-sub);
   border: var(--wb-border-width) solid var(--wb-line-soft);
   font-size: var(--wb-type-compact-size);

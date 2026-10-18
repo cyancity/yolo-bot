@@ -111,15 +111,11 @@ button.versionTag[data-published='true']:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-:global([data-wb-scheme='dark']) .authorTag,
-:global([data-theme='dark']) .authorTag {
+:global([data-wb-scheme='dark']) .authorTag {
   background: color-mix(in srgb, var(--wb-surface) 75%, var(--wb-line) 25%);
   color: var(--wb-fg-placeholder);
 }
-:global([data-wb-style='wechat']) .card {
-  width: 100%;
-  max-width: 520px;
-}
+
 
 
 .draftMark { flex: none; padding: 0 var(--wb-space-4); border-radius: var(--wb-radius-pill); background: var(--wb-accent-soft); color: var(--wb-accent); font-size: var(--wb-type-caption-size); font-weight: 600; }

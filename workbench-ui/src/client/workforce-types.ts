@@ -182,6 +182,8 @@ export interface MessageTool {
 export type MessageRole = 'user' | 'agent' | 'system'
 
 export interface WorkforceMessage {
+  /** Registered extension preview emitted by a trusted host/tool integration. */
+  readonly extensionPreview?: { readonly id: string; readonly data: unknown } | undefined
   readonly id: string
   readonly threadId: string
   readonly ts: string

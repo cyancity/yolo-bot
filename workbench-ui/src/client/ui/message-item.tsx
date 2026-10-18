@@ -1,3 +1,4 @@
+import { Button } from './button.tsx'
 /**
  * MessageItem：语义 article 行。Discord = 全左对齐署名行；WeChat = 员工左 /
  * 自己右气泡。分组连续消息省略头像与署名。body 是 renderer 产物；
@@ -67,9 +68,9 @@ export function MessageItem({
           </div>
         )}
         {quote && (
-          <button type="button" className={css.quote} onClick={quote.onJump}>
+          <Button variant="plain" type="button" className={css.quote} onClick={quote.onJump}>
             {quote.label}
-          </button>
+          </Button>
         )}
         {role === 'system' ? (
           <div className={css.systemBody}>{body}</div>
@@ -79,7 +80,7 @@ export function MessageItem({
             {actions && actions.length > 0 && (
               <span className={css.actions}>
                 {actions.map(a => (
-                  <button
+                  <Button variant="plain"
                     key={a.id}
                     type="button"
                     className={css.actionBtn}
@@ -88,7 +89,7 @@ export function MessageItem({
                     onClick={a.onInvoke}
                   >
                     {a.label}
-                  </button>
+                  </Button>
                 ))}
               </span>
             )}
@@ -107,9 +108,9 @@ export function MessageItem({
           </div>
         )}
         {thread && (
-          <button type="button" className={css.threadBtn} onClick={thread.onOpen}>
+          <Button variant="plain" type="button" className={css.threadBtn} onClick={thread.onOpen}>
             {WF.ui.viewTask(thread.replyCount)}
-          </button>
+          </Button>
         )}
         {children}
       </div>

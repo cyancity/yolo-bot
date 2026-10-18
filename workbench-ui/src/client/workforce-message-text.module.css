@@ -1,8 +1,8 @@
 .messageText {
   min-width: 0;
   max-width: min(100%, 780px);
-  font-size: var(--wb-type-label-size);
-  line-height: 22px;
+  font-size: var(--wb-type-body-size);
+  line-height: var(--wb-type-body-leading);
   overflow-wrap: anywhere;
   color: var(--wb-fg);
 }
@@ -30,7 +30,7 @@
 .messageText :global(.task-list-item) input { margin: 0 var(--wb-space-4) 0 0; accent-color: var(--wb-accent); }
 /* 引用块底用专用 --wb-quote-bg（与 --wb-hover 分开）：hover 保持官方/常规值后，
    引用块仍能与正文底色区分。引用文字按正文色，不用弱化的 --wb-fg-muted。 */
-.messageText blockquote { margin: var(--wb-space-4) 0; padding: var(--wb-space-3) var(--wb-space-5); border-left: 3px solid var(--wb-accent); background: var(--wb-quote-bg); border-radius: 0 var(--wb-radius-lg) var(--wb-radius-lg) 0; color: var(--wb-fg); }
+.messageText blockquote { margin: var(--wb-space-4) 0; padding: var(--wb-space-3) var(--wb-space-5); border-left: var(--wb-border-width) solid var(--wb-line); background: var(--wb-quote-bg); border-radius: 0 var(--wb-radius-lg) var(--wb-radius-lg) 0; color: var(--wb-fg); }
 .messageText blockquote :global(p),
 .messageText blockquote :global(li) { color: var(--wb-fg); }
 .messageText blockquote :global(a) { color: var(--wb-fg); text-decoration: underline; }

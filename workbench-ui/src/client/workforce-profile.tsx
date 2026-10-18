@@ -4,6 +4,7 @@
  * - 支持修改昵称、挑选预设插画头像、上传本地图片自定义头像。
  * - 本地持久化，全局同步（useSyncExternalStore）。
  */
+import { Button, TextInput } from './ui/primitives.ts'
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
 import css from './workforce-profile.module.css'
@@ -385,9 +386,9 @@ export function UserProfileModal({
       >
         <div className={css.modalHeader}>
           <h2 id={inputId} className={css.modalTitle}>{WF.userProfile.title}</h2>
-          <button type="button" className={css.closeBtn} onClick={onClose} aria-label={WF.common.close}>
+          <Button variant="plain" type="button" className={css.closeBtn} onClick={onClose} aria-label={WF.common.close}>
             ✕
-          </button>
+          </Button>
         </div>
 
         {/* 头像预览与操作 */}
@@ -397,20 +398,20 @@ export function UserProfileModal({
           </div>
           <div className={css.avatarControls}>
             <div className={css.avatarBtnRow}>
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.uploadBtn}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {WF.userProfile.uploadCustom}
-              </button>
-              <button
+              </Button>
+              <Button variant="plain"
                 type="button"
                 className={css.resetBtn}
                 onClick={handleReset}
               >
                 {WF.userProfile.reset}
-              </button>
+              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -431,7 +432,7 @@ export function UserProfileModal({
               const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
               const isActive = avatarUrl === itemUrl
               return (
-                <button
+                <Button variant="plain"
                   key={item.id}
                   type="button"
                   className={`${css.presetItem} ${isActive ? css.presetItemActive : ''}`}
@@ -439,7 +440,7 @@ export function UserProfileModal({
                   onClick={() => handlePickPreset(item.svg)}
                 >
                   <img src={itemUrl} alt={item.name} className={css.avatarImg} />
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -448,7 +449,7 @@ export function UserProfileModal({
         {/* 名字输入 */}
         <div className={css.formSection}>
           <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
-          <input
+          <TextInput
             id="user-profile-name-input"
             type="text"
             className={css.input}
@@ -461,12 +462,12 @@ export function UserProfileModal({
 
         {/* 底部按钮 */}
         <div className={css.modalFooter}>
-          <button type="button" className={css.cancelBtn} onClick={onClose}>
+          <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>
             {WF.common.cancel}
-          </button>
-          <button type="button" className={css.saveBtn} onClick={handleSave}>
+          </Button>
+          <Button variant="plain" type="button" className={css.saveBtn} onClick={handleSave}>
             {WF.common.save}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

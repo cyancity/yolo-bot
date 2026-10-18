@@ -2,8 +2,9 @@
  * Composer：输入区壳。唯一发送主按钮（或同位 Stop）；附件、@、提示为弱元素。
  * 草稿、上传、投递状态由调用方持有；@候选等浮层由调用方经 popup 槽渲染。
  */
-import { forwardRef, useId, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useId, useLayoutEffect, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import css from './composer.module.css'
+import { AssistantRuntimeProvider, ComposerPrimitive, useExternalStoreRuntime, type ThreadMessageLike } from '@assistant-ui/react'
 import { Button } from './button.tsx'
 import { Icon } from './icons.tsx'
 import { WF } from '../workforce-strings.ts'
@@ -55,12 +56,23 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
   },
   ref,
 ) {
+  const { height: _height, minHeight: _minHeight, maxHeight: _maxHeight, ...autosizeStyle } = textareaProps?.style ?? {}
   const uid = useId()
   const taId = `${uid}-input`
   const canSend = text.trim().length > 0 || (attachments?.some(a => a.state === 'ready') ?? false)
   const blocked = state === 'blocked'
+  const runtime = useExternalStoreRuntime<ThreadMessageLike>({ messages: [], convertMessage: message => message, isRunning: state === 'sending', isSendDisabled: blocked || !canSend,
+    onNew: async () => { onSubmit() }, ...(onStop ? { onCancel: async () => onStop() } : {}),
+  })
+  useLayoutEffect(() => {
+    const composer = runtime.thread.composer
+    if (composer.getState().text !== text) composer.setText(text)
+    const ids = new Set(attachments?.filter(attachment => attachment.state === 'ready').map(attachment => attachment.id))
+    for (const [index, attachment] of composer.getState().attachments.entries()) if (!ids.has(attachment.id)) void composer.getAttachmentByIndex(index).remove()
+    for (const attachment of attachments ?? []) if (attachment.state === 'ready' && !composer.getState().attachments.some(item => item.id === attachment.id)) void composer.addAttachment({ id: attachment.id, name: attachment.name, type: 'file', content: [] })
+  }, [runtime, text, attachments, error])
   return (
-    <div ref={ref} className={css.composer} data-state={state} data-context-key={contextKey} data-composer-card>
+    <AssistantRuntimeProvider runtime={runtime}><ComposerPrimitive.Root asChild><div ref={ref} className={css.composer} data-state={state} data-context-key={contextKey} data-composer-card>
       {attachments && attachments.length > 0 && (
         <ul className={css.attachments} aria-label={WF.ui.attachmentsAria}>
           {attachments.map(a => (
@@ -69,14 +81,14 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
               <span className={css.attachName}>{a.name}</span>
               {a.state === 'uploading' && <span className={css.attachState}>{WF.ui.uploadingState}</span>}
               {a.state === 'failed' && (
-                <button type="button" className={css.attachRetry} onClick={() => onRetryAttachment?.(a.id)}>
+                <Button variant="plain" type="button" className={css.attachRetry} onClick={() => onRetryAttachment?.(a.id)}>
                   {WF.ui.attachmentFailed(a.error)}，{WF.ui.retryAttachment}
-                </button>
+                </Button>
               )}
               {onRemoveAttachment && (
-                <button type="button" className={css.attachRemove} aria-label={WF.ui.removeAttachmentAria(a.name)} onClick={() => onRemoveAttachment(a.id)}>
+                <Button variant="plain" type="button" className={css.attachRemove} aria-label={WF.ui.removeAttachmentAria(a.name)} onClick={() => onRemoveAttachment(a.id)}>
                   ×
-                </button>
+                </Button>
               )}
             </li>
           ))}
@@ -86,8 +98,10 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
         {tools && <div className={css.tools}>{tools}</div>}
         <div className={css.inputWrap}>
           <label htmlFor={taId} className={css.srOnly}>{label}</label>
-          <textarea
+          <ComposerPrimitive.Input
+            addAttachmentOnPaste={false}
             {...textareaProps}
+            style={autosizeStyle}
             ref={textareaRef}
             id={taId}
             data-composer-input
@@ -101,20 +115,19 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
           {popup}
         </div>
         {state === 'sending' && onStop ? (
-          <Button variant="secondary" onClick={onStop} aria-label={stopLabel}>
+          <ComposerPrimitive.Cancel asChild><Button variant="secondary" aria-label={stopLabel}>
             <Icon name="stop" />{stopLabel}
-          </Button>
+          </Button></ComposerPrimitive.Cancel>
         ) : (
-          <Button
+          <ComposerPrimitive.Send asChild><Button
             variant="primary"
             disabled={blocked || !canSend}
             loading={state === 'sending'}
-            onClick={onSubmit}
             title={blocked ? blockedReason : undefined}
             data-composer-send
           >
             {state === 'failed' ? retryLabel : sendLabel}
-          </Button>
+          </Button></ComposerPrimitive.Send>
         )}
       </div>
       {(blockedReason || error || hint) && (
@@ -124,6 +137,6 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
           {hint && <span className={css.hint}>{hint}</span>}
         </div>
       )}
-    </div>
+    </div></ComposerPrimitive.Root></AssistantRuntimeProvider>
   )
 })

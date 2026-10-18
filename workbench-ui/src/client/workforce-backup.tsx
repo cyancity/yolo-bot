@@ -1,3 +1,4 @@
+import { Textarea } from './ui/primitives.ts'
 import { useRef, useState } from 'react'
 import { API_PREFIX } from './transport.ts'
 import { Button, Dialog } from './ui/index.tsx'
@@ -48,7 +49,7 @@ export function WorkforceBackupDialog({ onClose }: { readonly onClose: () => voi
       {error && <p role="alert" className={css.error}>{error}</p>}
       {directory && <div role="status" className={css.form}>
         <strong>{WF.backup.created}</strong>
-        <label>{WF.backup.path}<textarea readOnly rows={3} value={directory} /></label>
+        <label>{WF.backup.path}<Textarea readOnly rows={3} value={directory} /></label>
       </div>}
       <p className={css.hint}>{WF.backup.recover}</p>
       <div className={css.actions}>

@@ -370,8 +370,7 @@
   stroke: transparent !important;
 }
 
-:global([data-wb-scheme='dark']) .react-flow__minimap-node,
-:global([data-theme='dark']) .react-flow__minimap-node {
+:global([data-wb-scheme='dark']) .react-flow__minimap-node {
   fill: color-mix(in srgb, var(--wb-accent) 45%, var(--wb-surface-raised)) !important;
   stroke: transparent !important;
 }

@@ -1,3 +1,4 @@
+import { Button, Textarea } from './ui/primitives.ts'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Tooltip } from './ui/index.tsx'
 import { Dialog } from './ui/index.tsx'
@@ -79,29 +80,29 @@ export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSo
     <p className={css.hint}>{WF.memory.hint}</p>
     {data && <div className={css.usage} role="status">{WF.memory.usage(usage, data.limits[scope])}</div>}
     {loading && !data && <div className={css.loading} role="status" aria-label={WF.memory.loading}><span /><span /><span /></div>}
-    {error && !deleting && <div className={css.error} role="alert">{error}<button type="button" disabled={busy} onClick={() => void reload()}>{WF.memory.reload}</button></div>}
+    {error && !deleting && <div className={css.error} role="alert">{error}<Button variant="plain" type="button" disabled={busy} onClick={() => void reload()}>{WF.memory.reload}</Button></div>}
     {data && <>
       <ul className={css.list}>
         {data.memories.map(memory => <li key={memory.id} className={css.item}>
           <p className={css.text}>{memory.text}</p>
           <div className={css.meta}>{WF.memory.recordedBy(memory.source.by === 'user' ? WF.common.you : (employees.find(employee => employee.id === memory.source.by)?.name ?? WF.common.employee), new Date(memory.updatedAt).toLocaleString())}</div>
           <div className={css.actions}>
-            {memory.source.threadId && onOpenSource && <button type="button" onClick={() => {
+            {memory.source.threadId && onOpenSource && <Button variant="plain" type="button" onClick={() => {
               try { onOpenSource(memory.source.threadId!, memory.source.messageId) }
               catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
-            }}>{WF.memory.viewSource}</button>}
-            <button type="button" disabled={busy} onClick={() => { setEditing(memory); setDraft(memory.text); setError(undefined); setNotice('') }}>{WF.common.edit}</button>
-            <button type="button" disabled={busy} onClick={() => { setDeleting(memory); setError(undefined) }}>{WF.common.delete}</button>
+            }}>{WF.memory.viewSource}</Button>}
+            <Button variant="plain" type="button" disabled={busy} onClick={() => { setEditing(memory); setDraft(memory.text); setError(undefined); setNotice('') }}>{WF.common.edit}</Button>
+            <Button variant="plain" type="button" disabled={busy} onClick={() => { setDeleting(memory); setError(undefined) }}>{WF.common.delete}</Button>
           </div>
         </li>)}
       </ul>
       {data.memories.length === 0 && <p className={css.hint}>{WF.memory.emptyHint}</p>}
       <div className={css.form}>
         <label htmlFor={inputId}>{editing ? (scope === 'employee' ? WF.memory.instructionEdit : WF.memory.memoryEdit) : (scope === 'employee' ? WF.memory.instructionAdd : WF.memory.memoryAdd)}</label>
-        <textarea id={inputId} rows={3} value={draft} disabled={busy} onChange={event => { setDraft(event.target.value); setNotice('') }} placeholder={scope === 'employee' ? WF.memory.instructionPlaceholder : WF.memory.memoryPlaceholder} />
+        <Textarea id={inputId} rows={3} value={draft} disabled={busy} onChange={event => { setDraft(event.target.value); setNotice('') }} placeholder={scope === 'employee' ? WF.memory.instructionPlaceholder : WF.memory.memoryPlaceholder} />
         <div className={css.actions}>
-          <button type="button" disabled={busy || loading || draft.trim() === ''} onClick={() => void save()}>{busy ? WF.models.saving : scope === 'employee' ? WF.memory.instructionSave : WF.memory.memorySave}</button>
-          {editing && <button type="button" disabled={busy} onClick={() => { setEditing(undefined); setDraft('') }}>{WF.memory.cancelEdit}</button>}
+          <Button variant="plain" type="button" disabled={busy || loading || draft.trim() === ''} onClick={() => void save()}>{busy ? WF.models.saving : scope === 'employee' ? WF.memory.instructionSave : WF.memory.memorySave}</Button>
+          {editing && <Button variant="plain" type="button" disabled={busy} onClick={() => { setEditing(undefined); setDraft('') }}>{WF.memory.cancelEdit}</Button>}
         </div>
       </div>
     </>}
@@ -109,7 +110,7 @@ export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSo
     {deleting && <Dialog title={WF.memory.deleteMemoryTitle} closeLabel={WF.common.cancel} busy={busy} onClose={() => setDeleting(undefined)}>
       <div className={css.editor}><p>{WF.memory.deleteMemoryDesc}</p><p className={css.text}>{deleting.text}</p>
         {error && <p className={css.error} role="alert">{error}</p>}
-        <div className={css.actions}><button type="button" autoFocus disabled={busy} onClick={() => setDeleting(undefined)}>{WF.common.cancel}</button><button type="button" disabled={busy} onClick={() => void remove()}>{busy ? WF.models.clearing : WF.memory.deleteConfirm}</button></div>
+        <div className={css.actions}><Button variant="plain" type="button" autoFocus disabled={busy} onClick={() => setDeleting(undefined)}>{WF.common.cancel}</Button><Button variant="plain" type="button" disabled={busy} onClick={() => void remove()}>{busy ? WF.models.clearing : WF.memory.deleteConfirm}</Button></div>
       </div>
     </Dialog>}
   </section>
@@ -164,7 +165,7 @@ export function RememberedMemoryCard({ memory }: { readonly memory: RememberedMe
   }
   return <div className={css.remembered} data-memory-id={memory.id}>
     <Tooltip content={memory.text} side="top"><span>{undone ? WF.memory.memoryUndone : WF.memory.memoryRecorded(getScopeLabels()[memory.scope])}</span></Tooltip>
-    {!undone && <><span aria-hidden="true">·</span><button type="button" disabled={busy} onClick={() => void undo()}>{busy ? WF.memory.undoing : WF.memory.undo}</button></>}
+    {!undone && <><span aria-hidden="true">·</span><Button variant="plain" type="button" disabled={busy} onClick={() => void undo()}>{busy ? WF.memory.undoing : WF.memory.undo}</Button></>}
     {error && <span className={css.error} role="alert">{error}</span>}
   </div>
 }

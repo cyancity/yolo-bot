@@ -4,12 +4,10 @@
 }
 
 .tip {
-  position: fixed;
   z-index: var(--wb-layer-tooltip);
-  transform: translate(-50%, -100%);
   max-width: 240px;
   padding: var(--wb-space-2) var(--wb-space-4);
-  border-radius: var(--wb-radius-badge);
+  border-radius: var(--wb-radius-control);
   background: var(--wb-tooltip-bg);
   color: var(--wb-tooltip-fg);
   font-size: var(--wb-type-caption-size);
@@ -18,13 +16,3 @@
   pointer-events: none;
   white-space: pre-line;
 }
-
-.tip[data-side='bottom'] { transform: translate(-50%, 0); }
-.tip[data-side='left'] { transform: translate(-100%, -50%); }
-.tip[data-side='right'] { transform: translate(0, -50%); }
-.tip[data-side='top'] { transform: translate(-50%, -100%); }
-
-.tip[data-align='start'] { transform: translate(0, -100%); }
-.tip[data-align='end'] { transform: translate(-100%, -100%); }
-.tip[data-align='start'][data-side='bottom'] { transform: translate(0, 0); }
-.tip[data-align='end'][data-side='bottom'] { transform: translate(-100%, 0); }

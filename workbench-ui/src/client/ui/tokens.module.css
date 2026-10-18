@@ -1,20 +1,14 @@
-/**
- * tokens.module.css — D2 设计 token 根。
- * 四套语义色表按 data-wb-style × data-wb-scheme 收口到 .root 子树；
- * 布局/尺寸 token 按 data-wb-style；字体/间距/动效共用。
- * 不写 html/body/--dsw-*；color-scheme 由根 inline style 设置。
+/** Shared assistant-ui / shadcn visual system.
+ * Palette follows https://www.assistant-ui.com/elements/thread.
+ * The persisted style key selects navigation structure only; both layouts share
+ * this visual system. All surfaces and portals consume the same semantic tokens.
  */
 
-/* token 承载层：.root 是插件根（带布局 reset），.scope 只声明变量、供 portal 到
-   body 的浮层重建 token 环境。scheme 色块同时挂 html[data-wb-*]（全局偏好镜像，
-   供 body 下 portal 继承）与 .root/.scope[data-wb-*]（本根权威值，优先级更高）。
-   基础刻度同样挂 html[data-wb-style]：portal 到 body、未包 .scope 的弹窗也能取到
-   间距/字号/圆角 token，组件里因此不需要写 fallback。刻度说明见 docs/design-tokens.md。 */
 html[data-wb-style],
 .root,
 .scope {
   /* 字体 */
-  --wb-font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  --wb-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
   --wb-font-mono: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
   --wb-weight-regular: 400;
   --wb-weight-medium: 500;
@@ -28,18 +22,18 @@ html[data-wb-style],
   --wb-type-caption-size: .75rem;
   --wb-type-caption-weight: 400;
   --wb-type-caption-leading: 1.5;
-  --wb-type-compact-size: .8125rem;
+  --wb-type-compact-size: .875rem;
   --wb-type-compact-weight: 400;
-  --wb-type-compact-leading: 1.5385;
+  --wb-type-compact-leading: 1.4286;
   --wb-type-label-size: .875rem;
   --wb-type-label-weight: 500;
   --wb-type-label-leading: 1.4286;
-  --wb-type-body-size: .9375rem;
+  --wb-type-body-size: 1rem;
   --wb-type-body-weight: 400;
-  --wb-type-body-leading: 1.6;
-  --wb-type-strong-size: .9375rem;
+  --wb-type-body-leading: 1.5;
+  --wb-type-strong-size: 1rem;
   --wb-type-strong-weight: 600;
-  --wb-type-strong-leading: 1.6;
+  --wb-type-strong-leading: 1.5;
   --wb-type-section-size: 1rem;
   --wb-type-section-weight: 600;
   --wb-type-section-leading: 1.5;
@@ -65,11 +59,11 @@ html[data-wb-style],
   --wb-space-9: 48px;
 
   /* 页面/卡片布局常量（旧 tokens 迁移沿用值） */
-  --wb-page-max: 1280px;
+  --wb-page-max: 1152px;
   --wb-card-min: 260px;
   --wb-font-xs: .75rem;
   /* 运行时偏好覆写：气泡圆角（workforce.tsx 内联写入）。 */
-  --wb-bubble-radius: 12px;
+  --wb-bubble-radius: 16px;
   /* 组件局部小色阶别名；--wb-accent-fg-sm / --wb-sub-fg-sm 按深浅在色表里定义 */
   --wb-danger-soft: var(--wb-danger-bg);
   --wb-line-strong: var(--wb-line-control);
@@ -107,6 +101,30 @@ html[data-wb-style],
   /* 单条正文超长时的折叠高度（≈14 行），「展开全文」按此判定。 */
   --wb-message-clamp-height: 320px;
   --wb-zoom: 1;
+
+  /* assistant-ui's default thread and shadcn control geometry. */
+  --wb-radius-panel: 12px;
+  --wb-radius-control: var(--wb-radius-md);
+  --wb-radius-bubble: 16px;
+  --wb-radius-composer: 16px;
+  --wb-radius-overlay: var(--wb-radius-lg);
+  --wb-radius-avatar: var(--wb-radius-dot);
+  --wb-nav-row-height: 36px;
+  --wb-header-height: 56px;
+  --wb-message-gap: 24px;
+  --wb-message-continuation-gap: 8px;
+  --wb-message-pad-x: 16px;
+  --wb-bubble-pad-y: 8px;
+  --wb-composer-min-height: 96px;
+  --wb-avatar-nav-size: 24px;
+  --wb-nav-width: 240px;
+  --wb-thread-max: 44rem;
+  --wb-dialog-width: 512px;
+  --wb-dialog-wide-width: 768px;
+  --wb-suggestion-min: 240px;
+  --wb-type-welcome-size: 1.5rem;
+  --wb-thread-gutter: 24px;
+  --wb-opacity-disabled: .5;
 
   /* 图层（插件局部） */
   --wb-layer-base: 0;
@@ -152,295 +170,133 @@ html[data-wb-style],
   box-sizing: border-box;
 }
 
-/* ---- Discord 布局 token ---- */
-html[data-wb-style='discord'],
-.scope[data-wb-style='discord'],
-.root[data-wb-style='discord'] {
-  --wb-radius-panel: var(--wb-radius-md);
-  --wb-radius-control: var(--wb-radius-lg);
-  --wb-radius-bubble: var(--wb-radius-md);
-  --wb-radius-overlay: var(--wb-radius-md);
-  --wb-radius-avatar: 50%;
-  --wb-nav-row-height: 32px;
-  --wb-header-height: 48px;
-  --wb-message-gap: 12px;
-  --wb-message-continuation-gap: 2px;
-  --wb-message-pad-x: 20px;
-  --wb-bubble-pad-y: 8px;
-  --wb-composer-min-height: 88px;
-  --wb-avatar-nav-size: 24px;
-  --wb-nav-width: 240px;
-}
-
-/* ---- WeChat 布局 token ---- */
-html[data-wb-style='wechat'],
-.scope[data-wb-style='wechat'],
-.root[data-wb-style='wechat'] {
-  --wb-radius-panel: var(--wb-radius-sm);
-  --wb-radius-control: var(--wb-radius-md);
-  --wb-radius-bubble: var(--wb-radius-sm);
-  --wb-radius-overlay: var(--wb-radius-md);
-  --wb-radius-avatar: var(--wb-radius-sm);
-  --wb-nav-row-height: 64px;
-  --wb-header-height: 56px;
-  --wb-message-gap: 20px;
-  --wb-message-continuation-gap: 8px;
-  --wb-message-pad-x: 24px;
-  --wb-bubble-pad-y: 10px;
-  --wb-composer-min-height: 112px;
-  --wb-avatar-nav-size: 40px;
-  --wb-nav-width: 280px;
-}
-
-/* ---- Discord dark ---- */
-html[data-wb-style='discord'][data-wb-scheme='dark'],
-.scope[data-wb-style='discord'][data-wb-scheme='dark'],
-.root[data-wb-style='discord'][data-wb-scheme='dark'] {
-  --wb-bg: #1e1f22;
-  --wb-rail: #1e1f22;
-  --wb-nav: #2b2d31;
-  --wb-surface: #313338;
-  --wb-surface-sub: #2b2d31;
-  --wb-surface-raised: #383a40;
-  --wb-fg: #f2f3f5;
-  --wb-fg-muted: #b5bac1;
-  --wb-fg-placeholder: #a0a6b0;
-  --wb-fg-placeholder-aa: #a0a6b0; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
-  --wb-line: #44474f;
-  --wb-line-soft: #35373d;
-  --wb-line-control: #737985;
-  --wb-hover: #383a40;
-  --wb-pressed: #40434a;
-  --wb-selected-bg: #3b3f5c;
-  --wb-selected-fg: #f2f3f5;
-  --wb-accent: #5865f2;
-  --wb-accent-hover: #4752c4;
-  --wb-accent-pressed: #3c45a5;
-  --wb-on-accent: #ffffff;
-  --wb-accent-soft: #303454;
-  --wb-accent-fg: #b8c0ff;
-  --wb-link: #a9bdff;
-  --wb-focus: #b8c0ff;
-  --wb-disabled-bg: #2b2d31;
-  --wb-disabled-fg: #888e99;
-  --wb-disabled-line: #44474f;
-  --wb-success: #8edaa4;
-  --wb-success-bg: #233b2b;
-  --wb-warning: #edcc85;
-  --wb-warning-bg: #40351e;
-  --wb-danger: #ffb0ac;
-  --wb-danger-bg: #432b2e;
-  --wb-danger-solid: #a12e2e;
+html[data-wb-style][data-wb-scheme='light'],
+.scope[data-wb-scheme='light'],
+.root[data-wb-scheme='light'] {
+  --wb-bg: oklch(.992 .002 106);
+  --wb-rail: var(--wb-bg);
+  --wb-nav: var(--wb-surface-sub);
+  --wb-surface: var(--wb-bg);
+  --wb-surface-sub: oklch(.97 .004 106);
+  --wb-surface-raised: var(--wb-bg);
+  --wb-fg: oklch(.145 .006 106);
+  --wb-fg-muted: oklch(.556 .007 106);
+  --wb-fg-placeholder: var(--wb-fg-muted);
+  --wb-fg-placeholder-aa: var(--wb-fg-muted);
+  --wb-line: oklch(.922 .005 106);
+  --wb-line-soft: var(--wb-line);
+  --wb-line-control: var(--wb-line);
+  --wb-hover: var(--wb-surface-sub);
+  --wb-pressed: oklch(.94 .004 106);
+  --wb-selected-bg: var(--wb-hover);
+  --wb-selected-fg: var(--wb-fg);
+  --wb-accent: oklch(.205 .006 106);
+  --wb-accent-hover: oklch(.32 .006 106);
+  --wb-accent-pressed: var(--wb-fg);
+  --wb-on-accent: oklch(.985 .003 106);
+  --wb-accent-soft: var(--wb-surface-sub);
+  --wb-accent-fg: var(--wb-fg);
+  --wb-link: var(--wb-fg);
+  --wb-focus: oklch(.708 .006 106);
+  --wb-disabled-bg: var(--wb-surface-sub);
+  --wb-disabled-fg: var(--wb-fg-muted);
+  --wb-disabled-line: var(--wb-line);
+  --wb-success: #166534;
+  --wb-success-bg: #f0fdf4;
+  --wb-warning: #854d0e;
+  --wb-warning-bg: #fefce8;
+  --wb-danger: #b91c1c;
+  --wb-danger-bg: #fef2f2;
+  --wb-danger-solid: #dc2626;
   --wb-on-danger: #ffffff;
-  --wb-info: #9dc9f5;
-  --wb-info-bg: #24364b;
-  --wb-quote-bg: #2b2d31;
-  --wb-quote-line: #737985;
-  --wb-bubble-peer: #313338;
-  --wb-bubble-self: #303454;
-  --wb-bubble-self-fg: #f2f3f5;
-  --wb-bubble-line: #44474f;
-  --wb-unread-bg: #5865f2;
-  --wb-on-unread: #ffffff;
-  --wb-skeleton-base: #383a40;
-  --wb-skeleton-highlight: #44474f;
-  --wb-overlay: rgba(0, 0, 0, .56);
-  --wb-tooltip-bg: #111214;
-  --wb-tooltip-fg: #f2f3f5;
-  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .28);
-  --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .32);
-  --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .40);
-  --wb-accent-fg-sm: var(--wb-accent);
+  --wb-info: #1d4ed8;
+  --wb-info-bg: #eff6ff;
+  --wb-quote-bg: var(--wb-surface-sub);
+  --wb-quote-line: var(--wb-line-control);
+  --wb-bubble-peer: transparent;
+  --wb-bubble-self: var(--wb-surface-sub);
+  --wb-bubble-self-fg: var(--wb-fg);
+  --wb-bubble-line: var(--wb-line);
+  --wb-unread-bg: var(--wb-accent);
+  --wb-on-unread: var(--wb-on-accent);
+  --wb-skeleton-base: var(--wb-surface-sub);
+  --wb-skeleton-highlight: var(--wb-line);
+  --wb-overlay: rgb(0 0 0 / 50%);
+  --wb-tooltip-bg: var(--wb-accent);
+  --wb-tooltip-fg: var(--wb-on-accent);
+  --wb-shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
+  --wb-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+  --wb-shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  --wb-accent-fg-sm: var(--wb-fg);
   --wb-sub-fg-sm: var(--wb-fg-muted);
+  --wb-focus-ring: color-mix(in srgb, var(--wb-focus) 50%, transparent);
 }
 
-/* ---- Discord light ---- */
-html[data-wb-style='discord'][data-wb-scheme='light'],
-.scope[data-wb-style='discord'][data-wb-scheme='light'],
-.root[data-wb-style='discord'][data-wb-scheme='light'] {
-  --wb-bg: #ffffff;
-  --wb-rail: #e6e8ec;
-  --wb-nav: #f2f3f5;
-  --wb-surface: #ffffff;
-  --wb-surface-sub: #f2f3f5;
-  --wb-surface-raised: #ffffff;
-  --wb-fg: #232428;
-  --wb-fg-muted: #5c616c;
-  --wb-fg-placeholder: #6b707b;
-  --wb-fg-placeholder-aa: #5f6672; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
-  --wb-line: #dedede;
-  --wb-line-soft: #dedede;
-  --wb-line-control: #7a808c;
-  --wb-hover: #e7e9ee;
-  --wb-pressed: #dce0e7;
-  --wb-selected-bg: #e6e9ff;
-  --wb-selected-fg: #232428;
-  --wb-accent: #4752c4;
-  --wb-accent-hover: #3944ad;
-  --wb-accent-pressed: #303a96;
-  --wb-on-accent: #ffffff;
-  --wb-accent-soft: #eceeff;
-  --wb-accent-fg: #3944ad;
-  --wb-link: #3545ad;
-  --wb-focus: #4752c4;
-  --wb-disabled-bg: #eceef1;
-  --wb-disabled-fg: #7a7f89;
-  --wb-disabled-line: #d9dce2;
-  --wb-success: #236e3c;
-  --wb-success-bg: #e8f4ec;
-  --wb-warning: #805b13;
-  --wb-warning-bg: #fff3d8;
-  --wb-danger: #a12e2e;
-  --wb-danger-bg: #fdecec;
-  --wb-danger-solid: #a12e2e;
+html[data-wb-style][data-wb-scheme='dark'],
+.scope[data-wb-scheme='dark'],
+.root[data-wb-scheme='dark'] {
+  --wb-bg: oklch(.145 .006 106);
+  --wb-rail: var(--wb-bg);
+  --wb-nav: var(--wb-surface-sub);
+  --wb-surface: var(--wb-bg);
+  --wb-surface-sub: oklch(.205 .006 106);
+  --wb-surface-raised: var(--wb-surface-sub);
+  --wb-fg: oklch(.985 .003 106);
+  --wb-fg-muted: oklch(.708 .006 106);
+  --wb-fg-placeholder: var(--wb-fg-muted);
+  --wb-fg-placeholder-aa: var(--wb-fg-muted);
+  --wb-line: rgb(255 255 255 / 10%);
+  --wb-line-soft: var(--wb-line);
+  --wb-line-control: rgb(255 255 255 / 15%);
+  --wb-hover: oklch(.269 .006 106);
+  --wb-pressed: oklch(.32 .006 106);
+  --wb-selected-bg: var(--wb-hover);
+  --wb-selected-fg: var(--wb-fg);
+  --wb-accent: oklch(.922 .005 106);
+  --wb-accent-hover: oklch(.82 .005 106);
+  --wb-accent-pressed: oklch(.75 .005 106);
+  --wb-on-accent: oklch(.205 .006 106);
+  --wb-accent-soft: var(--wb-hover);
+  --wb-accent-fg: var(--wb-fg);
+  --wb-link: var(--wb-fg);
+  --wb-focus: oklch(.556 .007 106);
+  --wb-disabled-bg: var(--wb-surface-sub);
+  --wb-disabled-fg: var(--wb-fg-muted);
+  --wb-disabled-line: var(--wb-line);
+  --wb-success: #86efac;
+  --wb-success-bg: #10271a;
+  --wb-warning: #fde047;
+  --wb-warning-bg: #2b2511;
+  --wb-danger: #fca5a5;
+  --wb-danger-bg: #2e1616;
+  --wb-danger-solid: #b91c1c;
   --wb-on-danger: #ffffff;
-  --wb-info: #215f97;
-  --wb-info-bg: #e9f2fc;
-  --wb-quote-bg: #f2f3f5;
-  --wb-quote-line: #7a808c;
-  --wb-bubble-peer: #ffffff;
-  --wb-bubble-self: #eceeff;
-  --wb-bubble-self-fg: #232428;
-  --wb-bubble-line: #d9dce2;
-  --wb-unread-bg: #4752c4;
-  --wb-on-unread: #ffffff;
-  --wb-skeleton-base: #e7e9ee;
-  --wb-skeleton-highlight: #f2f3f5;
-  --wb-overlay: rgba(0, 0, 0, .32);
-  --wb-tooltip-bg: #232428;
-  --wb-tooltip-fg: #ffffff;
-  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .08);
-  --wb-shadow-popover: 0 4px 16px rgba(0, 0, 0, .12);
-  --wb-shadow-dialog: 0 12px 40px rgba(0, 0, 0, .18);
-  /* 小字前景加深到 AA（浅色下 accent / muted 小字直接用不达 4.5:1） */
-  --wb-accent-fg-sm: color-mix(in srgb, var(--wb-accent) 82%, #000);
-  --wb-sub-fg-sm: color-mix(in srgb, var(--wb-fg-muted) 78%, #000);
-}
-
-/* ---- WeChat light ---- */
-html[data-wb-style='wechat'][data-wb-scheme='light'],
-.scope[data-wb-style='wechat'][data-wb-scheme='light'],
-.root[data-wb-style='wechat'][data-wb-scheme='light'] {
-  --wb-bg: #fafafa;
-  --wb-rail: #e1e1e6;
-  --wb-nav: #eeeef0;
-  --wb-surface: #fafafa;
-  --wb-surface-sub: #f0f0f2;
-  --wb-surface-raised: #fafafa;
-  --wb-fg: #19191a;
-  --wb-fg-muted: #9f9fa6;
-  --wb-fg-placeholder: #9f9fa6;
-  --wb-fg-placeholder-aa: #5f6672; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
-  --wb-line: #dedede;
-  --wb-line-soft: #dedede;
-  --wb-line-control: #9f9fa6;
-  --wb-hover: #e5e5e8;
-  --wb-pressed: #dcdce0;
-  --wb-selected-bg: #00c375;
-  --wb-selected-fg: #ffffff;
-  --wb-accent: #00c375;
-  --wb-accent-hover: #00b069;
-  --wb-accent-pressed: #009e5e;
-  --wb-on-accent: #ffffff;
-  --wb-accent-soft: #e6f9f1;
-  --wb-accent-fg: #00c375;
-  --wb-link: #00c375;
-  --wb-focus: #00c375;
-  --wb-disabled-bg: #e8e8e8;
-  --wb-disabled-fg: #9f9fa6;
-  --wb-disabled-line: #d0d0d0;
-  --wb-success: #00c375;
-  --wb-success-bg: #e8f4ec;
-  --wb-warning: #fa9d3b;
-  --wb-warning-bg: #fdf5e8;
-  --wb-danger: #fa5151;
-  --wb-danger-bg: #feebeb;
-  --wb-danger-solid: #fa5151;
-  --wb-on-danger: #ffffff;
-  --wb-info: #10aeff;
-  --wb-info-bg: #eaf6fe;
-  --wb-quote-bg: #f2f2f4;
-  --wb-quote-line: #c4c4c8;
-  --wb-bubble-peer: #ffffff;
-  --wb-bubble-self: #9df29f;
-  --wb-bubble-self-fg: #19191a;
-  --wb-bubble-line: #e0e0e0;
-  --wb-unread-bg: #fa5151;
-  --wb-on-unread: #ffffff;
-  --wb-skeleton-base: #e4e4e6;
-  --wb-skeleton-highlight: #eeeef0;
-  --wb-overlay: rgba(0, 0, 0, .28);
-  --wb-tooltip-bg: #19191a;
-  --wb-tooltip-fg: #ffffff;
-  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .06);
-  --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .08);
-  --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .14);
-  /* 小字前景加深到 AA（浅色下 accent / muted 小字直接用不达 4.5:1） */
-  --wb-accent-fg-sm: color-mix(in srgb, var(--wb-accent) 82%, #000);
-  --wb-sub-fg-sm: color-mix(in srgb, var(--wb-fg-muted) 78%, #000);
-}
-
-/* ---- WeChat dark ---- */
-html[data-wb-style='wechat'][data-wb-scheme='dark'],
-.scope[data-wb-style='wechat'][data-wb-scheme='dark'],
-.root[data-wb-style='wechat'][data-wb-scheme='dark'] {
-  --wb-bg: #111111;
-  --wb-rail: #141414;
-  --wb-nav: #191919;
-  --wb-surface: #222222;
-  --wb-surface-sub: #191919;
-  --wb-surface-raised: #292929;
-  --wb-fg: #ededed;
-  --wb-fg-muted: #a9a9a9;
-  --wb-fg-placeholder: #929292;
-  --wb-fg-placeholder-aa: #929292; /* 主消息区 placeholder：浅色加深到 AA，深色同 placeholder */
-  --wb-line: #3b3b3b;
-  --wb-line-soft: #2c2c2c;
-  --wb-line-control: #858585;
-  --wb-hover: #2b2b2b;
-  --wb-pressed: #343434;
-  --wb-selected-bg: #233b2b;
-  --wb-selected-fg: #ededed;
-  --wb-accent: #62c985;
-  --wb-accent-hover: #78d797;
-  --wb-accent-pressed: #4db873;
-  --wb-on-accent: #102619;
-  --wb-accent-soft: #1c3324;
-  --wb-accent-fg: #80dda0;
-  --wb-link: #8adea6;
-  --wb-focus: #80dda0;
-  --wb-disabled-bg: #242424;
-  --wb-disabled-fg: #777777;
-  --wb-disabled-line: #3b3b3b;
-  --wb-success: #8ed7a5;
-  --wb-success-bg: #203729;
-  --wb-warning: #e5c27b;
-  --wb-warning-bg: #3c321d;
-  --wb-danger: #f2a5a0;
-  --wb-danger-bg: #402828;
-  --wb-danger-solid: #a12e2e;
-  --wb-on-danger: #ffffff;
-  --wb-info: #9cc8ee;
-  --wb-info-bg: #223448;
-  --wb-quote-bg: #292929;
-  --wb-quote-line: #858585;
-  --wb-bubble-peer: #222222;
-  --wb-bubble-self: #255b36;
-  --wb-bubble-self-fg: #ededed;
-  --wb-bubble-line: #3b3b3b;
-  --wb-unread-bg: #62c985;
-  --wb-on-unread: #102619;
-  --wb-skeleton-base: #2b2b2b;
-  --wb-skeleton-highlight: #383838;
-  --wb-overlay: rgba(0, 0, 0, .60);
-  --wb-tooltip-bg: #ededed;
-  --wb-tooltip-fg: #202020;
-  --wb-shadow-sm: 0 1px 3px rgba(0, 0, 0, .30);
-  --wb-shadow-popover: 0 4px 14px rgba(0, 0, 0, .36);
-  --wb-shadow-dialog: 0 12px 36px rgba(0, 0, 0, .44);
-  --wb-accent-fg-sm: var(--wb-accent);
+  --wb-info: #93c5fd;
+  --wb-info-bg: #152237;
+  --wb-quote-bg: var(--wb-surface-sub);
+  --wb-quote-line: var(--wb-line-control);
+  --wb-bubble-peer: transparent;
+  --wb-bubble-self: var(--wb-hover);
+  --wb-bubble-self-fg: var(--wb-fg);
+  --wb-bubble-line: var(--wb-line);
+  --wb-unread-bg: var(--wb-accent);
+  --wb-on-unread: var(--wb-on-accent);
+  --wb-skeleton-base: var(--wb-surface-sub);
+  --wb-skeleton-highlight: var(--wb-hover);
+  --wb-overlay: rgb(0 0 0 / 50%);
+  --wb-tooltip-bg: var(--wb-accent);
+  --wb-tooltip-fg: var(--wb-on-accent);
+  --wb-shadow-sm: 0 1px 2px rgb(0 0 0 / 10%);
+  --wb-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 20%), 0 2px 4px -2px rgb(0 0 0 / 20%);
+  --wb-shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 30%), 0 4px 6px -4px rgb(0 0 0 / 30%);
+  --wb-accent-fg-sm: var(--wb-fg);
   --wb-sub-fg-sm: var(--wb-fg-muted);
+  --wb-focus-ring: color-mix(in srgb, var(--wb-focus) 50%, transparent);
 }
+
+.root ::selection { background: var(--wb-selected-bg); color: var(--wb-selected-fg); }
+.root * { scrollbar-width: thin; scrollbar-color: var(--wb-line-control) transparent; }
+.root input, .root textarea { caret-color: var(--wb-fg); }
 
 /* reduced-motion：时长归零、不做编排动画；loading 仍保留静态标记 */
 @media (prefers-reduced-motion: reduce) {

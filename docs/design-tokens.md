@@ -4,6 +4,12 @@ workbench-ui 的颜色、字号、圆角、阴影、间距只从 `--wb-*` token 
 
 `pnpm lint`（stylelint + `stylelint-declaration-strict-value`，配置在 `workbench-ui/stylelint.config.mjs`）会拦下新写进来的字面量。
 
+## 共享组件
+
+对话使用 assistant-ui 官方 runtime 和 primitives；基础控件采用配套的 shadcn/Radix 组合，样式继续消费同一份 `--wb-*` token。整体外观采用 [assistant-ui 官方 Thread 默认风格](https://www.assistant-ui.com/elements/thread)，通过同一套语义 token 映射到全部页面和扩展：中性配色、细边框、近黑主按钮、16px 正文，避免局部重新设计控件。
+
+页面和扩展从 `workbench-ui/src/client/ui/` 复用 Button、TextInput、Textarea、Select、Switch、Checkbox、RadioGroup、Dialog、Tabs、Menu、Tooltip 等；已有 label 模式的 Input 保持兼容。基础原生控件只在 kit 中实现，业务处保留文件选择等需要专门浏览器语义的输入。标准组件已有的键盘、焦点和浮层行为交给官方 primitive。
+
 ## 间距
 
 | token | 值 | 常见用途 |
@@ -21,7 +27,7 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 
 按钮、输入框、菜单项这类控件的高度不靠内边距凑：内边距取刻度值，总高度用 `min-height` 对齐 `--wb-control-height-sm/md/lg`（32/36/44px）。徽标类小元素需要 1px 级微调时改 `line-height`，内边距仍取刻度。
 
-布局风格相关的间距（`--wb-message-pad-x`、`--wb-bubble-pad-y`、`--wb-message-gap` 等）定义在 `tokens.module.css` 的风格块里，按 Discord / WeChat 各自取值，不受这张刻度限制。
+消息与输入框共用 `--wb-thread-max: 44rem` 的居中内容列。`--wb-message-pad-x`、`--wb-bubble-pad-y`、`--wb-message-gap` 统一定义在 token 根，不随导航结构改变。
 
 ## 圆角
 
@@ -35,16 +41,16 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 | `--wb-radius-pill` | 999px，胶囊 |
 | `--wb-radius-dot` | 50%，圆形 |
 
-语义圆角按布局风格取三档之一，组件优先用语义 token：
+语义圆角统一使用组件角色，不随导航结构切换：
 
-| token | Discord | WeChat |
-|---|---|---|
-| `--wb-radius-panel` | md | sm |
-| `--wb-radius-control` | lg | md |
-| `--wb-radius-bubble` | md | sm |
-| `--wb-radius-overlay` | md | md |
-| `--wb-radius-avatar` | 50% | sm |
-| `--wb-radius-badge` | sm | sm |
+| token | 值 |
+|---|---|
+| `--wb-radius-panel` | 12px |
+| `--wb-radius-control` | 6px |
+| `--wb-radius-bubble` / `--wb-radius-composer` | 16px |
+| `--wb-radius-overlay` | 8px |
+| `--wb-radius-avatar` | 50% |
+| `--wb-radius-badge` | 4px |
 
 ## 字号
 
@@ -54,9 +60,9 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 |---|---|---|
 | `--wb-type-micro-size` | .6875rem（11px） | 徽标、计数、极小标签 |
 | `--wb-type-caption-size` | .75rem（12px） | 时间、说明、次要信息 |
-| `--wb-type-compact-size` | .8125rem（13px） | 列表、按钮、紧凑正文 |
+| `--wb-type-compact-size` | .875rem（14px） | 列表、按钮、紧凑正文 |
 | `--wb-type-label-size` | .875rem（14px） | 表单标签、卡片标题 |
-| `--wb-type-body-size` | .9375rem（15px） | 消息正文 |
+| `--wb-type-body-size` | 1rem（16px） | 消息正文、聊天输入框 |
 | `--wb-type-section-size` | 1rem（16px） | 区块标题、Markdown h3 |
 | `--wb-type-heading-size` | 1.125rem（18px） | 弹窗标题、Markdown h2 |
 | `--wb-type-title-size` | 1.25rem（20px） | 页面标题、Markdown h1 |
@@ -65,13 +71,13 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 
 ## 颜色
 
-每个布局风格（discord / wechat）× 深浅（light / dark）各有一张色表，结构相同：
+浅色与深色各有一张 assistant-ui 中性色表。历史 `style` 偏好值 `discord` / `wechat` 仅控制分组频道或会话列表的导航结构，不再切换配色、气泡和控件外观。
 
 - 中性色阶：`--wb-bg`、`--wb-rail`、`--wb-nav`、`--wb-surface`、`--wb-surface-sub`、`--wb-surface-raised`；前景 `--wb-fg`、`--wb-fg-muted`、`--wb-fg-placeholder`；线 `--wb-line-soft`、`--wb-line`、`--wb-line-control`；交互 `--wb-hover`、`--wb-pressed`、`--wb-selected-bg`、`--wb-selected-fg`。
-- 一个强调色：`--wb-accent` 及 `-hover`、`-pressed`、`-soft`、`-fg`，强调色上的文字用 `--wb-on-accent`。
+- 中性主色（浅色近黑，深色浅白）：`--wb-accent` 及 `-hover`、`-pressed`、`-soft`、`-fg`，强调色上的文字用 `--wb-on-accent`。
 - 语义色：`--wb-success`、`--wb-warning`、`--wb-danger`、`--wb-info`，各带 `-bg`；实底危险按钮 `--wb-danger-solid` + `--wb-on-danger`；未读 `--wb-unread-bg` + `--wb-on-unread`。
 - 其他：`--wb-link`、`--wb-focus`、`--wb-disabled-*`、`--wb-quote-*`、`--wb-bubble-*`、`--wb-skeleton-*`、`--wb-tooltip-*`、`--wb-overlay`。
-- 小字对比度：`--wb-accent-fg-sm`、`--wb-sub-fg-sm` 在浅色下加深到 AA；`--wb-fg-placeholder-aa` 是主消息区用的 placeholder（浅色加深）。
+- 小字前景：`--wb-accent-fg-sm`、`--wb-sub-fg-sm`、`--wb-fg-placeholder-aa` 引用统一前景与次要前景；焦点颜色为 `--wb-focus`，半透明焦点环为 `--wb-focus-ring`。
 - 与深浅无关：`--wb-on-color`（站点色、生成色等彩色填充上的白字）、`--wb-media-bg`（视频底色）。
 
 派生色用 `color-mix()` 混 token，例如 `color-mix(in srgb, var(--wb-accent) 12%, transparent)`；需要提亮或压暗时混 `var(--wb-fg)`，不混 `#fff` / `#000`。

@@ -1,3 +1,4 @@
+import { Button } from './ui/primitives.ts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
@@ -272,7 +273,7 @@ function WorkforceCanvasViewContent({
       {/* Top Floating Toolbar */}
       <div className={css.canvasToolbar}>
         {onCloseCanvas && (
-          <button
+          <Button variant="plain"
             type="button"
             className={css.toolbarBtn}
             onClick={onCloseCanvas}
@@ -281,9 +282,9 @@ function WorkforceCanvasViewContent({
           >
             <Icon name="reply" width={14} height={14} />
             <span>{WF.canvas.backToChat}</span>
-          </button>
+          </Button>
         )}
-        <button
+        <Button variant="plain"
           type="button"
           className={css.toolbarBtn}
           onClick={() => setConfirmAutoLayoutOpen(true)}
@@ -292,7 +293,7 @@ function WorkforceCanvasViewContent({
         >
           <Icon name="direction" width={14} height={14} />
           <span>{WF.canvas.autoLayout}</span>
-        </button>
+        </Button>
         <span className={css.toolbarMeta}>
           {WF.canvas.stats(nodes.length, edges.length)}
         </span>

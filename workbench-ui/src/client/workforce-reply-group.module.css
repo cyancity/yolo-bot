@@ -14,12 +14,7 @@
 }
 
 /* WeChat：组卡跟着员工气泡放宽，不再缩进到头像列右侧。 */
-:global([data-wb-style='wechat']) .group {
-  margin: var(--wb-space-2) var(--wb-space-5);
-  max-width: min(100%, 640px);
-  border-radius: var(--wb-radius-bubble);
-  background: var(--wb-bubble-peer);
-}
+
 
 .groupHead {
   display: flex;
@@ -290,9 +285,5 @@
 }
 
 @media (max-width: 900px) {
-  .group,
-  :global([data-wb-style='wechat']) .group {
-    margin-left: var(--wb-space-4);
-    margin-right: var(--wb-space-4);
-  }
+  .group { margin: var(--wb-space-2) var(--wb-space-5); max-width: 100%; }
 }

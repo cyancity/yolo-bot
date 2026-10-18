@@ -1,3 +1,6 @@
+.plain { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.plain:focus-visible { outline: var(--wb-border-width) solid var(--wb-focus-ring); outline-offset: var(--wb-space-2); }
+.plain:disabled { opacity: var(--wb-opacity-disabled); cursor: not-allowed; }
 .button {
   display: inline-flex;
   align-items: center;
@@ -24,11 +27,11 @@
 .lg { height: var(--wb-control-height-lg); padding: 0 var(--wb-space-6); }
 
 .primary {
-  background: var(--wb-accent);
-  color: var(--wb-on-accent);
+  background: var(--wb-fg);
+  color: var(--wb-bg);
 }
-.primary:hover:not(:disabled) { background: var(--wb-accent-hover); }
-.primary:active:not(:disabled) { background: var(--wb-accent-pressed); }
+.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--wb-fg) 88%, var(--wb-bg)); }
+.primary:active:not(:disabled) { background: color-mix(in srgb, var(--wb-fg) 80%, var(--wb-bg)); }
 
 .secondary {
   background: var(--wb-surface);
@@ -49,32 +52,30 @@
   background: var(--wb-danger-solid);
   color: var(--wb-on-danger);
 }
-.danger:hover:not(:disabled) { filter: brightness(1.08); }
+.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--wb-danger-solid) 88%, var(--wb-bg)); }
 
 .button:disabled {
-  background: var(--wb-disabled-bg);
-  border-color: var(--wb-disabled-line);
-  color: var(--wb-disabled-fg);
+  opacity: var(--wb-opacity-disabled);
   cursor: not-allowed;
 }
 
 .button:focus-visible {
-  outline: var(--wb-focus-width) solid var(--wb-focus);
-  outline-offset: var(--wb-focus-offset);
+  outline: var(--wb-border-width) solid var(--wb-focus-ring);
+  outline-offset: var(--wb-space-2);
 }
 
 .spinner {
   width: var(--wb-icon-sm);
   height: var(--wb-icon-sm);
   border-radius: var(--wb-radius-dot);
-  border: 2px solid currentColor;
+  border: var(--wb-border-width) solid currentColor;
   border-top-color: transparent;
   animation: spin .8s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .button { transition: none; }
-  .spinner { animation: none; border-top-color: currentColor; opacity: .6; }
+  .spinner { animation: none; border-top-color: currentColor; opacity: var(--wb-opacity-disabled); }
 }
 
 @keyframes spin {

@@ -1,5 +1,22 @@
 /* Core sidebar theme, conversation navigation and user controls. */
 
+/* Preserve the shell's own tracks and width preferences while a page owns presentation. */
+:global([data-wb-sidebar-presentation='hidden']) {
+  grid-template-columns: var(--wb-independent-grid-columns) !important;
+}
+
+:global([data-wb-sidebar-presentation='hidden']) > :global([data-side='sidebar']) {
+  display: none;
+}
+
+:global([data-wb-sidebar-presentation='hidden']) :global([class*='_root']):has(:global([data-workforce-sidebar])) {
+  width: 100% !important;
+}
+
+:global([data-wb-sidebar-presentation='hidden']) :global([class*='_regionArea']):has(:global([data-workforce-sidebar])) {
+  display: flex !important;
+}
+
 
 /* 侧栏（频道列表栏）背景跟随主题：--wb-nav 介于竖栏(--wb-rail)与内容区(--wb-bg)之间。
    基础规则在 workforce.module.css，借根元素属性选择器覆盖；
@@ -31,7 +48,7 @@
   background: transparent;
   color: var(--wb-fg-muted);
   font-size: var(--wb-type-caption-size);
-  font-weight: 700;
+  font-weight: var(--wb-weight-medium);
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.03em;

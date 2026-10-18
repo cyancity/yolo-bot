@@ -1,3 +1,5 @@
+import { Button, TextInput, Textarea, Checkbox, Switch } from './ui/primitives.ts'
+import { Select } from './ui/select.tsx'
 /**
  * 数字员工工作区整页：频道与员工私信的消息流、线程面板，以及独立员工管理页。
  */
@@ -152,13 +154,13 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
         <div className={css.empSidebarList}>
           <div className={css.empSidebarHead}>
             <span className={css.empSidebarTitle}>{WF.workspace.employeeListTitle(snapshot.employees.length)}</span>
-            <button
+            <Button variant="plain"
               type="button"
               className={`${css.empBtnAdd} ${css.empBtnAddCompact}`}
               onClick={() => selectEmployee('new')}
             >
               ＋ {WF.employeesPage.add}
-            </button>
+            </Button>
           </div>
           {selectedId === 'new' && (
             <div className={css.empCompactCard} data-selected="true">
@@ -241,9 +243,9 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             !modelsState.providers.some(p => p.configured || p.requiresApiKey === false) && (
               <div className={css.streamError} role="alert">
                 <span>{WF.employeesPage.noModel}</span>
-                <button type="button" className={css.empAction} onClick={() => source.models.open()}>
+                <Button variant="plain" type="button" className={css.empAction} onClick={() => source.models.open()}>
                   {WF.employeesPage.noModelAction}
-                </button>
+                </Button>
               </div>
             )}
 
@@ -262,18 +264,18 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     size={42}
                   />
                   <div className={css.colorSwatches}>
-                    <button
+                    <Button variant="plain"
                       type="button"
                       className={`${css.colorDefaultBtn} ${avatarColor === '' ? css.colorDefaultBtnActive : ''}`}
                       onClick={() => setAvatarColor('')}
                       title={WF.workspace.defaultColorTooltip}
                     >
                       {WF.employeesPage.avatarColorDefault}
-                    </button>
+                    </Button>
                     {AVATAR_PALETTES.map(palette => {
                       const isSelected = avatarColor === `palette:${palette.id}` || avatarColor === palette.id
                       return (
-                        <button
+                        <Button variant="plain"
                           key={palette.id}
                           type="button"
                           className={`${css.paletteSwatchBtn} ${isSelected ? css.paletteSwatchActive : ''}`}
@@ -289,11 +291,11 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                             size={28}
                           />
                           <span className={css.paletteSwatchLabel}>{palette.label}</span>
-                        </button>
+                        </Button>
                       )
                     })}
                     <label className={`${css.colorCustomWrap} ${avatarColor.startsWith('#') ? css.colorCustomActive : ''}`} title={WF.employeesPage.avatarColorCustom}>
-                      <input
+                      <TextInput
                         type="color"
                         className={css.colorCustomInput}
                         value={avatarColor && /^#[0-9a-f]{6}$/i.test(avatarColor) ? avatarColor : '#3b5bdb'}
@@ -311,24 +313,21 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               <div className={css.empFormGrid}>
                 <div className={css.empField}>
                   <label htmlFor="wf-emp-name">{WF.employeesPage.name}</label>
-                  <input id="wf-emp-name" className={cx('wb-input', css.empInput)} value={name} onChange={e => setName(e.target.value)} />
+                  <TextInput id="wf-emp-name" className={cx('wb-input', css.empInput)} value={name} onChange={e => setName(e.target.value)} />
                 </div>
                 <div className={css.empField}>
                   <label htmlFor="wf-emp-title">{WF.employeesPage.role}</label>
-                  <input id="wf-emp-title" className={cx('wb-input', css.empInput)} value={title} onChange={e => setTitle(e.target.value)} placeholder={WF.workspace.rolePlaceholder} />
+                  <TextInput id="wf-emp-title" className={cx('wb-input', css.empInput)} value={title} onChange={e => setTitle(e.target.value)} placeholder={WF.workspace.rolePlaceholder} />
                 </div>
               </div>
 
               <div className={css.empField}>
                 <label htmlFor="wf-emp-persona">{WF.workspace.roleDescription}</label>
-                <textarea id="wf-emp-persona" rows={2} value={persona} onChange={e => setPersona(e.target.value)} />
+                <Textarea id="wf-emp-persona" rows={2} value={persona} onChange={e => setPersona(e.target.value)} />
               </div>
 
               <div className={css.empField}>
-                <label className={css.empCheckboxLabel}>
-                  <input type="checkbox" checked={lead} onChange={e => setLead(e.target.checked)} />
-                  {WF.employeesPage.lead}
-                </label>
+                <Switch label={WF.employeesPage.lead} checked={lead} onChange={setLead} />
               </div>
             </div>
 
@@ -337,7 +336,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               <h4 className={css.empCardSectionTitle}>{WF.workspace.coreCapabilitiesSection}</h4>
               <div className={css.empField}>
                 <label htmlFor="wf-emp-model">{WF.employeesPage.model}</label>
-                <select
+                <Select
                   id="wf-emp-model"
                   className={cx('wb-input', css.empInput)}
                   value={model}
@@ -362,7 +361,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       ))}
                     </optgroup>
                   ))}
-                </select>
+                </Select>
                 <span className={css.empModelHint}>{WF.employeesPage.modelHint}</span>
               </div>
 
@@ -377,7 +376,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       <span key={skillName} className={css.skillChipSelected}>
                         <span className={css.skillChipIcon}>⚡</span>
                         <span className={css.skillChipText}>{skillName}</span>
-                        <button
+                        <Button variant="plain"
                           type="button"
                           className={css.skillChipRemove}
                           title={WF.workspace.removeSkill(skillName)}
@@ -385,13 +384,13 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                           onClick={() => removeSkill(skillName)}
                         >
                           ×
-                        </button>
+                        </Button>
                       </span>
                     ))
                   )}
                 </div>
                 <div className={css.customSkillRow}>
-                  <input
+                  <TextInput
                     type="text"
                     className={cx('wb-input', css.customSkillInput)}
                     placeholder={WF.workspace.customSkillPlaceholder}
@@ -405,7 +404,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       }
                     }}
                   />
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={css.empBtnAdd}
                     disabled={!customSkillInput.trim()}
@@ -415,7 +414,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     }}
                   >
                     {WF.workspace.addBtn}
-                  </button>
+                  </Button>
                 </div>
                 {(catalogSkills ?? []).length + (userSkills ?? []).length > 0 && (
                   <div className={css.skillLibraryWrap}>
@@ -424,7 +423,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                       {(catalogSkills ?? []).map(skill => {
                         const isAdded = skills.includes(skill.name)
                         return (
-                          <button
+                          <Button variant="plain"
                             key={`catalog:${skill.name}`}
                             type="button"
                             className={`${css.skillPick} ${isAdded ? css.skillPickActive : ''}`}
@@ -432,7 +431,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                             onClick={() => toggleSkill(skill.name)}
                           >
                             {isAdded ? `✓ ${skill.name}` : `＋ ${skill.name}`}
-                          </button>
+                          </Button>
                         )
                       })}
                       {(userSkills ?? [])
@@ -440,7 +439,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                         .map(skill => {
                           const isAdded = skills.includes(skill.name)
                           return (
-                            <button
+                            <Button variant="plain"
                               key={`user:${skill.name}`}
                               type="button"
                               className={`${css.skillPick} ${isAdded ? css.skillPickActive : ''}`}
@@ -449,7 +448,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                               onClick={() => toggleSkill(skill.name)}
                             >
                               {isAdded ? `✓ ${skill.name}` : `＋ ${skill.name}`}
-                            </button>
+                            </Button>
                           )
                         })}
                     </div>
@@ -458,18 +457,14 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               </div>
 
               <div className={css.empField}>
-                <label className={css.empCheckboxLabel}>
-                  <input type="checkbox" checked={mcpLimited} onChange={e => setMcpLimited(e.target.checked)} />
-                  {WF.workspace.limitMcpServersLabel}
-                </label>
+                <Switch label={WF.workspace.limitMcpServersLabel} checked={mcpLimited} onChange={setMcpLimited} />
                 {mcpLimited && (
                   <div className={css.empFieldRow}>
                     {(mcpServers ?? []).map(server => (
                       <label key={server.id} className={css.empModelHint} style={{ display: 'inline-flex', gap: 4, marginRight: 12 }}>
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={mcpIds.includes(server.id)}
-                          onChange={e => setMcpIds(e.target.checked ? [...mcpIds, server.id] : mcpIds.filter(id => id !== server.id))}
+                          onCheckedChange={checked => setMcpIds(checked === true ? [...mcpIds, server.id] : mcpIds.filter(id => id !== server.id))}
                         />
                         {server.label}（{server.transport === 'stdio' ? WF.workspace.localCommand : 'HTTP'}）
                       </label>
@@ -501,7 +496,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             <div className={css.empFormActions}>
               {currentEmployee !== 'new' && currentEmployee !== undefined && (
                 currentEmployee.isLeader || lead ? (
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={css.empBtnDelete}
                     disabled
@@ -509,32 +504,32 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     style={{ opacity: 0.4, cursor: 'not-allowed' }}
                   >
                     {WF.workspace.deleteEmployeeBtn}
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button variant="plain"
                     type="button"
                     className={css.empBtnDelete}
                     onClick={() => setDeleting(currentEmployee)}
                   >
                     {WF.employeesPage.delete}
-                  </button>
+                  </Button>
                 )
               )}
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.empBtnCancel}
                 onClick={() => selectEmployee(currentEmployee)}
               >
                 {WF.workspace.cancelChanges}
-              </button>
-              <button
+              </Button>
+              <Button variant="plain"
                 type="button"
                 className={css.empBtnSave}
                 disabled={busy}
                 onClick={() => void save()}
               >
                 {busy ? WF.workspace.saving : WF.employeesPage.save}
-              </button>
+              </Button>
               {error !== undefined && <span className={css.empFormError} role="alert">{error}</span>}
             </div>
           </div>
@@ -547,8 +542,8 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             </p>
             {error && <p className={css.empFormError} role="alert">{error}</p>}
             <div className={css.empFormActions} style={{ marginTop: 16 }}>
-              <button type="button" className={css.empBtnDelete} disabled={busy} onClick={() => void doDelete()}>{WF.employeesPage.delete}</button>
-              <button type="button" className={css.empBtnCancel} onClick={() => setDeleting(undefined)}>{WF.employeesPage.cancel}</button>
+              <Button variant="plain" type="button" className={css.empBtnDelete} disabled={busy} onClick={() => void doDelete()}>{WF.employeesPage.delete}</Button>
+              <Button variant="plain" type="button" className={css.empBtnCancel} onClick={() => setDeleting(undefined)}>{WF.employeesPage.cancel}</Button>
             </div>
           </Dialog>
         )}
@@ -664,18 +659,18 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
       <div className={css.employeeSurface} data-wb-style={prefs.style}>
         <div className={css.streamHead} data-section="stream-head">
           <div className={css.streamHeadRow}>
-            <button type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
+            <Button variant="plain" type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <line x1="4" y1="6" x2="20" y2="6"/>
                 <line x1="4" y1="12" x2="20" y2="12"/>
                 <line x1="4" y1="18" x2="20" y2="18"/>
               </svg>
-            </button>
+            </Button>
             <h2 className={css.streamTitle}>{WF.brand}</h2>
             <span className={css.streamHeadDivider} aria-hidden="true" />
             <span className={css.streamDesc}>{WF.employeesPage.intro}</span>
             <div className={css.streamSettingsWrap}>
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.streamHeadActionBtn}
                 title={WF.models.title}
@@ -683,7 +678,7 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
                 onClick={() => source.models.open()}
               >
                 <Icon name="settings" width={18} height={18} />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -704,8 +699,8 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
     return <div className={css.root} data-workforce-root>
       <div className={css.streamEmpty}>
         {modelError?.message ?? failure ?? WF.employee.loading}
-        {modelError && modelError.action !== 'retry' && <button type="button" className={css.empAction} onClick={() => source.models.open({ provider: modelError.action === 'addKey' ? modelError.provider : undefined })}>{modelError.action === 'addKey' ? WF.errorActions.addKey : WF.errorActions.changeModel}</button>}
-        {failure && <button type="button" className={css.empAction} onClick={() => { setAttempt(value => value + 1); source.refresh() }}>{WF.status.retry}</button>}
+        {modelError && modelError.action !== 'retry' && <Button variant="plain" type="button" className={css.empAction} onClick={() => source.models.open({ provider: modelError.action === 'addKey' ? modelError.provider : undefined })}>{modelError.action === 'addKey' ? WF.errorActions.addKey : WF.errorActions.changeModel}</Button>}
+        {failure && <Button variant="plain" type="button" className={css.empAction} onClick={() => { setAttempt(value => value + 1); source.refresh() }}>{WF.status.retry}</Button>}
       </div>
     </div>
   }
@@ -756,10 +751,8 @@ function TemplatesSection({ templates, onToggle, onApply }: {
             </div>
           </div>
           <div className={css.empCardActions}>
-            <label className={css.empAction}>
-              <input type="checkbox" checked={template.enabled} disabled={busy === template.id} onChange={e => void run(template.id, () => onToggle(template.id, e.target.checked))} /> {WF.workspace.enable}
-            </label>
-            <button type="button" className={css.empAction} disabled={busy === template.id} onClick={() => void run(template.id, () => onApply(template.id))}>{WF.workspace.applyTemplateBtn}</button>
+            <Switch label={WF.workspace.enable} checked={template.enabled} disabled={busy === template.id} onChange={checked => void run(template.id, () => onToggle(template.id, checked))} />
+            <Button variant="plain" type="button" className={css.empAction} disabled={busy === template.id} onClick={() => void run(template.id, () => onApply(template.id))}>{WF.workspace.applyTemplateBtn}</Button>
           </div>
         </div>
       ))}
@@ -844,7 +837,7 @@ function McpServersSection({ servers, employees, source, onSaved }: {
     <div className={css.empForm} data-workforce-mcp-servers>
       <div className={css.empHead}>
         <h2 className={css.empTitle}>{WF.workspace.mcpServersTitle}</h2>
-        <button type="button" className={css.listAdd} onClick={() => beginEdit('new')}>＋ {WF.workspace.addServer}</button>
+        <Button variant="plain" type="button" className={css.listAdd} onClick={() => beginEdit('new')}>＋ {WF.workspace.addServer}</Button>
       </div>
       <p className={css.empIntro}>{WF.workspace.mcpServersIntro}</p>
       {servers !== undefined && servers.length === 0 && editing === undefined && <p className={css.empIntro}>{WF.workspace.mcpNoServersHint}</p>}
@@ -869,9 +862,9 @@ function McpServersSection({ servers, employees, source, onSaved }: {
             </div>
           </div>
           <div className={css.empCardActions}>
-            <button type="button" className={css.empAction} onClick={() => void (async () => { await source.patchMcpServer(server.id, { enabled: !server.enabled }); onSaved() })()}>{server.enabled ? WF.workspace.disable : WF.workspace.enable}</button>
-            <button type="button" className={css.empAction} onClick={() => beginEdit(server)}>{WF.employeesPage.edit}</button>
-            <button type="button" className={`${css.empAction} ${css.empActionDanger}`} onClick={() => setConfirmDelete(server)}>{WF.employeesPage.delete}</button>
+            <Button variant="plain" type="button" className={css.empAction} onClick={() => void (async () => { await source.patchMcpServer(server.id, { enabled: !server.enabled }); onSaved() })()}>{server.enabled ? WF.workspace.disable : WF.workspace.enable}</Button>
+            <Button variant="plain" type="button" className={css.empAction} onClick={() => beginEdit(server)}>{WF.employeesPage.edit}</Button>
+            <Button variant="plain" type="button" className={`${css.empAction} ${css.empActionDanger}`} onClick={() => setConfirmDelete(server)}>{WF.employeesPage.delete}</Button>
           </div>
         </div>
       ))}
@@ -881,54 +874,54 @@ function McpServersSection({ servers, employees, source, onSaved }: {
           <div className={css.empFormGrid}>
             <div className={css.empField}>
               <label htmlFor="wf-mcp-name">{WF.workspace.serverNameLabel}</label>
-              <input id="wf-mcp-name" className={cx('wb-input', css.empInput)} value={serverName} onChange={e => setServerName(e.target.value)} placeholder="filesystem" />
+              <TextInput id="wf-mcp-name" className={cx('wb-input', css.empInput)} value={serverName} onChange={e => setServerName(e.target.value)} placeholder="filesystem" />
             </div>
             <div className={css.empField}>
               <label htmlFor="wf-mcp-label">{WF.workspace.displayNameLabel}</label>
-              <input id="wf-mcp-label" className={cx('wb-input', css.empInput)} value={label} onChange={e => setLabel(e.target.value)} />
+              <TextInput id="wf-mcp-label" className={cx('wb-input', css.empInput)} value={label} onChange={e => setLabel(e.target.value)} />
             </div>
             <div className={css.empField}>
               <label htmlFor="wf-mcp-transport">{WF.workspace.transportLabel}</label>
-              <select id="wf-mcp-transport" className={cx('wb-input', css.empInput)} value={transport} onChange={e => setTransport(e.target.value as 'stdio' | 'streamable-http')}>
+              <Select id="wf-mcp-transport" className={cx('wb-input', css.empInput)} value={transport} onChange={e => setTransport(e.target.value as 'stdio' | 'streamable-http')}>
                 <option value="stdio">{WF.workspace.transportStdio}</option>
                 <option value="streamable-http">{WF.workspace.transportHttp}</option>
-              </select>
+              </Select>
             </div>
             {transport === 'stdio' ? (
               <>
                 <div className={css.empField + ' ' + css.empFieldRow}>
                   <label htmlFor="wf-mcp-command">{WF.workspace.startCommand}</label>
-                  <input id="wf-mcp-command" className={cx('wb-input', css.empInput)} value={command} onChange={e => setCommand(e.target.value)} placeholder={WF.workspace.commandPlaceholder} />
+                  <TextInput id="wf-mcp-command" className={cx('wb-input', css.empInput)} value={command} onChange={e => setCommand(e.target.value)} placeholder={WF.workspace.commandPlaceholder} />
                 </div>
                 <div className={css.empField}>
                   <label htmlFor="wf-mcp-args">{WF.workspace.argsPlaceholder}</label>
-                  <input id="wf-mcp-args" className={cx('wb-input', css.empInput)} value={args} onChange={e => setArgs(e.target.value)} placeholder="-y @modelcontextprotocol/server-filesystem" />
+                  <TextInput id="wf-mcp-args" className={cx('wb-input', css.empInput)} value={args} onChange={e => setArgs(e.target.value)} placeholder="-y @modelcontextprotocol/server-filesystem" />
                 </div>
                 <div className={css.empField}>
                   <label htmlFor="wf-mcp-cwd">{WF.workspace.cwdLabel}</label>
-                  <input id="wf-mcp-cwd" className={cx('wb-input', css.empInput)} value={cwd} onChange={e => setCwd(e.target.value)} />
+                  <TextInput id="wf-mcp-cwd" className={cx('wb-input', css.empInput)} value={cwd} onChange={e => setCwd(e.target.value)} />
                 </div>
                 <div className={css.empField + ' ' + css.empFieldRow}>
                   <label htmlFor="wf-mcp-env">{WF.workspace.envLabel}</label>
-                  <textarea id="wf-mcp-env" rows={2} value={envText} onChange={e => setEnvText(e.target.value)} placeholder={'API_KEY=@MY_MCP_KEY\nDEBUG=false'} />
+                  <Textarea id="wf-mcp-env" rows={2} value={envText} onChange={e => setEnvText(e.target.value)} placeholder={'API_KEY=@MY_MCP_KEY\nDEBUG=false'} />
                 </div>
               </>
             ) : (
               <>
                 <div className={css.empField + ' ' + css.empFieldRow}>
                   <label htmlFor="wf-mcp-url">{WF.workspace.urlLabel}</label>
-                  <input id="wf-mcp-url" className={cx('wb-input', css.empInput)} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://mcp.example.com/mcp" />
+                  <TextInput id="wf-mcp-url" className={cx('wb-input', css.empInput)} value={url} onChange={e => setUrl(e.target.value)} placeholder="https://mcp.example.com/mcp" />
                 </div>
                 <div className={css.empField + ' ' + css.empFieldRow}>
                   <label htmlFor="wf-mcp-headers">{WF.workspace.headersLabel}</label>
-                  <textarea id="wf-mcp-headers" rows={2} value={headersText} onChange={e => setHeadersText(e.target.value)} placeholder={'Authorization=@MCP_TOKEN'} />
+                  <Textarea id="wf-mcp-headers" rows={2} value={headersText} onChange={e => setHeadersText(e.target.value)} placeholder={'Authorization=@MCP_TOKEN'} />
                 </div>
               </>
             )}
           </div>
           <div className={css.empFormActions}>
-            <button type="button" className={css.composerSend} disabled={busy} onClick={() => void save()}>{WF.employeesPage.save}</button>
-            <button type="button" className={css.empAction} onClick={() => setEditing(undefined)}>{WF.employeesPage.cancel}</button>
+            <Button variant="plain" type="button" className={css.composerSend} disabled={busy} onClick={() => void save()}>{WF.employeesPage.save}</Button>
+            <Button variant="plain" type="button" className={css.empAction} onClick={() => setEditing(undefined)}>{WF.employeesPage.cancel}</Button>
             {error !== undefined && <span className={css.empFormError} role="alert">{error}</span>}
           </div>
         </div>
@@ -941,13 +934,13 @@ function McpServersSection({ servers, employees, source, onSaved }: {
           </p>
           {error && <p className={css.empFormError} role="alert">{error}</p>}
           <div className={css.empFormActions}>
-            <button type="button" className={css.composerSend} disabled={busy} onClick={() => void (async () => {
+            <Button variant="plain" type="button" className={css.composerSend} disabled={busy} onClick={() => void (async () => {
               setBusy(true); setError(undefined)
               try { await source.deleteMcpServer(confirmDelete.id); setConfirmDelete(undefined); onSaved() }
               catch (e) { setError(e instanceof Error ? e.message : String(e)) }
               finally { setBusy(false) }
-            })()}>{WF.employeesPage.delete}</button>
-            <button type="button" className={css.empAction} onClick={() => setConfirmDelete(undefined)}>{WF.employeesPage.cancel}</button>
+            })()}>{WF.employeesPage.delete}</Button>
+            <Button variant="plain" type="button" className={css.empAction} onClick={() => setConfirmDelete(undefined)}>{WF.employeesPage.cancel}</Button>
           </div>
         </Dialog>
       )}

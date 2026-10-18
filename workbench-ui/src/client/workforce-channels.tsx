@@ -1,3 +1,5 @@
+import { Button, TextInput } from './ui/primitives.ts'
+import { Select } from './ui/select.tsx'
 /**
  * WorkforceChannels：Discord 风格频道列表与分组管理组件。
  * - 支持新建频道、重命名、复制、移动分组、删除（遇到 409 提示「频道里还有执行中的任务」）。
@@ -382,7 +384,7 @@ export function WorkforceChannels({
   const renderChannelButton = (channel: { id: string; name: string; groupId: string | null; pinned: boolean; unread: boolean }) => {
     const isActive = activeChannelId === channel.id
     return (
-      <button
+      <Button variant="plain"
         key={channel.id}
         type="button"
         className={`${css.channelItem} ${isActive ? css.channelItemActive : ''}`}
@@ -400,7 +402,7 @@ export function WorkforceChannels({
           </span>
         )}
         {channel.unread && <span className={css.unreadDot} title={WF.channelUI.hasUnread} />}
-      </button>
+      </Button>
     )
   }
 
@@ -429,17 +431,17 @@ export function WorkforceChannels({
       {/* 顶部标题与新建入口 */}
       {/* 顶部标题与新建入口（标题行点击折叠/展开整个频道区） */}
       <div className={css.topActionRow}>
-        <button type="button" className={css.sectionToggleBtn} onClick={toggleChannelsSectionCollapse} aria-expanded={!sectionCollapsed}>
+        <Button variant="plain" type="button" className={css.sectionToggleBtn} onClick={toggleChannelsSectionCollapse} aria-expanded={!sectionCollapsed}>
           <span className={`${css.chevron} ${sectionCollapsed ? css.chevronCollapsed : ''}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </span>
           <span className={css.topTitle}>{WF.nav.channels}</span>
-        </button>
+        </Button>
         {!sectionCollapsed && (
           <div className={css.topActions}>
-            <button
+            <Button variant="plain"
               type="button"
               className={css.iconBtn}
               title={WF.channelUI.newChannelBtn}
@@ -450,8 +452,8 @@ export function WorkforceChannels({
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-            </button>
-            <button
+            </Button>
+            <Button variant="plain"
               type="button"
               className={css.iconBtn}
               title={WF.channelUI.newGroupBtn}
@@ -463,7 +465,7 @@ export function WorkforceChannels({
                 <line x1="12" y1="11" x2="12" y2="17"/>
                 <line x1="9" y1="14" x2="15" y2="14"/>
               </svg>
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -473,10 +475,10 @@ export function WorkforceChannels({
         <div className={css.migrationBanner} role="status">
           <span className={css.migrationText}>{WF.channelUI.legacyGroupsMigration(legacyGroupsToSync.length)}</span>
           <div className={css.migrationActions}>
-            <button type="button" className={css.syncBtn} disabled={syncingLegacy} onClick={() => void handleSyncLegacyGroups()}>
+            <Button variant="plain" type="button" className={css.syncBtn} disabled={syncingLegacy} onClick={() => void handleSyncLegacyGroups()}>
               {syncingLegacy ? WF.channelUI.syncing : WF.channelUI.sync}
-            </button>
-            <button type="button" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>{WF.channelUI.ignore}</button>
+            </Button>
+            <Button variant="plain" type="button" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>{WF.channelUI.ignore}</Button>
           </div>
         </div>
       )}
@@ -486,8 +488,8 @@ export function WorkforceChannels({
         <div className={css.errorBanner} role="alert">
           <span className={css.errorMessage}>{opError.message}</span>
           <span className={css.errorActions}>
-            {opError.retry && <button type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</button>}
-            <button type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</button>
+            {opError.retry && <Button variant="plain" type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</Button>}
+            <Button variant="plain" type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</Button>
           </span>
         </div>
       )}
@@ -509,7 +511,7 @@ export function WorkforceChannels({
         <div className={css.groupBlock}>
           <div className={css.groupHeader} style={{ cursor: 'default' }}>
             <div className={css.groupHeaderLeft}>
-              <span className={css.groupTitle}>📌 {WF.channelUI.pinnedChannels}</span>
+              <span className={css.groupTitle}>{WF.channelUI.pinnedChannels}</span>
             </div>
           </div>
           <div className={css.channelList}>
@@ -534,7 +536,7 @@ export function WorkforceChannels({
                 </span>
                 <span className={css.groupTitle}>{WF.channelUI.ungrouped}</span>
               </div>
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.groupAddBtn}
                 title={WF.channelUI.createChannelInUngrouped}
@@ -545,7 +547,7 @@ export function WorkforceChannels({
                   <line x1="12" y1="5" x2="12" y2="19"/>
                   <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-              </button>
+              </Button>
             </div>
             {!collapsedMap[UNGROUPED_KEY] && (
               <div className={css.channelList}>
@@ -574,7 +576,7 @@ export function WorkforceChannels({
                 </span>
                 <span className={css.groupTitle}>{groupDisplayName(group)}</span>
               </div>
-              <button
+              <Button variant="plain"
                 type="button"
                 className={css.groupAddBtn}
                 title={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
@@ -588,7 +590,7 @@ export function WorkforceChannels({
                   <line x1="12" y1="5" x2="12" y2="19"/>
                   <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-              </button>
+              </Button>
             </div>
 
             {!group.collapsed && (
@@ -738,7 +740,7 @@ function CreateChannelModal({
         <form className={css.dialogForm} onSubmit={handleSubmit}>
           <div className={css.formItem}>
             <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
-            <input
+            <TextInput
               id="new-channel-name"
               type="text"
               className={css.inputField}
@@ -751,7 +753,7 @@ function CreateChannelModal({
           </div>
           <div className={css.formItem}>
             <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
-            <select
+            <Select
               id="channel-group-select"
               className={css.selectField}
               value={groupId}
@@ -761,11 +763,11 @@ function CreateChannelModal({
               {groups.map(g => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className={css.dialogFooter}>
-            <button type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
-            <button type="submit" className={css.submitBtn} disabled={!name.trim()}>{WF.common.confirm}</button>
+            <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button variant="plain" type="submit" className={css.submitBtn} disabled={!name.trim()}>{WF.common.confirm}</Button>
           </div>
         </form>
       </div>
@@ -812,7 +814,7 @@ function RenameModal({
         <h3 className={css.dialogTitle}>{title}</h3>
         <form className={css.dialogForm} onSubmit={e => void handleSubmit(e)}>
           <div className={css.formItem}>
-            <input
+            <TextInput
               type="text"
               className={css.inputField}
               value={val}
@@ -823,8 +825,8 @@ function RenameModal({
             />
           </div>
           <div className={css.dialogFooter}>
-            <button type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</button>
-            <button type="submit" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>{WF.common.confirm}</button>
+            <Button variant="plain" type="button" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button variant="plain" type="submit" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>{WF.common.confirm}</Button>
           </div>
         </form>
       </div>

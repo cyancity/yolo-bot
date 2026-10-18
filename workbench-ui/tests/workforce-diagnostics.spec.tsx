@@ -49,6 +49,7 @@ describe('诊断导出预览', () => {
     expect(screen.queryByText('正在读取任务列表…')).toBeNull()
     expect(screen.queryByText(/还没有任务/)).toBeNull()
     fireEvent.click(toggle)
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' })
     expect((await screen.findByRole('option', { name: '刚跑完的任务' }))).toBeTruthy()
   })
 

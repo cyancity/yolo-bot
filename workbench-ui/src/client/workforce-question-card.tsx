@@ -1,3 +1,4 @@
+import { TextInput } from './ui/primitives.ts'
 import { useState, useRef } from 'react'
 import css from './workforce-question-card.module.css'
 import { Button, IconButton, Menu } from './ui/index.tsx'
@@ -212,7 +213,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
                 {item.options?.length ? (
                   <div className={css.options}>
                     {item.options.map(option => (
-                      <button
+                      <Button variant="plain"
                         type="button"
                         key={option.label}
                         className={`${css.option}${(selected[item.id] ?? []).includes(option.label) ? ` ${css.optionSelected}` : ''}`}
@@ -221,11 +222,11 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
                       >
                         <span className={css.optionLabel}>{item.multiSelect ? '☐ ' : ''}{option.label}</span>
                         {option.description ? <span className={css.optionDesc}>{option.description}</span> : null}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ) : null}
-                <input
+                <TextInput
                   className={css.customInput}
                   placeholder={item.options?.length ? WF.questions.customPlaceholderWithOptions : WF.questions.customPlaceholder}
                   value={customs[item.id] ?? ''}

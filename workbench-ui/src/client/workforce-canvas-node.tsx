@@ -1,3 +1,4 @@
+import { Button } from './ui/primitives.ts'
 import { memo, useEffect, useState } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
@@ -61,7 +62,7 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
         {status === 'done' && <span className={`${css.statusBadge} ${css.statusDone}`}>{WF.common.done}</span>}
         {status === 'failed' && <span className={`${css.statusBadge} ${css.statusFailed}`}>{WF.common.failed}</span>}
         <div className={css.moreMenuWrap}>
-          <button
+          <Button variant="plain"
             type="button"
             className={css.nodeMoreBtn}
             title={WF.common.moreOptions}
@@ -71,21 +72,21 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
             }}
           >
             ···
-          </button>
+          </Button>
           {menuOpen && (
             <div
               className={css.nodeDropdownMenu}
               onClick={e => e.stopPropagation()}
             >
-              <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.threadId, WF.canvas.threadId)}>
+              <Button variant="plain" type="button" className={css.contextMenuItem} onClick={() => copyId(data.threadId, WF.canvas.threadId)}>
                 <span>📋</span>
                 <span>{WF.canvas.copyThreadId(data.threadId.slice(0, 8))}</span>
-              </button>
+              </Button>
               {data.taskId && (
-                <button type="button" className={css.contextMenuItem} onClick={() => copyId(data.taskId!, WF.canvas.taskId)}>
+                <Button variant="plain" type="button" className={css.contextMenuItem} onClick={() => copyId(data.taskId!, WF.canvas.taskId)}>
                   <span>📋</span>
                   <span>{WF.canvas.copyTaskId(data.taskId!.slice(0, 8))}</span>
-                </button>
+                </Button>
               )}
             </div>
           )}

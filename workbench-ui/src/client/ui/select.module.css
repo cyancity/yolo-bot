@@ -1,0 +1,14 @@
+.trigger { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--wb-space-4); min-width: 0; min-height: var(--wb-control-height-md); border: var(--wb-border-width) solid var(--wb-line-control); border-radius: var(--wb-radius-control); padding: var(--wb-space-3) var(--wb-control-pad-x); color: var(--wb-fg); background: var(--wb-surface); font: var(--wb-type-label-size) / var(--wb-type-label-leading) var(--wb-font-family); cursor: pointer; }
+.trigger:focus-visible { outline: var(--wb-border-width) solid var(--wb-focus-ring); outline-offset: var(--wb-space-2); }
+.trigger:disabled { opacity: var(--wb-opacity-disabled); cursor: not-allowed; }
+.icon, .indicator { display: inline-flex; flex: none; width: var(--wb-icon-sm); height: var(--wb-icon-sm); color: var(--wb-fg-muted); }
+.icon svg, .indicator svg, .scroll svg { width: var(--wb-icon-sm); height: var(--wb-icon-sm); }
+.content { z-index: var(--wb-layer-menu); min-width: var(--radix-select-trigger-width); max-height: var(--radix-select-content-available-height); overflow: hidden; border: var(--wb-border-width) solid var(--wb-line); border-radius: var(--wb-radius-overlay); background: var(--wb-surface-raised); color: var(--wb-fg); box-shadow: var(--wb-shadow-popover); font: var(--wb-type-label-size) / var(--wb-type-label-leading) var(--wb-font-family); }
+.viewport { padding: var(--wb-space-3); }
+.group + .group { margin-top: var(--wb-space-3); }
+.groupLabel { padding: var(--wb-space-4); font-size: var(--wb-type-caption-size); font-weight: var(--wb-weight-semibold); color: var(--wb-fg-muted); }
+.item { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5); min-height: var(--wb-control-height-sm); padding: var(--wb-space-2) var(--wb-space-4); border-radius: var(--wb-radius-sm); outline: none; user-select: none; cursor: default; }
+.item[data-highlighted] { background: var(--wb-hover); }
+.item[data-state='checked'] { background: var(--wb-selected-bg); color: var(--wb-selected-fg); }
+.item[data-disabled] { opacity: var(--wb-opacity-disabled); }
+.scroll { display: flex; align-items: center; justify-content: center; padding: var(--wb-space-3); }

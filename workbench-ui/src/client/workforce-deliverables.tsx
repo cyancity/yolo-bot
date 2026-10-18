@@ -5,6 +5,7 @@
  * WorkforceFilePreview。版本真源在宿主 store，这里只按 workforce-types 契约
  * 展示并调用发布路由；发布返回的整条任务先就地顶替，再让 source 轮询对齐。
  */
+import { Button } from './ui/primitives.ts'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceApi } from './workforce-api.ts'
@@ -123,7 +124,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
 
   const hasMultipleVersions = view.versions.length > 1
   const versionPill = hasMultipleVersions ? (
-    <button
+    <Button variant="plain"
       type="button"
       className={css.versionTag}
       data-published={view.published}
@@ -138,7 +139,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
         <line x1="3" y1="12" x2="21" y2="12" />
         <line x1="3" y1="18" x2="21" y2="18" />
       </svg>
-    </button>
+    </Button>
   ) : (
     <span className={css.versionTag} data-published={view.published}>
       {view.published ? '✓ ' : ''}v{view.shownVersion}
@@ -147,7 +148,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
 
   const head = <>
     <span className={css.fileIcon} data-extension={extension}><FileTypeIcon path={item.name} size={22} /></span>
-    <button type="button" className={css.fileName} title={WF.deliverables.openFileTitle(item.name)} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</button>
+    <Button variant="plain" type="button" className={css.fileName} title={WF.deliverables.openFileTitle(item.name)} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</Button>
     {versionPill}
     <span className={css.authorTag}>{authorName(view.authorId, employees)}</span>
     {view.newDraftVersion !== undefined && <span className={css.draftMark}>{WF.deliverables.newDraftVersion(view.newDraftVersion)}</span>}
@@ -175,11 +176,11 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
               <span className={css.versionTime}>{fmtStamp(version.createdAt)}</span>
               <span className={css.versionChars}>{WF.deliverables.charCount(version.charCount)}</span>
               <span className={css.versionSpacer} />
-              <button type="button" className={css.versionAction} disabled={busy} onClick={() => void openDeliverable(version.version)}>{LABELS.open}</button>
+              <Button variant="plain" type="button" className={css.versionAction} disabled={busy} onClick={() => void openDeliverable(version.version)}>{LABELS.open}</Button>
               {version.version !== item.publishedVersion && (
-                <button type="button" className={css.versionAction} title={LABELS.publishNote} disabled={busy} onClick={() => void publish(version.version)}>
+                <Button variant="plain" type="button" className={css.versionAction} title={LABELS.publishNote} disabled={busy} onClick={() => void publish(version.version)}>
                   {busy ? LABELS.publishing : LABELS.publish}
-                </button>
+                </Button>
               )}
               <WorkforceNativeFileMenu
                 url={api.deliverableUrl(taskId, item.name, version.version)}
@@ -189,7 +190,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
               />
             </div>
           ))}
-          <button
+          <Button variant="plain"
             type="button"
             className={css.collapseRow}
             onClick={() => setOpen(false)}
@@ -201,7 +202,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
-          </button>
+          </Button>
         </div>
       )}
       {error && <span className={css.error} role="alert">{error}</span>}

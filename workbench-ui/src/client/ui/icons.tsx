@@ -22,7 +22,7 @@ const paths = {
   task: 'M4 5h16v14H4z M4 10h16 M8 15h4',
   stop: 'M7 7h10v10H7z',
   search: 'M11 4a7 7 0 1 0 7 7a7 7 0 0 0-7-7z M16.5 16.5L21 21',
-  send: 'M3 11l18-8-8 18-2-8z',
+  send: 'M12 19V5 M5 12l7-7 7 7',
   download: 'M12 3v13 M7 11l5 5 5-5 M3 21h18',
   more: 'M5 12a1.5 1.5 0 1 0 .01 0z M12 12a1.5 1.5 0 1 0 .01 0z M19 12a1.5 1.5 0 1 0 .01 0z',
   copy: 'M8 8h12v12H8z M4 4h12v3 M4 4v12h3',

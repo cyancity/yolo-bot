@@ -19,6 +19,8 @@ yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信
 - `pnpm install` 后执行 `pnpm -r typecheck`、`pnpm -r test`、`pnpm -r build`。host 测试限制两文件 worker，避免文件持久化测试抢占 CPU/磁盘；不增加全局测试超时，不放宽断言。
 - 发布包只使用预构建 `lib/` 与 package.json 的 files 白名单。host 输出 `lib/index.mjs`，UI 输出 `lib/index.js`、`lib/client.js`；公开声明分别为 `lib/extension.d.mts` / `lib/extension.d.ts`。用 `pnpm -r exec npm pack --dry-run --json` 核对实际文件清单。
 - UI 样式的颜色、字号、圆角、阴影、间距（padding/margin/gap）只用 `--wb-*` token（刻度见 `docs/design-tokens.md`，定义只在 `ui/tokens.module.css`），不写字面量和 `var()` 兜底值；`pnpm lint`（stylelint）检查，例外写进 `workbench-ui/stylelint.config.mjs` 或行内注明原因。
+- 对话 UI 使用 `@assistant-ui/react` `0.15.29`、`@assistant-ui/react-markdown` `0.14.23`。`ExternalStoreRuntime` 适配 DSH 的消息、发送、工具、附件和任务取消，消息转换显式 `joinStrategy: none`，避免合并不同员工的连续回复；宿主仍持有会话和持久化真源。
+- 基础 UI 统一消费 `src/client/ui/` 的 shadcn/Radix 组合：Button、TextInput、Textarea、Select、Switch、Checkbox、RadioGroup、Dialog、Tabs、Menu、Tooltip 等。官方已支持的行为复用对应 primitive；缺失的业务组件在共享 kit 抽象。基础原生表单标签只放在 kit 实现内，文件选择等有专门浏览器语义的输入可留在业务处。整体采用 assistant-ui 官方默认中性视觉，页面和扩展沿用 `--wb-*` token，不另建主题或控件外观。历史 style 偏好仅切换导航结构，不恢复 Discord/WeChat 配色、字号或气泡规则。
 - 不新增单测或接口测试；既有核心断言不删、不放宽、不新增 skip。移除功能时删除其专属测试；混合文件保留通用断言，依赖路径变化只调整导入与 fixture。
 
 ## 贡献规范
