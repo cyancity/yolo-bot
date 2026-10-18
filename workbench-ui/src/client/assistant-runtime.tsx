@@ -1,9 +1,11 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
-import { AssistantRuntimeProvider, MessagePrimitive, ThreadPrimitive, useExternalStoreRuntime, useExternalMessageConverter, type AttachmentAdapter, type ThreadMessage, type ThreadMessageLike, type ToolCallMessagePartProps } from '@assistant-ui/react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { AssistantRuntimeProvider, MessagePrimitive, ThreadPrimitive, useExternalStoreRuntime, useExternalMessageConverter, useToolCallElapsed, type AttachmentAdapter, type ThreadMessage, type ThreadMessageLike, type ToolCallMessagePartProps } from '@assistant-ui/react'
 import type { WorkforceMessage, WorkforceSnapshot } from './workforce-types.ts'
 import type { WorkforceSource } from './workforce-source.ts'
 import { attachmentMessage, MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
 import { WorkbenchExtensionPreview, readExtensionPreview } from './extension-preview.tsx'
+import { Badge, Card, CardContent } from './ui/index.tsx'
+import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
 import css from './assistant-runtime.module.css'
 
@@ -104,14 +106,50 @@ const TextRenderer = createContext<((text: string) => ReactNode) | undefined>(un
 function RichTextPart({ text }: { readonly text: string }) { return <>{useContext(TextRenderer)?.(text) ?? text}</> }
 
 function ToolFallback({ toolName, result, argsText, status, isError }: ToolCallMessagePartProps) {
+  const [expanded, setExpanded] = useState(isError)
+  const elapsedMs = useToolCallElapsed()
+  const elapsedText = elapsedMs !== undefined ? `${(elapsedMs / 1000).toFixed(1)}s` : undefined
+
   let parsed: unknown = result
   if (typeof result === 'string') { try { parsed = JSON.parse(result) } catch {} }
   const preview = readExtensionPreview(parsed)
   const output = typeof result === 'string' ? result : result === undefined ? argsText : JSON.stringify(result, null, 2)
-  const fallback = <details className={css.tool} open={isError} data-state={status.type}>
-    <summary><span>{toolName}</span><span className={css.toolState}>{status.type === 'running' ? WF.ui.uploadingState : isError ? WF.common.failed : WF.steps.summary(1)}</span></summary>
-    {output && <pre className={css.output}>{output}</pre>}
-  </details>
+
+  const statusText = status.type === 'running'
+    ? (elapsedText ? `${WF.ui.uploadingState} · ${elapsedText}` : WF.ui.uploadingState)
+    : isError
+      ? (elapsedText ? `${WF.common.failed} · ${elapsedText}` : WF.common.failed)
+      : (elapsedText ?? WF.steps.summary(1))
+
+  const fallback = (
+    <Card className={css.toolCard} data-state={status.type}>
+      <button
+        type="button"
+        className={css.toolSummary}
+        onClick={() => setExpanded(prev => !prev)}
+        aria-expanded={expanded}
+      >
+        <span className={css.toolName}>
+          <Icon name={expanded ? 'chevronDown' : 'chevronRight'} width={14} height={14} className={css.toolIcon} />
+          <span>{toolName}</span>
+        </span>
+        <span className={css.toolStateWrap}>
+          <Badge
+            variant="pill"
+            tone={status.type === 'running' ? 'accent' : isError ? 'danger' : 'neutral'}
+            className={css.toolBadge}
+          >
+            {statusText}
+          </Badge>
+        </span>
+      </button>
+      {expanded && output ? (
+        <CardContent className={css.toolBody}>
+          <pre className={css.output}>{output}</pre>
+        </CardContent>
+      ) : null}
+    </Card>
+  )
   return preview ? <WorkbenchExtensionPreview preview={preview} fallback={fallback} /> : fallback
 }
 const PART_COMPONENTS = { Text: RichTextPart, tools: { Fallback: ToolFallback } }

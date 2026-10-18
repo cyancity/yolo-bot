@@ -46,6 +46,7 @@ export interface DialogProps {
   readonly size?: DialogSize
   /** 全屏覆盖宿主标题栏下方的可用区；挂载时收起其他 dialog，卸载时恢复。 */
   readonly fullScreen?: boolean
+  readonly className?: string
 }
 
 export function Dialog({
@@ -66,6 +67,7 @@ export function Dialog({
   wide,
   size,
   fullScreen,
+  className,
 }: DialogProps) {
   const overlay = useOverlayTarget()
   const restoreRef = useRef<HTMLElement | null>(null)
@@ -88,11 +90,11 @@ export function Dialog({
 
   const contentClasses = [
     css.dialog,
+    className,
     isSm ? css.sm : '',
     isWide ? css.wide : '',
     isFullScreen ? css.fullScreen : '',
   ].filter(Boolean).join(' ')
-
   const actions = (primaryAction || secondaryAction || footer) ? (
     <div className={css.foot}>
       {secondaryAction && (
@@ -123,7 +125,7 @@ export function Dialog({
 
   return <DialogPrimitive.Root open={open ?? true} onOpenChange={change}>
     <DialogPrimitive.Portal container={overlay ?? undefined}>
-      <DialogPrimitive.Overlay className={css.overlay} />
+      <DialogPrimitive.Overlay className={css.overlay} aria-hidden="true" onClick={() => change(false)} />
       <DialogPrimitive.Content asChild className={contentClasses} {...(!description ? { 'aria-describedby': undefined } : {})} aria-busy={busy ? true : undefined}
         onOpenAutoFocus={event => {
           restoreRef.current = returnFocusRef?.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
@@ -132,7 +134,7 @@ export function Dialog({
         onCloseAutoFocus={event => { event.preventDefault(); (returnFocusRef?.current ?? restoreRef.current)?.focus() }}
         onEscapeKeyDown={event => { if (busy) event.preventDefault() }}
         onPointerDownOutside={event => { if (busy) event.preventDefault() }}
-      ><dialog ref={dialogRef} open={open ?? true} onCancel={event => { event.preventDefault(); change(false) }}>
+      ><dialog ref={dialogRef} open={open ?? true} aria-label={title} onCancel={event => { event.preventDefault(); change(false) }}>
         <div className={css.head}>
           <DialogPrimitive.Title className={css.title}>{title}</DialogPrimitive.Title>
           <DialogPrimitive.Close asChild><IconButton label={closeLabel ?? WF.common.close} icon={<Icon name="close" />} size="sm" data-dialog-close disabled={busy} /></DialogPrimitive.Close>

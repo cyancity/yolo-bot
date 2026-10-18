@@ -4,7 +4,7 @@
  * 「全部展开」就地还原成完整气泡序列（复用同一套 MessageRow，不另做渲染）。
  * 高度可控是唯一目的：三条 1000 字回复从 3 屏压到一张卡。
  */
-import { Button } from './ui/primitives.ts'
+import { Badge, Button, Card, CardContent, CardFooter, CardHeader } from './ui/index.tsx'
 import { memo, type ReactNode } from 'react'
 import css from './workforce-reply-group.module.css'
 import { Icon } from './ui/icons.tsx'
@@ -43,16 +43,16 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
   const isRunning = runningCount > 0
   const stateText = isRunning ? WF.replyGroup.running(runningCount, group.members.length) : WF.replyGroup.done
   return (
-    <div className={css.group} data-reply-group={group.parentId} data-mode={collapsed ? 'collapsed' : 'summary'}>
-      <div className={css.groupHead}>
+    <Card className={css.group} data-reply-group={group.parentId} data-mode={collapsed ? 'collapsed' : 'summary'}>
+      <CardHeader className={css.groupHead}>
         <span className={css.groupTitle}>
           <Icon name="users" width={15} height={15} />
           {WF.replyGroup.title(group.members.length)}
         </span>
-        <span className={css.groupState} data-running={isRunning}>
+        <Badge variant="pill" tone={isRunning ? 'accent' : 'neutral'} className={css.groupState} data-running={isRunning}>
           <span className={css.groupStateDot} aria-hidden="true" />
           {stateText}
-        </span>
+        </Badge>
         <Button variant="plain"
           type="button"
           className={css.groupAction}
@@ -61,11 +61,14 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
         >
           {expanded ? WF.replyGroup.collapse : WF.replyGroup.expand}
         </Button>
-      </div>
+      </CardHeader>
       {expanded ? (
-        <div>{group.members.map(member => <div key={member.message.id}>{renderMember(member.message)}</div>)}</div>
+        <CardContent className={css.groupContent}>
+          <div>{group.members.map(member => <div key={member.message.id}>{renderMember(member.message)}</div>)}</div>
+        </CardContent>
       ) : (
-        <ul className={css.memberList}>
+        <CardContent className={css.groupContent}>
+          <ul className={css.memberList}>
           {group.members.map(member => {
             const message = member.message
             const employee = employees.find(item => item.id === member.employeeId)
@@ -108,9 +111,10 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
               </li>
             )
           })}
-        </ul>
+          </ul>
+        </CardContent>
       )}
-      {!expanded && footer !== undefined && <div className={css.groupFoot}>{footer}</div>}
-    </div>
+      {!expanded && footer !== undefined && <CardFooter className={css.groupFoot}>{footer}</CardFooter>}
+    </Card>
   )
 })

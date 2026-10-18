@@ -1,10 +1,10 @@
 import { Button } from './ui/primitives.ts'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { FileTypeIcon, IconCloseOutlineRegular, ImageLightbox, Modal, ReadBlock, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
+import { FileTypeIcon, ImageLightbox, ReadBlock, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReadBlockLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
-import { Menu, Tooltip, tokenScopeClass } from './ui/index.tsx'
+import { Badge, Dialog, Menu, Tooltip, tokenScopeClass } from './ui/index.tsx'
 import { WF } from './workforce-strings.ts'
 import css from './workforce-attachments.module.css'
 
@@ -485,53 +485,15 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
 
   const extension = extensionOf(cleanName) ?? (extensionOf(attachmentName(url)) ?? 'file')
   const isMarkdown = extension === 'md' || extension === 'markdown' || /\.md(?:$|\?)/i.test(url) || /\.markdown(?:$|\?)/i.test(url)
-
   return (
-    <Modal
+    <Dialog
       open
-      headless
       title={name}
       className={`${tokenScopeClass} ${css.previewDialog}`}
       onClose={close}
-    >
-      <div
-        className={css.previewContainer}
-        onKeyDown={event => {
-          if (event.key === 'Escape') {
-            event.stopPropagation()
-            close()
-          }
-        }}
-      >
-        <div className={css.previewHeader}>
-          <div className={css.previewTitleRow}>
-            <span className={css.previewIcon} data-extension={extension}>
-              <FileTypeIcon path={cleanName || name} size={20} />
-            </span>
-            <h2 className={css.previewTitle} title={name}>{name}</h2>
-            {isMarkdown && <span className={css.previewBadge}>Markdown</span>}
-          </div>
-          <Button variant="plain"
-            type="button"
-            className={css.previewCloseBtn}
-            aria-label={WF.attachments.closeFilePreview}
-            title={WF.attachments.closeEsc}
-            onClick={close}
-          >
-            <IconCloseOutlineRegular size={16} />
-          </Button>
-        </div>
-        <div className={css.previewBody} data-kind={kind} tabIndex={0}>
-          {kind === 'pdf' ? (
-            <FilePdfPreview url={url} name={name} mime={mime} />
-          ) : kind === 'video' ? (
-            <FileVideoPreview url={url} name={name} mime={mime} />
-          ) : kind === 'audio' ? (
-            <FileAudioPreview url={url} name={name} mime={mime} />
-          ) : (
-            <FileTextPreview url={url} name={name} mime={mime} />
-          )}
-        </div>
+      closeLabel={WF.attachments.closeFilePreview}
+      size="wide"
+      footer={
         <div className={css.previewFooter}>
           <div className={css.previewFooterInfo}>
             <a
@@ -548,8 +510,27 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
             {WF.common.close}
           </Button>
         </div>
+      }
+    >
+      <div className={css.previewContainer}>
+        {isMarkdown && (
+          <div className={css.previewMetaRow}>
+            <Badge variant="pill" tone="accent" className={css.previewBadge}>Markdown</Badge>
+          </div>
+        )}
+        <div className={css.previewBody} data-kind={kind} tabIndex={0}>
+          {kind === 'pdf' ? (
+            <FilePdfPreview url={url} name={name} mime={mime} />
+          ) : kind === 'video' ? (
+            <FileVideoPreview url={url} name={name} mime={mime} />
+          ) : kind === 'audio' ? (
+            <FileAudioPreview url={url} name={name} mime={mime} />
+          ) : (
+            <FileTextPreview url={url} name={name} mime={mime} />
+          )}
+        </div>
       </div>
-    </Modal>
+    </Dialog>
   )
 }
 

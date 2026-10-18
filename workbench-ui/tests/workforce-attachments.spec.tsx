@@ -238,7 +238,7 @@ describe('WorkforceFilePreview 弹窗预览', () => {
       expect(onClose).toHaveBeenCalledTimes(3)
 
       // 点击遮罩触发 onClose
-      const mask = baseElement.querySelector('[aria-hidden="true"]')
+      const mask = baseElement.querySelector('[class*="overlay"]') ?? baseElement.querySelector('[aria-hidden="true"]')
       expect(mask).toBeTruthy()
       fireEvent.click(mask!)
       expect(onClose).toHaveBeenCalledTimes(4)
