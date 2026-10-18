@@ -120,6 +120,7 @@ html[data-wb-style],
   --wb-avatar-nav-size: 24px;
   --wb-nav-width: 240px;
   --wb-thread-max: 44rem;
+  --wb-dialog-sm-width: 420px;
   --wb-dialog-width: 512px;
   --wb-dialog-wide-width: 768px;
   --wb-suggestion-min: 240px;

@@ -20,6 +20,8 @@
 }
 
 .wide { width: var(--wb-dialog-wide-width); max-width: min(var(--wb-dialog-wide-width), calc(100vw - var(--wb-space-9))); }
+.sm { width: var(--wb-dialog-sm-width); max-width: min(var(--wb-dialog-sm-width), calc(100vw - var(--wb-space-9))); }
+
 
 .fullScreen {
   inset: 0;
@@ -54,6 +56,13 @@
   font-size: var(--wb-type-compact-size);
   color: var(--wb-fg-muted);
 }
+.form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+
 
 .body {
   padding: var(--wb-space-5) var(--wb-space-6);
@@ -65,4 +74,19 @@
   justify-content: flex-end;
   gap: var(--wb-space-4);
   padding: 0 var(--wb-space-6) var(--wb-space-5);
+}
+.formItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wb-space-2);
+  margin-bottom: var(--wb-space-5);
+}
+
+.formItem:last-child {
+  margin-bottom: 0;
+}
+
+.formLabel {
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
 }

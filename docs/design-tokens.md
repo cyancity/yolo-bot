@@ -28,6 +28,7 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 按钮、输入框、菜单项这类控件的高度不靠内边距凑：内边距取刻度值，总高度用 `min-height` 对齐 `--wb-control-height-sm/md/lg`（32/36/44px）。徽标类小元素需要 1px 级微调时改 `line-height`，内边距仍取刻度。
 
 消息与输入框共用 `--wb-thread-max: 44rem` 的居中内容列。`--wb-message-pad-x`、`--wb-bubble-pad-y`、`--wb-message-gap` 统一定义在 token 根，不随导航结构改变。
+弹窗尺寸包含三档宽度：`--wb-dialog-sm-width: 420px`（紧凑/轻量表单）、`--wb-dialog-width: 512px`（默认）与 `--wb-dialog-wide-width: 768px`（宽版/模型接入）。
 
 ## 圆角
 

@@ -2,7 +2,6 @@
 import { Button, TextInput } from './ui/primitives.ts'
 import { Icon, type IconName } from './ui/icons.tsx'
 import { useEffect, useDeferredValue, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import type { ComposedProps } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls the 'sidebar' slot spec, SidebarOwnerProps, and the
 // GlobalStandardProps.usePanelInfo merge.
@@ -13,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 import type { PreferenceFields, WorkbenchChromeProps } from '../extension.ts'
-import { cx, WorkbenchSurface } from './ui/index.tsx'
+import { cx, WorkbenchSurface, Dialog } from './ui/index.tsx'
 import { SIDEBAR_TAKEOVER_FIELD, type PrefsSource } from './prefs.ts'
 import { PANEL_ID, type WorkbenchNavActions, type WorkbenchNavState, type WorkbenchView } from './nav.ts'
 import { S } from './strings.ts'
@@ -22,7 +21,6 @@ import css from './workbench.module.css'
 import sub from './sidebar.module.css'
 import workforceCss from './workforce.module.css'
 import searchCss from './workforce-sidebar-search.module.css'
-import dialogCss from './workforce-channels.module.css'
 import type { WorkforceSource } from './workforce-source.ts'
 import type { Employee, Thread, WorkforceMessage } from './workforce-types.ts'
 import { DEFAULT_CHANNEL } from './nav.ts'
@@ -533,7 +531,7 @@ function SidebarOverlays({ core }: { readonly core: SidebarCore }) {
   </>
 }
 
-/** Bot rename modal portaled to document.body */
+/** Bot rename modal using kit Dialog */
 function RenameBotModal({
   currentName,
   onClose,
@@ -565,47 +563,40 @@ function RenameBotModal({
     }
   }
 
-  const modal = (
-    <div className={dialogCss.dialogBackdrop} onClick={onClose}>
-      <div
-        className={dialogCss.dialogCard}
-        role="dialog"
-        aria-modal="true"
-        aria-label={WF.sidebarActions.renameEmployee}
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => {
-          if (e.key === 'Escape' && !busy) {
-            e.preventDefault()
-            e.stopPropagation()
-            onClose()
-          }
-        }}
-      >
-        <h3 className={dialogCss.dialogTitle}>{WF.sidebarActions.renameEmployee}</h3>
-        <form className={dialogCss.dialogForm} onSubmit={e => void handleSubmit(e)}>
-          <div className={dialogCss.formItem}>
-            <label className={dialogCss.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
-            <TextInput
-              id="rename-bot-name-input"
-              ref={inputRef}
-              type="text"
-              className={dialogCss.inputField}
-              value={val}
-              placeholder={WF.common.enterNewName}
-              maxLength={30}
-              onChange={e => setVal(e.target.value)}
-            />
-          </div>
-          <div className={dialogCss.dialogFooter}>
-            <Button variant="plain" type="button" className={dialogCss.cancelBtn} onClick={onClose} disabled={busy}>{WF.common.cancel}</Button>
-            <Button variant="plain" type="submit" className={dialogCss.submitBtn} disabled={busy || !val.trim()}>{busy ? WF.models.saving : WF.common.confirm}</Button>
-          </div>
-        </form>
+  return (
+    <Dialog
+      size="sm"
+      title={WF.sidebarActions.renameEmployee}
+      closeLabel={WF.common.cancel}
+      onClose={onClose}
+      busy={busy}
+      onSubmit={e => void handleSubmit(e)}
+      secondaryAction={{
+        label: WF.common.cancel,
+        onInvoke: onClose,
+        disabled: busy,
+      }}
+      primaryAction={{
+        label: busy ? WF.models.saving : WF.common.confirm,
+        type: 'submit',
+        disabled: busy || !val.trim(),
+        loading: busy,
+      }}
+    >
+      <div className={sub.formItem}>
+        <label className={sub.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
+        <TextInput
+          id="rename-bot-name-input"
+          ref={inputRef}
+          type="text"
+          value={val}
+          placeholder={WF.common.enterNewName}
+          maxLength={30}
+          onChange={e => setVal(e.target.value)}
+        />
       </div>
-    </div>
+    </Dialog>
   )
-
-  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
 
 /** Keyword search matching result */
