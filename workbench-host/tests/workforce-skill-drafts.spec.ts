@@ -25,6 +25,7 @@ beforeEach(async () => {
     agent.ctx.on = (name: string, fn: any) => agent.hooks.set(name, [...(agent.hooks.get(name) ?? []), fn])
     agent.fire = (name: string, request: any) => { const list = agent.hooks.get(name) ?? []; let index = 0; const run = (): Promise<unknown> => (list[index++]?.(request, run) ?? Promise.resolve('delegated')); return run() }
     agent.followup = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextTurn.push(message); logs.set(id, [{ type: 'agent/inbox/spliced', seq: 0, time: 1, data: { inserted: [message] } }, { type: 'turn/start', seq: 1, time: 2, data: {} }]) })
+    agent.steer = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextStep.push(message); logs.set(id, [...(logs.get(id) ?? []), { type: 'agent/inbox/spliced', seq: logs.get(id)?.length ?? 0, time: 3, data: { target: 'next-step', inserted: [message] } }]) })
     agent.cancel = vi.fn(() => { agent.status = 'idle'; agent.inbox.nextTurn = []; agent.inbox.nextStep = []; logs.set(id, end('aborted')) })
     agents.set(id, agent); if (!logs.has(id)) logs.set(id, [])
     return { agent, dispose: vi.fn(async () => { agents.delete(id) }) }

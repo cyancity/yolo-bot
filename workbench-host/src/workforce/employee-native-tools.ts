@@ -97,13 +97,10 @@ export async function installEmployeeNativeTools(agentValue: unknown, workspace:
   const scopeApi = capability(scopeModule, 'scope')
   const scopeOf = scopeApi.scopeOf
   const scopeChainOf = scopeApi.scopeChainOf
-  const scopeParentOf = scopeApi.scopeParentOf
-  if (typeof scopeOf !== 'function' || typeof scopeChainOf !== 'function' || typeof scopeParentOf !== 'function') throw new Error('Native scope ancestry API unavailable')
+  if (typeof scopeOf !== 'function' || typeof scopeChainOf !== 'function') throw new Error('Native scope ancestry API unavailable')
   const chain: unknown = scopeChainOf(scopeOf(ctx))
   if (!Array.isArray(chain) || chain[0] !== agent || chain.some(scope => typeof scope !== 'object' || scope === null)) throw new Error('Native scope chain does not belong to the real employee agent')
   const scopes: unknown[] = [...chain, undefined]
-  const parentScope: unknown = scopeParentOf(agent)
-  if (parentScope !== undefined && (typeof parentScope !== 'object' || parentScope === null)) throw new Error('Native parent scope unavailable')
   const selected: { module: NativeModule; config: unknown; names: readonly string[] }[] = []
   for (const [name, names] of moduleTools) {
     const present = names.filter(tool => captured.has(tool))
@@ -151,7 +148,7 @@ export async function installEmployeeNativeTools(agentValue: unknown, workspace:
   })
   try {
     let ownerContext: Context | undefined
-    broker = ctx.plugin({ name: 'employee-native-tools', inject: ['skills', 'tools', 'systemPrompt'], apply(owner: Context) { currentGeneration++; ownerContext = owner } })
+    broker = ctx.plugin({ name: 'employee-native-tools', inject: ['skills', 'tools', 'systemPrompt', 'workingDirectory'], apply(owner: Context) { currentGeneration++; ownerContext = owner } })
     if (broker.inertia) await broker.inertia
     if (broker.state !== ACTIVE_FIBER_STATE || !ownerContext) throw new Error('Employee private broker failed to activate')
     mountedGeneration = currentGeneration
@@ -179,7 +176,7 @@ export async function installEmployeeNativeTools(agentValue: unknown, workspace:
         const spillFiber = privateCtx.plugin(spill.plugin, { root: join(workspace.root, '.tmp'), cleanupPeriodDays: 0 })
         if (spillFiber.inertia) await spillFiber.inertia
         if (spillFiber.state !== ACTIVE_FIBER_STATE) throw new Error('Private native spillStore failed to activate')
-        await installEmployeeSkillResources(owner, workspace, policy, agent, parentScope)
+        const projectSkillResult = await installEmployeeSkillResources(owner, workspace, policy, agent)
         owner.tools.restrict({ allow: [] })
         owner.tools.presentAs('native')
         for (const [name, definition] of captured) {
@@ -256,7 +253,7 @@ export async function installEmployeeNativeTools(agentValue: unknown, workspace:
           const plan = admitted.get(exec.token)
           if (!plan) throw new Error('Employee execution lost admission')
           active++
-          try { return await employeeCallContext.run({ exec, plan }, next) }
+          try { return await projectSkillResult(exec, await employeeCallContext.run({ exec, plan }, next)) }
           finally { active--; admitted.delete(exec.token); admissions.delete(exec.token) }
         })
         // The original global retention prepends an outer waterfall listener.

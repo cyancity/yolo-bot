@@ -35,6 +35,7 @@ beforeEach(async () => {
     // Fire one scoped waterfall through the hooks registered by runtime.hookAgent; 'delegated' = every listener called next().
     agent.fire = (name: string, request: any) => { const list = agent.hooks.get(name) ?? []; let index = 0; const run = (): Promise<unknown> => (list[index++]?.(request, run) ?? Promise.resolve('delegated')); return run() }
     agent.followup = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextTurn.push(message); logs.set(id, [{ type: 'agent/inbox/spliced', seq: 0, time: 1, data: { inserted: [message] } }, { type: 'turn/start', seq: 1, time: 2, data: {} }]) })
+    agent.steer = vi.fn((message: any) => { agent.status = 'running'; agent.inbox.nextStep.push(message); logs.set(id, [...(logs.get(id) ?? []), { type: 'agent/inbox/spliced', seq: logs.get(id)?.length ?? 0, time: 3, data: { target: 'next-step', inserted: [message] } }]) })
     agent.cancel = vi.fn((cause?: { kind: string }) => { agent.status = 'idle'; agent.inbox.nextTurn = []; agent.inbox.nextStep = []; if (cause?.kind !== 'disposed') logs.set(id, end('aborted')) })
     agents.set(id, agent); if (!logs.has(id)) logs.set(id, [])
     return { agent, dispose: vi.fn(async () => { agents.delete(id) }) }
@@ -79,7 +80,9 @@ it('频道普通连续追问复用进行中任务与计时窗口，轮询完成�
     expect(followup.taskId).toBe(first.taskId)
     expect(state.tasks).toHaveLength(1)
     expect(services.agents.create).toHaveBeenCalledTimes(1)
-    expect(parent.followup).toHaveBeenCalledTimes(2)
+    expect(parent.followup).toHaveBeenCalledTimes(1)
+    expect(parent.steer).toHaveBeenCalledTimes(1)
+    expect(parent.inbox.nextStep.map((message: any) => message.id)).toEqual([followup.message.id])
     expect(state.bindings[first.thread.id]!.runStartedAt).toBe(binding.runStartedAt)
     parent.status = 'idle'; parent.inbox.nextTurn = []; parent.inbox.nextStep = []
     logs.set(binding.rootId, end('completed'))
@@ -117,7 +120,8 @@ it('同频道不同 requestId 并发只建一个任务/root，两份消息与回
   expect(second.message.id).not.toBe(first.message.id)
   expect(state.tasks).toHaveLength(1)
   expect(services.agents.create).toHaveBeenCalledTimes(1)
-  expect(parent.followup.mock.calls.map(([message]: any[]) => message.id)).toEqual([first.message.id, second.message.id])
+  expect(parent.followup.mock.calls.map(([message]: any[]) => message.id)).toEqual([first.message.id])
+  expect(parent.steer.mock.calls.map(([message]: any[]) => message.id)).toEqual([second.message.id])
   expect(Object.values(binding.humanTexts!)).toEqual([
     { text: '先完成任务甲', batch: first.message.id },
     { text: '补充要求：简短一些', batch: second.message.id },
@@ -234,7 +238,8 @@ it('频道普通追问首次读取挂起时停止旧任务，仍投给较新且�
   expect(state.bindings[second.thread.id]!.rootId).toBe(secondBinding.rootId)
   expect(state.bindings[second.thread.id]!.runStartedAt).toBe(secondBinding.runStartedAt)
   expect(agents.get(firstBinding.rootId).followup).toHaveBeenCalledTimes(1)
-  expect(agents.get(secondBinding.rootId).followup).toHaveBeenCalledTimes(2)
+  expect(agents.get(secondBinding.rootId).followup).toHaveBeenCalledTimes(1)
+  expect(agents.get(secondBinding.rootId).steer).toHaveBeenCalledTimes(1)
   expect(state.sendReceipts['channel-followup-other-cancel']).toMatchObject({ threadId: second.thread.id, deliveredTo: ['leader'] })
   expect(services.agents.create).toHaveBeenCalledTimes(2)
 })
@@ -294,7 +299,8 @@ it('频道追问投影目标挂起期间显式 @ 插入新任务，不改投未�
   expect(state.tasks).toHaveLength(2)
   expect(state.bindings[sent.thread.id]!.rootId).toBe(binding.rootId)
   expect(state.bindings[sent.thread.id]!.runStartedAt).toBe(binding.runStartedAt)
-  expect(parent.followup).toHaveBeenCalledTimes(2)
+  expect(parent.followup).toHaveBeenCalledTimes(1)
+  expect(parent.steer).toHaveBeenCalledTimes(1)
   expect(insertedAgent.followup).toHaveBeenCalledTimes(1)
   expect(insertedAgent.status).toBe('idle')
   expect(insertedAgent.inbox.nextTurn).toEqual([])
@@ -1250,7 +1256,7 @@ it('一条消息@多员工：负责人收到带系统说明的一份，直达员
   const batch = await runtime.send(sent.thread.id, '@负责人 @分析员 @执行员 @分析员 一起评估', ['leader', 'analyst', 'writer', 'analyst'])
   const binding = (await store.read()).bindings[sent.thread.id]!
   // 负责人那份投递附直达名单说明；直达会话是顶层 agent，不经 subagents 链路
-  const ownerText = parent.followup.mock.calls.at(-1)![0].content.map((part: any) => part.text).join('\n')
+  const ownerText = parent.steer.mock.calls.at(-1)![0].content.map((part: any) => part.text).join('\n')
   expect(ownerText).toContain('@负责人 @分析员 @执行员 @分析员 一起评估')
   expect(ownerText).toContain('分析、执行')
   expect(ownerText).toContain('本批对这些员工的派工会被系统拒绝')
@@ -1382,7 +1388,7 @@ it('频道新任务首投附最近任务索引（只含已发布成果、不含�
   expect((await store.read()).tasks.find(task => task.id === sent.taskId)!.prompt).toBe('开始新任务')
   // task 线程追问不重复注入
   await runtime.send(sent.thread.id, '继续')
-  expect(parent.followup.mock.calls[1][0].content.map((part: any) => part.text).join('\n')).toBe('继续')
+  expect(parent.steer.mock.calls[0][0].content.map((part: any) => part.text).join('\n')).toBe('继续')
   // DM 投递也不附索引
   const dm = await runtime.ensureDm('writer')
   await runtime.send(dm.id, '私信问候')
@@ -1482,7 +1488,7 @@ it('私信记忆变化后下一条用户消息附最新快照且只附一次，�
   await store.saveMemory({ scope: 'employee', scopeId: 'writer', text: '执行员专属条款' })
   await store.saveMemory({ scope: 'employee', scopeId: 'analyst', text: '分析员专属条款' })
   await runtime.send(dm.id, '第二条')
-  const second = agent.followup.mock.calls[1][0].content.map((part: any) => part.text).join('\n')
+  const second = agent.steer.mock.calls[0][0].content.map((part: any) => part.text).join('\n')
   expect(second).toContain('第二条')
   expect(second).toContain('最新长期记忆快照')
   expect(second).toContain('用中文回复')
@@ -1491,13 +1497,13 @@ it('私信记忆变化后下一条用户消息附最新快照且只附一次，�
   expect(second).not.toContain('分析员专属条款')
   // 快照已记录：没有再变化时下一条不再附
   await runtime.send(dm.id, '第三条')
-  expect(agent.followup.mock.calls[2][0].content.map((part: any) => part.text).join('\n')).toBe('第三条')
+  expect(agent.steer.mock.calls[1][0].content.map((part: any) => part.text).join('\n')).toBe('第三条')
   // 永久 DM 记忆变化不重建会话（记忆不进 composition）
   const creates = services.agents.create.mock.calls.length
   await store.saveMemory({ scope: 'global', text: '又一条全局' })
   await runtime.send(dm.id, '第四条')
   expect(services.agents.create.mock.calls.length).toBe(creates)
-  expect(agent.followup.mock.calls[3][0].content.map((part: any) => part.text).join('\n')).toContain('又一条全局')
+  expect(agent.steer.mock.calls[2][0].content.map((part: any) => part.text).join('\n')).toContain('又一条全局')
 })
 
 it('直达投递附「本线程此前记录」前缀：原始任务、已发布成果与最近消息，工具与过程行不进前缀；全新线程无前缀', async () => {

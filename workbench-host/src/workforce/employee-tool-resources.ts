@@ -4,8 +4,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { join, relative, isAbsolute, dirname, extname } from 'node:path'
 import type { EmployeeToolPolicy, EmployeeWorkspace } from './employee-tool-contract.js'
 import type { Context } from '@deepseek-ai/cordis'
-import type { SkillCandidate, SkillDefinition, SkillSummary, SkillViewOptions } from '@deepseek-ai/dsh-skill'
-import { isDeepStrictEqual } from 'node:util'
+import { renderSkillContent } from '@deepseek-ai/dsh-skill'
+import type { ToolExecution, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 
 /** Job output sources are synchronous; stage their genuine executor spill before native rendering. */
 export function employeeSpillProjection(workspace: EmployeeWorkspace, options: { preserveExtension?: boolean } = {}): (raw: unknown) => unknown {
@@ -59,14 +59,8 @@ export async function stageEmployeeResource(source: string, ws: EmployeeWorkspac
     if (checked.type !== 'directory') throw new Error('Skill directory resource is not a directory')
     return checked.absolutePath
   }
-  // Check the spelling too: realpath alone would hide a provider-owned junction.
-  let cursor = source
-  while (true) {
-    if ((await lstat(cursor)).isSymbolicLink()) throw new Error('Skill resources contain a link')
-    const parent = dirname(cursor)
-    if (parent === cursor) break
-    cursor = parent
-  }
+  // A native provider may expose a linked skill root. Only its resolved tree is
+  // copied; descendant links remain forbidden and confer no filesystem access.
   const id = createHash('sha256').update(root).digest('hex').slice(0, 16)
   const resourceName = `${id}-${randomUUID()}`
   const destination = join(ws.root, '.resources', resourceName)
@@ -98,103 +92,36 @@ export async function stageEmployeeResource(source: string, ws: EmployeeWorkspac
   return destination
 }
 
-/** Keeps the native skill loader/catalog intact, including user-explicit /skill loads. */
-export async function installEmployeeSkillResources(ctx: Context, workspace: EmployeeWorkspace, policy: EmployeeToolPolicy, agentScope: object, parentScope: object | undefined): Promise<void> {
+/** Projects loaded resources while preserving native providers, tool identity and catalog semantics. */
+export async function installEmployeeSkillResources(ctx: Context, workspace: EmployeeWorkspace, policy: EmployeeToolPolicy, agentScope: object): Promise<(exec: ToolExecution, result: ToolExecutionResult) => Promise<ToolExecutionResult>> {
   const skills = ctx.skills
-  if (!skills || typeof skills.snapshot !== 'function' || typeof skills.get !== 'function' || typeof skills.registerProvider !== 'function') throw new Error('Native skill provider projection API unavailable')
-  const signal = new AbortController().signal
-  const inheritedOptions: SkillViewOptions = { cwd: workspace.nativeCwd, scope: parentScope, signal }
-  const inherited = await skills.snapshot(inheritedOptions)
-  const original = await skills.snapshot({ ...inheritedOptions, scope: agentScope })
-  if (!original.complete) throw new Error('Native employee skill catalog is incomplete')
-  // Capture own winners before registration; subsequent base lookups use the
-  // inherited parent scope, so they cannot recurse into these projections.
-  const owned = new Map<string, SkillDefinition>()
-  for (const summary of original.skills) {
-    if (isDeepStrictEqual(summary, inherited.skills.find(item => item.name === summary.name))) continue
-    const definition = await skills.get(summary.name, { ...inheritedOptions, scope: agentScope })
-    if (!definition) throw new Error(`Native employee skill ${summary.name} became unavailable`)
-    if (definition.resourceBase?.kind === 'directory') throw new Error(`Own skill provider \"${summary.provider}\" has directory resources for \"${summary.name}\" but the native registry has no public replacement seam`)
-    owned.set(summary.name, definition)
-  }
-  const ownedProviders = new Set([...owned.values()].filter(definition => definition.provider !== 'runtime').map(definition => definition.provider))
-  for (const summary of original.skills) {
-    if (ownedProviders.has(summary.provider) && summary.resourceBase?.kind === 'directory') throw new Error(`Own skill provider \"${summary.provider}\" has visible directory resources but cannot be projected without replacing its native registration`)
-  }
-  if (!inherited.complete) throw new Error('Native inherited skill catalog is incomplete')
-  const registered = new Set<string>()
-  const runtimeRegistered = new Map<string, { original: SkillDefinition; dispose: () => void }>()
-  const project = async (definition: SkillDefinition, callerSignal: AbortSignal): Promise<SkillDefinition> => {
-    if (definition.resourceBase?.kind !== 'directory') return definition
-    return { ...definition, resourceBase: { kind: 'directory', path: await stageEmployeeResource(definition.resourceBase.path, workspace, policy, callerSignal) } }
-  }
-  const synchronize = async (callerSignal: AbortSignal): Promise<void> => {
-    const catalog = await skills.snapshot({ ...inheritedOptions, signal: callerSignal })
-    if (!catalog.complete) throw new Error('Native inherited skill catalog is incomplete')
-    const winners = new Map<string, SkillSummary>(catalog.skills.map(summary => [summary.name, summary]))
-    for (const [name, definition] of owned) winners.set(name, definition)
-    for (const summary of winners.values()) {
-      if (summary.provider === 'runtime') {
-        const previous = runtimeRegistered.get(summary.name)
-        const definition = owned.get(summary.name) ?? await skills.get(summary.name, { ...inheritedOptions, signal: callerSignal })
-        if (!definition) throw new Error(`Native runtime skill ${summary.name} became unavailable`)
-        if (owned.has(summary.name) || (previous && isDeepStrictEqual(previous.original, definition))) continue
-        const projected = await project(definition, callerSignal)
-        previous?.dispose()
-        const dispose = skills.register(projected)
-        const installed = await skills.get(summary.name, { ...inheritedOptions, scope: agentScope, signal: callerSignal })
-        if (!isDeepStrictEqual(installed, projected)) { dispose(); throw new Error(`Native runtime skill ${summary.name} could not be projected in the employee scope`) }
-        runtimeRegistered.set(summary.name, { original: definition, dispose })
-        continue
-      }
-      // Same-layer native providers with no directory resources need no projection;
-      // their original definitions remain live and keep native loading semantics.
-      if (ownedProviders.has(summary.provider) || registered.has(summary.provider)) continue
-      const provider = summary.provider
-      try {
-      skills.registerProvider(control => ({
-        name: provider,
-        async list(options) {
-          const listing = await skills.snapshot({ cwd: options.cwd ?? workspace.nativeCwd, scope: parentScope, signal: options.signal ?? control.signal })
-          const winners = new Map<string, SkillSummary>(listing.skills.map(item => [item.name, item]))
-          for (const [name, definition] of owned) winners.set(name, definition)
-          const candidates: SkillCandidate[] = [...winners.values()].filter(item => item.provider === provider).map(item => ({ ...item, rank: 0, locator: item.name }))
-          return { candidates, complete: listing.complete }
-        },
-        async get(candidate, options) {
-          const caller = options.signal ?? control.signal
-          const definition = owned.get(candidate.name) ?? await skills.get(candidate.name, { cwd: options.cwd ?? workspace.nativeCwd, scope: parentScope, signal: caller })
-          if (!definition || definition.provider !== provider) return undefined
-          return project(definition, caller)
-        },
-      }))
-      } catch (error: unknown) {
-        // Equal catalog summaries cannot expose which layer owns a provider.
-        // Native's exact same-layer collision is the public admission fact;
-        // it leaves the original registration intact.
-        if (!(error instanceof Error) || error.message !== `a skill provider named "${provider}" is already registered in this scope`) throw error
-        const current = await skills.snapshot({ ...inheritedOptions, scope: agentScope, signal: callerSignal })
-        if (!current.complete) throw new Error('Native employee skill catalog is incomplete')
-        for (const item of current.skills) {
-          if (item.provider !== provider) continue
-          const definition = await skills.get(item.name, { ...inheritedOptions, scope: agentScope, signal: callerSignal })
-          if (!definition) throw new Error(`Own skill provider "${provider}" became unavailable`)
-          if (definition.resourceBase?.kind === 'directory') throw new Error(`Own skill provider "${provider}" has directory resources but the native registry has no public replacement seam`)
-        }
-        ownedProviders.add(provider)
-        continue
-      }
-      registered.add(provider)
-    }
-    for (const [name, registration] of runtimeRegistered) {
-      if (winners.has(name)) continue
-      registration.dispose()
-      runtimeRegistered.delete(name)
-    }
-  }
-  await synchronize(signal)
+  const workingDirectory = ctx.get('workingDirectory') as { ensure(agent: unknown, signal: AbortSignal): Promise<string> } | undefined
+  if (!workingDirectory || typeof workingDirectory.ensure !== 'function') throw new Error('Native working directory service unavailable')
+  if (!skills || typeof skills.snapshot !== 'function' || typeof skills.get !== 'function') throw new Error('Native skill provider projection API unavailable')
+  const catalog = await skills.snapshot({ cwd: workspace.nativeCwd, scope: agentScope })
+  if (!catalog.complete) throw new Error('Native employee skill catalog is incomplete')
   ctx.on('agent/pre-step', async (step, next) => {
-    await synchronize(step.signal)
-    return next()
+    const decision = await next()
+    if (decision.kind === 'reject') return decision
+    const messages = await Promise.all(decision.messages.map(async message => {
+      if (message.source.kind !== 'skill-invocation') return message
+      const skill = await skills.get(message.source.name, { cwd: await workingDirectory.ensure(step.agent, step.signal), scope: agentScope, signal: step.signal })
+      if (!skill) throw new Error(`Native invoked skill ${message.source.name} became unavailable`)
+      if (skill.resourceBase?.kind !== 'directory') return message
+      const resourceBase = { kind: 'directory' as const, path: await stageEmployeeResource(skill.resourceBase.path, workspace, policy, step.signal) }
+      return { ...message, content: [{ type: 'text' as const, text: renderSkillContent({ ...skill, resourceBase }) }] }
+    }))
+    return { ...decision, messages }
   }, { prepend: true })
+  return async (exec, result) => {
+    if (exec.name !== 'skill' || result.isError) return result
+    const value = result.value
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return result
+    const resource = value.resourceBase
+    if (typeof resource !== 'object' || resource === null || Array.isArray(resource) || resource.kind !== 'directory' || typeof resource.path !== 'string') return result
+    const path = await stageEmployeeResource(resource.path, workspace, policy, exec.signal)
+    // Native tools normalizes an authored around-dispatch result through the
+    // original output schema and renderer before any retention policy runs.
+    return { ...result, value: { ...value, resourceBase: { kind: 'directory', path } } }
+  }
 }

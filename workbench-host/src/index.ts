@@ -95,6 +95,10 @@ export function apply(ctx: Context, config: Config): void {
       id: 'core.workforce', prefix: '/workforce',
       handle: createWorkforceHandler(workforce, admitted, missing, {
         skills: ctx.get('skills') as never,
+        skillScope: async () => {
+          const presets = get('agentPresets') as { acquireScope(): Promise<{ key: object } & AsyncDisposable> } | undefined
+          return await presets?.acquireScope()
+        },
         mcp: employeeMcp,
         templates,
         userSkills,
