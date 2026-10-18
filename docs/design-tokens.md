@@ -71,7 +71,7 @@ token 名里的数字是档位，不是像素。padding、margin、gap 只用这
 
 ## 颜色
 
-浅色与深色各有一张 assistant-ui 中性色表。历史 `style` 偏好值 `discord` / `wechat` 仅控制分组频道或会话列表的导航结构，不再切换配色、气泡和控件外观。
+浅色与深色各有一张 assistant-ui 中性色表。导航结构统一为 discord（分组频道加私信），历史 style 偏好值归一化为 discord，不再切换配色、气泡和控件外观。
 
 - 中性色阶：`--wb-bg`、`--wb-rail`、`--wb-nav`、`--wb-surface`、`--wb-surface-sub`、`--wb-surface-raised`；前景 `--wb-fg`、`--wb-fg-muted`、`--wb-fg-placeholder`；线 `--wb-line-soft`、`--wb-line`、`--wb-line-control`；交互 `--wb-hover`、`--wb-pressed`、`--wb-selected-bg`、`--wb-selected-fg`。
 - 中性主色（浅色近黑，深色浅白）：`--wb-accent` 及 `-hover`、`-pressed`、`-soft`、`-fg`，强调色上的文字用 `--wb-on-accent`。

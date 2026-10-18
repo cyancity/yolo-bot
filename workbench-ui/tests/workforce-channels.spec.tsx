@@ -49,7 +49,7 @@ describe('频道分组排序', () => {
     expect(container.textContent!.split('任务大厅').length - 1).toBe(1)
     // 视觉序：任务大厅 → 置顶区 → 未分组区 → 甲组 → 乙组；组内按 sort
     const order = orderOf(container,
-      '任务大厅', '📌 置顶频道', '钉住的频道', '未分组', '散落频道', '甲组', '甲组频道', '乙组', '乙组一频道', '乙组二频道')
+      '任务大厅', '置顶频道', '钉住的频道', '未分组', '散落频道', '甲组', '甲组频道', '乙组', '乙组一频道', '乙组二频道')
     expect(order.every(pos => pos >= 0)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
     // 无未读频道时不渲染未读徽标

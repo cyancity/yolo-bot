@@ -2314,9 +2314,8 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
           const isUser = message.role === 'user'
           const prevItem = index > 0 ? visibleItems[index - 1] : undefined
           const prevMsg = prevItem?.kind === 'message' ? prevItem.message : undefined
-          // 连续消息合并（同作者同 thread ≤5 分钟）只对 Discord 生效；WeChat 不合并，
-          // 每条消息都保留署名/头像（D2 风格对齐）。
-          const isConsecutive = prefs.style === 'discord' && (
+          // 连续消息合并（同作者同 thread ≤5 分钟）：省略重复署名与头像。
+          const isConsecutive = (
             prevMsg !== undefined &&
             prevMsg.role === message.role &&
             prevMsg.senderId === message.senderId &&
@@ -2923,12 +2922,6 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                       <span>{WF.settings.showTokens}</span>
                     </label>
                   </div>
-                  <div className={css.settingsDivider} />
-                  <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.settings.layoutTitle}</div>
-                    <RadioGroup label={WF.settings.layoutTitle} value={prefs.style} onValueChange={value => setPrefs({ style: value as typeof prefs.style })} items={[{ value: 'discord', label: WF.settings.layoutDiscord }, { value: 'wechat', label: WF.settings.layoutWechat }]} />
-                  </div>
-                  <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.schemeTitle}</div>
                     <RadioGroup label={WF.settings.schemeTitle} value={prefs.scheme} onValueChange={value => setPrefs({ scheme: value as typeof prefs.scheme })} items={[{ value: 'system', label: WF.settings.schemeSystem }, { value: 'light', label: WF.settings.schemeLight }, { value: 'dark', label: WF.settings.schemeDark }]} />
@@ -3047,7 +3040,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
               const task = footers.get(message.id)
               const prevItem = index > 0 ? visibleItems[index - 1] : undefined
               const prevMsg = prevItem?.kind === 'message' ? prevItem.message : undefined
-              const isConsecutive = prefs.style === 'discord' && (
+              const isConsecutive = (
                 !isRoot &&
                 prevMsg !== undefined &&
                 prevMsg.role === message.role &&

@@ -30,7 +30,7 @@ import { SidebarListSkeleton, useDelayedLoading } from './workforce-skeleton.tsx
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { WorkforceChannels } from './workforce-channels.tsx'
-import { WorkforceChatList, CreateChatModal } from './workforce-chat-list.tsx'
+import { CreateChatModal } from './workforce-create-chat.tsx'
 import { WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
 import { UserProfileModal, useUserProfile } from './workforce-profile.tsx'
 import { useWorkforcePrefs, type AvatarStyle } from './workforce-prefs.ts'
@@ -354,9 +354,6 @@ function SidebarChannelColumn({ core, brandName, context }: {
 }) {
   const { view, snapshot, prefs, navigate } = core
   const [createChatOpen, setCreateChatOpen] = useState(false)
-  // 导航结构由 style 决定（sidebar-chat-list 卡 D2 判据）：WeChat 会话优先单列表，
-  // Discord 分组频道 + 私信区。旧 sidebarMode 只作 V1 迁移读取，不再入偏好。
-  const chatStyle = prefs.style === 'wechat'
   return (
     <div className={workforceCss.channelColumn}>
       {brandName !== undefined && (
@@ -394,49 +391,9 @@ function SidebarChannelColumn({ core, brandName, context }: {
       <div className={workforceCss.channelScroll}>
         {core.showSidebarSkeleton ? (
           <SidebarListSkeleton />
-        ) : chatStyle ? (
-          <WorkforceChatList
-            channels={snapshot.channels}
-            threads={snapshot.threads}
-            employees={snapshot.employees}
-            messages={snapshot.messages}
-            activeChannelId={view.kind === 'home' ? DEFAULT_CHANNEL : view.kind === 'channel' ? view.id : undefined}
-            activeDmEmployeeId={view.kind === 'dm' ? view.id : undefined}
-            avatarStyle={prefs.avatarStyle}
-            typingEffect={prefs.typingEffect}
-            employeeMotion={core.activeActivities}
-            onSelectChannel={channelId => navigate({ kind: 'channel', id: channelId })}
-            onSelectDm={employeeId => navigate({ kind: 'dm', id: employeeId })}
-            onCreateChatReq={async input => {
-              const created = await core.workforce.createChannel(input.name, null, { groupChatName: input.groupChatName, memberIds: input.memberIds })
-              return created.id
-            }}
-            onPatchChannelReq={async (channelId, patch) => {
-              await core.workforce.patchChannel(channelId, patch)
-            }}
-            onMarkChannelReadReq={async (channelId) => {
-              await core.workforce.markChannelRead(channelId)
-            }}
-            onDuplicateChannelReq={async (channelId) => {
-              await core.workforce.duplicateChannel(channelId)
-            }}
-            onDeleteChannelReq={async (channelId) => {
-              await core.workforce.deleteChannel(channelId)
-              if (view.kind === 'channel' && view.id === channelId) {
-                navigate({ kind: 'channel', id: DEFAULT_CHANNEL })
-              }
-            }}
-            onPatchThreadReq={async (threadId, patch) => {
-              await core.workforce.patchThread(threadId, patch)
-            }}
-            onPatchEmployeeReq={async (employeeId, patch) => {
-              if (patch.name !== undefined) {
-                await core.workforce.updateEmployee(employeeId, { name: patch.name })
-              }
-            }}
-          />
-        ) : <>
-          <WorkforceChannels
+        ) : (
+          <>
+            <WorkforceChannels
             channels={snapshot.channels}
             groups={core.workforce.getChannelGroups()}
             activeChannelId={view.kind === 'home' ? DEFAULT_CHANNEL : view.kind === 'channel' ? view.id : undefined}
@@ -539,7 +496,8 @@ function SidebarChannelColumn({ core, brandName, context }: {
               <span className={workforceCss.employeeLabel}>{WF.common.offline}</span>
             </Button>
           ))}
-        </>}
+          </>
+        )}
         {snapshot.error && <div className={workforceCss.streamError} role="alert">{snapshot.error}</div>}
       </div>
 

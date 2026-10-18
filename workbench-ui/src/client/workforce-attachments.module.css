@@ -408,9 +408,6 @@
   margin-top: var(--wb-space-4);
   container-type: inline-size;
 }
-/* wechat 下附件条与气泡上限统一，与 .msgBubble 一致。 */
-
-
 .attachmentBarToggle {
   display: flex;
   align-items: center;

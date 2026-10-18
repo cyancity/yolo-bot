@@ -13,9 +13,6 @@
   overflow: hidden;
 }
 
-/* WeChat：组卡跟着员工气泡放宽，不再缩进到头像列右侧。 */
-
-
 .groupHead {
   display: flex;
   align-items: center;

@@ -9,7 +9,7 @@ export interface ChannelItemProps {
   readonly selected: boolean
   readonly unreadCount?: number
   readonly mentionCount?: number
-  /** WeChat 会话行的第二行摘要；Discord 行不渲染。 */
+  /** 会话行的第二行摘要。 */
   readonly preview?: string
   readonly timestamp?: string
   readonly avatar?: ReactNode
@@ -20,7 +20,7 @@ export interface ChannelItemProps {
   readonly trailing?: ReactNode
 }
 
-/** 导航行：Discord 频道行（#号，32px）与 WeChat 会话行（头像+摘要，64px）共用。 */
+/** 导航行：频道行（#号）与私信行共用。 */
 export function ChannelItem({ kind, label, selected, unreadCount, mentionCount, preview, timestamp, avatar, muted, disabled, onSelect, onContextMenu, trailing }: ChannelItemProps) {
   const unreadText = [
     unreadCount ? WF.ui.unreadCount(unreadCount) : '',
