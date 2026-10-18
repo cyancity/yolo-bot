@@ -54,8 +54,11 @@
 .loading span { height: 14px; background: var(--wb-hover); border-radius: var(--wb-radius-sm); }
 .loading span:last-child { width: 65%; }
 .dialogContent { min-width: 0; }
-:global(dialog):has(> .drawer) { box-sizing: border-box; position: fixed; inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0 auto; margin: 0; width: min(480px, 100vw); height: auto; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -8px 0 28px color-mix(in srgb, var(--wb-fg) 14%, transparent); }
-.drawer { min-width: 0; }
+/* 频道记忆抽屉：Dialog 把 children 包在 .body 里，.drawer 是 dialog 的孙节点，选择器要隔一层；
+   dialog 贴右撑满标题栏下方，标题栏固定，滚动只发生在 .drawer 内。 */
+:global(dialog):has(> div > .drawer) { box-sizing: border-box; position: fixed; inset: calc(var(--dsh-frame-chrome-top, 0px) / var(--wb-zoom)) 0 0 auto; margin: 0; width: min(480px, 100vw); height: calc((100dvh - var(--dsh-frame-chrome-top, 0px)) / var(--wb-zoom)); max-width: 100vw; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -8px 0 28px color-mix(in srgb, var(--wb-fg) 14%, transparent); overflow: hidden; display: flex; flex-direction: column; }
+:global(dialog):has(> div > .drawer) > div:has(> .drawer) { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.drawer { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding: var(--wb-space-5) var(--wb-space-6); }
 .remembered { display: flex; align-items: center; flex-wrap: wrap; gap: var(--wb-space-4); margin: var(--wb-space-4) 0 var(--wb-space-4) var(--wb-space-9); color: var(--wb-fg-muted); font-size: var(--wb-type-compact-size); line-height: 20px; }
 .remembered button { border: 0; padding: var(--wb-space-2) var(--wb-space-3); background: transparent; }
 .continuation { display: flex; align-items: center; flex-wrap: wrap; gap: var(--wb-space-4); padding: var(--wb-space-4) var(--wb-space-5); color: var(--wb-fg-muted); background: var(--wb-surface-sub); font-size: var(--wb-type-compact-size); line-height: 20px; }
