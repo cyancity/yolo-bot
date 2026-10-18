@@ -170,6 +170,14 @@ pnpm -r test
 pnpm -r build
 ```
 
+启动独立浏览器开发版：
+
+```sh
+pnpm dev [--port 3099]
+```
+
+数据保存在当前工作树 `tmp/dev-web/`，前端改动由 HMR 热更新，后端改动自动热重载。首次启动如需注入本地模型配置，可设置环境变量 `YOLO_BOT_DEV_PROFILE_PATCH` 指向 cordis patch 文件；未设置时保持宿主默认，可在界面中配置模型。
+
 装包前必须先构建，发布文件以各包 `files` 白名单为准。依赖钉版、运行时契约和贡献规范见 [AGENTS.md](AGENTS.md)。提交信息使用 conventional 前缀（`feat:`、`fix:`、`chore:`）。
 
 ## 致谢
