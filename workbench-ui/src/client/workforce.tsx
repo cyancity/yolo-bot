@@ -21,7 +21,7 @@ import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { useWorkforcePrefs, type AvatarStyle, type ReplyGrouping, type TypingEffect } from './workforce-prefs.ts'
 import css from './workforce.module.css'
 import { attachmentKind, formatFileSize, AttachmentBar, gateAttachment } from './workforce-attachments.tsx'
-import { DeliverableChips } from './workforce-deliverables.tsx'
+import { AnchoredDeliverablesContext, DeliverableChips, anchoredDeliverables, messageDeliverableNames } from './workforce-deliverables.tsx'
 import { attachmentMessage, MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
 import attachmentCss from './workforce-composer-attachments.module.css'
 import { classifyModelError, parseModelErrorAction } from './workforce-models.tsx'
@@ -1116,6 +1116,9 @@ const MessageRow = memo(function MessageRow({
     && message.question === undefined && message.approval === undefined && message.text.trim() !== ''
   // D2：审批/提问卡的行没有文字正文——msgBubble 画空框，正文容器整体不渲染。
   const hasText = message.text.trim() !== ''
+  // 成果卡固定在产出它的回复上，不随任务页脚移到后续消息或进行中的行。
+  const deliverableNames = useMemo(() => messageDeliverableNames(message), [message])
+  const deliverableTask = deliverableNames.size > 0 ? tasks.find(item => item.threadId === message.threadId) : undefined
   const copy = async (): Promise<void> => {
     setActionError(undefined)
     setCopied(false)
@@ -1226,6 +1229,9 @@ const MessageRow = memo(function MessageRow({
             label={WF.attachments.currentRoundFiles}
             items={message.attachments.map(file => ({ url: file.url, locationUrl: file.locationUrl, name: file.name, sizeBytes: file.sizeBytes, mime: file.mime }))}
           />
+        )}
+        {deliverableTask !== undefined && (
+          <DeliverableChips task={deliverableTask} employees={employees} source={source} only={deliverableNames} />
         )}
         {(message.question !== undefined || message.approval !== undefined) && (
           <WorkforceQuestionCard
@@ -2123,6 +2129,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
 
 
   const footers = useMemo(() => taskFooterTargets(task ? [task] : [], displayItems, skeletons), [task, displayItems, skeletons])
+  const anchored = useMemo(() => anchoredDeliverables(view.list), [view.list])
 
   const hasSkeleton = skeletons.length > 0
   const latestAgentMessageId = useMemo(() => {
@@ -2154,6 +2161,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
       && !view.list.some(m => m.threadId === item.threadId && m.role === 'agent' && m.tool === undefined && m.intermediate !== true && m.text.trim() !== ''))
     .map(item => item.id)), [snapshot.tasks, view.list])
   return (
+    <AnchoredDeliverablesContext.Provider value={anchored}>
     <aside
       className={css.thread}
       style={{
@@ -2347,6 +2355,7 @@ export function ThreadPanel({ source, threadId, title, employees: employeesProp,
         </WorkforceFilesDrawer>
       )}
     </aside>
+    </AnchoredDeliverablesContext.Provider>
   )
 }
 
@@ -2697,6 +2706,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
     return roots
   }, [messages])
   const replies = useMemo(() => visibleReplyCounts(messages), [messages])
+  const anchored = useMemo(() => anchoredDeliverables(messages), [messages])
   // 手动展开/收起：默认态由偏好决定，用户这一次的点击优先。
   const [toggledGroups, setToggledGroups] = useState<ReadonlySet<string>>(() => new Set())
   const [previewTarget, setPreviewTarget] = useState<{ readonly groupId: string; readonly messageId: string } | undefined>()
@@ -2768,7 +2778,7 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
   const visibleContextFiles = useMemo(() => contextFiles.filter(file => gateAttachment(file.name, file.mime).visible), [contextFiles])
 
   return (
-    <>
+    <AnchoredDeliverablesContext.Provider value={anchored}>
       <section
         className={`${css.stream} ${openThread ? css.streamWithThread : ''}`}
         data-workforce-surface={surface.kind}
@@ -3324,6 +3334,6 @@ export function WorkforceMain({ source, snapshot, surface, onDm, openThreadId, o
           <WorkforceFilesTimeline files={contextFiles} employees={employees} />
         </WorkforceFilesDrawer>
       )}
-    </>
+    </AnchoredDeliverablesContext.Provider>
   )
 }
