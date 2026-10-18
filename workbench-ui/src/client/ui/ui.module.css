@@ -390,3 +390,51 @@ button.stepDone:hover { background: var(--wb-hover); }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* 高频布局与设计模式公共类（审计第 3 节 Top 15 重复规则收拢） */
+.flexRow {
+  display: flex;
+  align-items: center;
+}
+
+.flexCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.inlineFlex {
+  display: inline-flex;
+  align-items: center;
+}
+
+.flexNone {
+  flex: none;
+}
+
+.minW0 {
+  min-width: 0;
+}
+
+.textMuted {
+  color: var(--wb-fg-muted);
+}
+
+.textCaption {
+  font-size: var(--wb-type-caption-size);
+  line-height: var(--wb-type-caption-leading);
+}
+
+.textCompact {
+  font-size: var(--wb-type-compact-size);
+  line-height: var(--wb-type-compact-leading);
+}
+
+.cardSurface {
+  background: var(--wb-surface);
+  border: var(--wb-border-width) solid var(--wb-line);
+  border-radius: var(--wb-radius-control);
+}
+
+.hoverBg:hover {
+  background: var(--wb-hover);
+}

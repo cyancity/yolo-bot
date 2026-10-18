@@ -7,7 +7,7 @@ import type { WorkbenchChromeProps } from '../extension.ts'
 import type { PrefsSource, ZoomPref } from './prefs.ts'
 import type { PreferenceFields } from '../extension.ts'
 import { ZOOM_CHOICES, normalizeZoom, normalizeLocale, LOCALE_FIELD, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
-import { Select, Switch, RadioGroup, WorkbenchSurface } from './ui/index.tsx'
+import { Select, Switch, RadioGroup, WorkbenchSurface, Panel, PanelSection } from './ui/index.tsx'
 import { useZoom } from './ui/zoom.ts'
 import { S } from './strings.ts'
 import { useWorkforcePrefs, type WorkforceScheme } from './workforce-prefs.ts'
@@ -33,48 +33,58 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
   const [prefs, setPrefs] = useWorkforcePrefs()
   const [error, setError] = useState<string>()
   return <WorkbenchSurface className={css.section} style={{ height: 'auto', display: 'block' }}>
-    <section className={css.group}>
-      <h3 className={css.groupTitle}>{S.settings.interface}</h3>
-      <label className={css.row}>
-        <span className={css.rowLabel}>{S.nav.zoom}</span>
-        <Select aria-label={S.nav.zoom} value={String(zoomPref)} onChange={event => {
-          const next = event.target.value === 'auto' ? 'auto' : Number(event.target.value)
-          void props.setZoom(next).then(() => setError(undefined), failure => setError(failure instanceof Error ? failure.message : String(failure)))
-        }}>
-          <option value="auto">{S.nav.zoomAuto(zoom)}</option>
-          {ZOOM_CHOICES.map(choice => <option key={choice} value={String(choice)}>{Math.round(choice * 1000) / 10}%</option>)}
-        </Select>
-      </label>
-      <label className={css.row}>
-        <span className={css.rowLabel}>{S.settings.languageLabel}</span>
-        <Select aria-label={S.settings.languageLabel} value={localePref} onChange={event => {
-          const next = normalizeLocale(event.target.value)
-          void props.patchPrefs({ [LOCALE_FIELD]: next })
-        }}>
-          <option value="auto">{S.settings.languageAuto}</option>
-          <option value="zh">{S.settings.languageZh}</option>
-          <option value="en">{S.settings.languageEn}</option>
-        </Select>
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <Switch label={S.settings.sidebarTakeover} checked={takeover}
-        onChange={checked => void props.patchPrefs({ [SIDEBAR_TAKEOVER_FIELD]: checked })} />
-    </section>
-    <section className={css.group}>
-      <h3 className={css.groupTitle}>{S.settings.appearance}</h3>
-      <fieldset className={css.radioGroup}>
-        <legend className={css.rowLabel}>{S.settings.schemeLabel}</legend>
-        <RadioGroup label={S.settings.schemeLabel} value={prefs.scheme}
-        onValueChange={value => setPrefs({ scheme: value as WorkforceScheme })}
-        items={[
-          { value: 'system', label: S.settings.schemeSystem },
-          { value: 'light', label: S.settings.schemeLight },
-          { value: 'dark', label: S.settings.schemeDark },
-        ]} />
-      </fieldset>
-      <Switch label={S.settings.showSteps} checked={prefs.showSteps}
-        onChange={checked => setPrefs({ showSteps: checked })} />
-    </section>
+    <Panel title={S.settings.interface} className={css.panel}>
+      <PanelSection>
+        <div className={css.content}>
+          <label className={css.row}>
+            <span className={css.rowLabel}>{S.nav.zoom}</span>
+            <Select aria-label={S.nav.zoom} value={String(zoomPref)} onChange={event => {
+              const next = event.target.value === 'auto' ? 'auto' : Number(event.target.value)
+              void props.setZoom(next).then(() => setError(undefined), failure => setError(failure instanceof Error ? failure.message : String(failure)))
+            }}>
+              <option value="auto">{S.nav.zoomAuto(zoom)}</option>
+              {ZOOM_CHOICES.map(choice => <option key={choice} value={String(choice)}>{Math.round(choice * 1000) / 10}%</option>)}
+            </Select>
+          </label>
+          <label className={css.row}>
+            <span className={css.rowLabel}>{S.settings.languageLabel}</span>
+            <Select aria-label={S.settings.languageLabel} value={localePref} onChange={event => {
+              const next = normalizeLocale(event.target.value)
+              void props.patchPrefs({ [LOCALE_FIELD]: next })
+            }}>
+              <option value="auto">{S.settings.languageAuto}</option>
+              <option value="zh">{S.settings.languageZh}</option>
+              <option value="en">{S.settings.languageEn}</option>
+            </Select>
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <div className={css.switchRow}>
+            <Switch label={S.settings.sidebarTakeover} checked={takeover}
+              onChange={checked => void props.patchPrefs({ [SIDEBAR_TAKEOVER_FIELD]: checked })} />
+          </div>
+        </div>
+      </PanelSection>
+    </Panel>
+    <Panel title={S.settings.appearance} className={css.panel}>
+      <PanelSection>
+        <div className={css.content}>
+          <div className={css.fieldRow}>
+            <span className={css.rowLabel}>{S.settings.schemeLabel}</span>
+            <RadioGroup label={S.settings.schemeLabel} value={prefs.scheme}
+              onValueChange={value => setPrefs({ scheme: value as WorkforceScheme })}
+              items={[
+                { value: 'system', label: S.settings.schemeSystem },
+                { value: 'light', label: S.settings.schemeLight },
+                { value: 'dark', label: S.settings.schemeDark },
+              ]} />
+          </div>
+          <div className={css.switchRow}>
+            <Switch label={S.settings.showSteps} checked={prefs.showSteps}
+              onChange={checked => setPrefs({ showSteps: checked })} />
+          </div>
+        </div>
+      </PanelSection>
+    </Panel>
     {props.renderSlot('workbench.settings', chrome)}
   </WorkbenchSurface>
 }

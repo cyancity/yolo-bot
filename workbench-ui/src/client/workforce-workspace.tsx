@@ -4,7 +4,7 @@ import { Select } from './ui/select.tsx'
  * 数字员工工作区整页：频道与员工私信的消息流、线程面板，以及独立员工管理页。
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { cx, Dialog } from './ui/index.tsx'
+import { cx, Dialog, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, ListRow, Chip, Badge, EmptyState } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
 import { getLocale } from './i18n.ts'
@@ -163,48 +163,53 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             </Button>
           </div>
           {selectedId === 'new' && (
-            <div className={css.empCompactCard} data-selected="true">
-              <WorkforceAvatar
-                name={name.trim() || WF.workspace.newEmployee}
-                isUser={false}
-                color={avatarColor || undefined}
-                live={false}
-                size={28}
-              />
-              <div className={css.empCompactCardBody}>
-                <div className={css.empCompactCardName}>
+            <ListRow
+              selected={true}
+              className={css.empCompactCard}
+              leading={
+                <WorkforceAvatar
+                  name={name.trim() || WF.workspace.newEmployee}
+                  isUser={false}
+                  color={avatarColor || undefined}
+                  live={false}
+                  size={28}
+                />
+              }
+              title={
+                <span className={css.empCompactCardName}>
                   {name.trim() || WF.workspace.creatingEmployee}
-                  {lead && <span className={css.msgLead}>{WF.employee.lead}</span>}
-                </div>
-                <div className={css.empCompactCardTitle}>{title.trim() || WF.workspace.creatingEllipsis}</div>
-              </div>
-            </div>
+                  {lead && <Badge tone="accent" variant="pill" className={css.msgLead}>{WF.employee.lead}</Badge>}
+                </span>
+              }
+              description={title.trim() || WF.workspace.creatingEllipsis}
+            />
           )}
           {snapshot.employees.map(employee => {
             const isSelected = selectedId === employee.id
             return (
-              <div
+              <ListRow
                 key={employee.id}
+                selected={isSelected}
                 className={css.empCompactCard}
-                data-selected={isSelected ? 'true' : undefined}
                 onClick={() => selectEmployee(employee)}
-              >
-                <WorkforceAvatar
-                  name={employee.name}
-                  isUser={false}
-                  color={employee.avatarColor}
-                  role={employee.role}
-                  live={false}
-                  size={28}
-                />
-                <div className={css.empCompactCardBody}>
-                  <div className={css.empCompactCardName}>
+                leading={
+                  <WorkforceAvatar
+                    name={employee.name}
+                    isUser={false}
+                    color={employee.avatarColor}
+                    role={employee.role}
+                    live={false}
+                    size={28}
+                  />
+                }
+                title={
+                  <span className={css.empCompactCardName}>
                     {employee.name}
-                    {employee.isLeader && <span className={css.msgLead}>{WF.employee.lead}</span>}
-                  </div>
-                  <div className={css.empCompactCardTitle}>{employee.title || employee.persona || WF.workspace.noRoleDescription}</div>
-                </div>
-              </div>
+                    {employee.isLeader && <Badge tone="accent" variant="pill" className={css.msgLead}>{WF.employee.lead}</Badge>}
+                  </span>
+                }
+                description={employee.title || employee.persona || WF.workspace.noRoleDescription}
+              />
             )
           })}
 
@@ -373,19 +378,15 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     <span className={css.skillEmptyHint}>{WF.workspace.noSkillsConfiguredHint}</span>
                   ) : (
                     skills.map(skillName => (
-                      <span key={skillName} className={css.skillChipSelected}>
-                        <span className={css.skillChipIcon}>⚡</span>
-                        <span className={css.skillChipText}>{skillName}</span>
-                        <Button variant="plain"
-                          type="button"
-                          className={css.skillChipRemove}
-                          title={WF.workspace.removeSkill(skillName)}
-                          aria-label={WF.workspace.removeSkill(skillName)}
-                          onClick={() => removeSkill(skillName)}
-                        >
-                          ×
-                        </Button>
-                      </span>
+                      <Chip
+                        key={skillName}
+                        icon={<span>⚡</span>}
+                        removable
+                        onRemove={() => removeSkill(skillName)}
+                        removeAriaLabel={WF.workspace.removeSkill(skillName)}
+                      >
+                        {skillName}
+                      </Chip>
                     ))
                   )}
                 </div>
@@ -698,9 +699,23 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
     const modelError = classifyModelError(undefined, failure)
     return <div className={css.root} data-workforce-root>
       <div className={css.streamEmpty}>
-        {modelError?.message ?? failure ?? WF.employee.loading}
-        {modelError && modelError.action !== 'retry' && <Button variant="plain" type="button" className={css.empAction} onClick={() => source.models.open({ provider: modelError.action === 'addKey' ? modelError.provider : undefined })}>{modelError.action === 'addKey' ? WF.errorActions.addKey : WF.errorActions.changeModel}</Button>}
-        {failure && <Button variant="plain" type="button" className={css.empAction} onClick={() => { setAttempt(value => value + 1); source.refresh() }}>{WF.status.retry}</Button>}
+        <EmptyState
+          title={modelError?.message ?? failure ?? WF.employee.loading}
+          action={
+            <>
+              {modelError && modelError.action !== 'retry' && (
+                <Button variant="secondary" onClick={() => source.models.open({ provider: modelError.action === 'addKey' ? modelError.provider : undefined })}>
+                  {modelError.action === 'addKey' ? WF.errorActions.addKey : WF.errorActions.changeModel}
+                </Button>
+              )}
+              {failure && (
+                <Button variant="secondary" onClick={() => { setAttempt(value => value + 1); source.refresh() }}>
+                  {WF.status.retry}
+                </Button>
+              )}
+            </>
+          }
+        />
       </div>
     </div>
   }
@@ -742,19 +757,19 @@ function TemplatesSection({ templates, onToggle, onApply }: {
       <p className={css.empIntro}>{WF.workspace.employeePresetsIntro}</p>
       {error !== undefined && <div className={css.empFormError} role="alert">{error}</div>}
       {templates.map(template => (
-        <div key={template.id} className={css.empCard}>
-          <div className={css.empCardBody}>
-            <div className={css.empCardName}>{template.label}</div>
-            <div className={css.empCardRole}>{template.description}</div>
-            <div className={css.empCardMeta}>
-              <span className={css.empModelHint}>{WF.workspace.templateStats(template.skills.length, template.employees.length)}</span>
-            </div>
-          </div>
-          <div className={css.empCardActions}>
+        <Card key={template.id} variant="subtle" className={css.empCard}>
+          <CardHeader>
+            <CardTitle className={css.empCardName}>{template.label}</CardTitle>
+            <CardDescription className={css.empCardRole}>{template.description}</CardDescription>
+          </CardHeader>
+          <CardContent className={css.empCardMeta}>
+            <span className={css.empModelHint}>{WF.workspace.templateStats(template.skills.length, template.employees.length)}</span>
+          </CardContent>
+          <CardFooter className={css.empCardActions}>
             <Switch label={WF.workspace.enable} checked={template.enabled} disabled={busy === template.id} onChange={checked => void run(template.id, () => onToggle(template.id, checked))} />
             <Button variant="plain" type="button" className={css.empAction} disabled={busy === template.id} onClick={() => void run(template.id, () => onApply(template.id))}>{WF.workspace.applyTemplateBtn}</Button>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
       ))}
     </div>
   )
@@ -842,31 +857,31 @@ function McpServersSection({ servers, employees, source, onSaved }: {
       <p className={css.empIntro}>{WF.workspace.mcpServersIntro}</p>
       {servers !== undefined && servers.length === 0 && editing === undefined && <p className={css.empIntro}>{WF.workspace.mcpNoServersHint}</p>}
       {(servers ?? []).map(server => (
-        <div key={server.id} className={css.empCard}>
-          <div className={css.empCardBody}>
-            <div className={css.empCardName}>
+        <Card key={server.id} variant="subtle" className={css.empCard}>
+          <CardHeader>
+            <CardTitle className={css.empCardName}>
               {server.label}
-              {!server.enabled && <span className={css.msgLead}>{WF.skillDrafts.statusDisabled}</span>}
-            </div>
-            <div className={css.empCardRole}>
+              {!server.enabled && <Badge tone="neutral" variant="pill" className={css.msgLead}>{WF.skillDrafts.statusDisabled}</Badge>}
+            </CardTitle>
+            <CardDescription className={css.empCardRole}>
               {server.transport === 'stdio' ? `${WF.workspace.localCommand} ${server.command} ${(server.args ?? []).join(' ')}` : `HTTP ${server.url}`}
               {` · mcp__${server.serverName}__*`}
-            </div>
-            <div className={css.empCardMeta}>
-              <span className={css.empModelHint}>{WF.workspace.assignedEmployeesCount(assigned(server).length)}</span>
-              {server.status?.credentials.map(cred => (
-                <span key={cred.key} className={css.empModelHint}>{cred.key}→@{cred.ref} {cred.configured ? WF.models.configured : WF.models.notConfigured}</span>
-              ))}
-              {server.status?.errors.map((message, index) => <span key={index} className={css.empFormError}>{message}</span>)}
-              {server.status !== undefined && !server.status.available && <span className={css.empModelHint}>{WF.workspace.mcpClientUnavailable}</span>}
-            </div>
-          </div>
-          <div className={css.empCardActions}>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className={css.empCardMeta}>
+            <span className={css.empModelHint}>{WF.workspace.assignedEmployeesCount(assigned(server).length)}</span>
+            {server.status?.credentials.map(cred => (
+              <span key={cred.key} className={css.empModelHint}>{cred.key}→@{cred.ref} {cred.configured ? WF.models.configured : WF.models.notConfigured}</span>
+            ))}
+            {server.status?.errors.map((message, index) => <span key={index} className={css.empFormError}>{message}</span>)}
+            {server.status !== undefined && !server.status.available && <span className={css.empModelHint}>{WF.workspace.mcpClientUnavailable}</span>}
+          </CardContent>
+          <CardFooter className={css.empCardActions}>
             <Button variant="plain" type="button" className={css.empAction} onClick={() => void (async () => { await source.patchMcpServer(server.id, { enabled: !server.enabled }); onSaved() })()}>{server.enabled ? WF.workspace.disable : WF.workspace.enable}</Button>
             <Button variant="plain" type="button" className={css.empAction} onClick={() => beginEdit(server)}>{WF.employeesPage.edit}</Button>
             <Button variant="plain" type="button" className={`${css.empAction} ${css.empActionDanger}`} onClick={() => setConfirmDelete(server)}>{WF.employeesPage.delete}</Button>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
       ))}
 
       {editing !== undefined && (

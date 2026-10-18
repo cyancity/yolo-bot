@@ -1,4 +1,4 @@
-import { Button } from './ui/primitives.ts'
+import { Button, Card, CardHeader, CardContent, CardFooter, Badge } from './ui/index.tsx'
 import { memo, useEffect, useState } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { NodeProps } from '@xyflow/react'
@@ -46,7 +46,9 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
   }
 
   return (
-    <div
+    <Card
+      variant={selected ? 'interactive' : 'default'}
+      selected={selected}
       className={`${css.turnCard} ${selected ? css.turnCardSelected : ''}`}
       onContextMenu={e => {
         e.preventDefault()
@@ -56,11 +58,11 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
     >
       <Handle type="target" position={Position.Left} className={css.handle} />
 
-      <div className={css.turnHeader}>
+      <CardHeader className={css.turnHeader}>
         <span className={css.channelTag}>{channelTitle}</span>
-        {status === 'running' && <span className={`${css.statusBadge} ${css.statusRunning}`}>{WF.common.running}</span>}
-        {status === 'done' && <span className={`${css.statusBadge} ${css.statusDone}`}>{WF.common.done}</span>}
-        {status === 'failed' && <span className={`${css.statusBadge} ${css.statusFailed}`}>{WF.common.failed}</span>}
+        {status === 'running' && <Badge tone="info" variant="pill">{WF.common.running}</Badge>}
+        {status === 'done' && <Badge tone="success" variant="pill">{WF.common.done}</Badge>}
+        {status === 'failed' && <Badge tone="danger" variant="pill">{WF.common.failed}</Badge>}
         <div className={css.moreMenuWrap}>
           <Button variant="plain"
             type="button"
@@ -91,55 +93,56 @@ export const TurnCanvasNode = memo(function TurnCanvasNode({
             </div>
           )}
         </div>
-      </div>
+      </CardHeader>
 
-      <div className={css.promptRow}>
-        <div className={css.userBubble}>
-          <span className={css.userPrefix}>{(!senderName || senderName === '你' || senderName === 'You') ? WF.canvas.userPrefix : `${senderName}:`}</span>
-          <span className={css.promptContent}>{promptText}</span>
-        </div>
-      </div>
-
-      {replySnippet && (
-        <div className={css.replyRow}>
-          <div className={css.agentAvatarWrap}>
-            <WorkforceAvatar
-              name={agentName || WF.common.employee}
-              role={agentRole}
-              color={agentAvatarColor}
-              size={28}
-              state={status === 'running' ? 'working' : 'idle'}
-              live={status === 'running'}
-            />
-          </div>
-          <div className={css.agentBubble}>
-            {agentName && <span className={css.agentName}>{agentName}</span>}
-            <p className={css.replyContent}>{replySnippet}</p>
+      <CardContent className={css.turnBody}>
+        <div className={css.promptRow}>
+          <div className={css.userBubble}>
+            <span className={css.userPrefix}>{(!senderName || senderName === '你' || senderName === 'You') ? WF.canvas.userPrefix : `${senderName}:`}</span>
+            <span className={css.promptContent}>{promptText}</span>
           </div>
         </div>
-      )}
 
-      <div className={css.turnFooter}>
+        {replySnippet && (
+          <div className={css.replyRow}>
+            <div className={css.agentAvatarWrap}>
+              <WorkforceAvatar
+                name={agentName || WF.common.employee}
+                role={agentRole}
+                color={agentAvatarColor}
+                size={28}
+                state={status === 'running' ? 'working' : 'idle'}
+                live={status === 'running'}
+              />
+            </div>
+            <div className={css.agentBubble}>
+              {agentName && <span className={css.agentName}>{agentName}</span>}
+              <p className={css.replyContent}>{replySnippet}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+
+      <CardFooter className={css.turnFooter}>
         {toolsCount > 0 && (
-          <span className={css.toolBadge}>
+          <Badge tone="neutral" variant="standard" className={css.toolBadge}>
             {WF.canvas.toolsCount(toolsCount)}
-          </span>
+          </Badge>
         )}
         {usage && (
-          <span className={css.cacheBadge} title={WF.canvas.cacheTitle(totalIn, cached, usage.outputTokens)}>
+          <Badge tone="neutral" variant="standard" className={css.cacheBadge} title={WF.canvas.cacheTitle(totalIn, cached, usage.outputTokens)}>
             {WF.canvas.cacheBadge(hitRate, formatK(totalIn))}
-          </span>
+          </Badge>
         )}
-      </div>
+      </CardFooter>
 
       <Handle type="source" position={Position.Right} className={css.handle} />
-
 
       {copiedText && (
         <div className={css.copiedToast} style={{ position: 'absolute', bottom: -28, left: 10, zIndex: 1000 }}>
           ✓ {copiedText}
         </div>
       )}
-    </div>
+    </Card>
   )
 })

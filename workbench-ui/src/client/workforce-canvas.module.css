@@ -90,7 +90,7 @@
 
 .channelTag {
   font-size: var(--wb-type-micro-size);
-  font-weight: 600;
+  font-weight: var(--wb-weight-semibold);
   color: var(--wb-fg-muted);
   background: var(--wb-surface-sub);
   padding: var(--wb-space-2) var(--wb-space-3);
@@ -101,27 +101,6 @@
   white-space: nowrap;
 }
 
-.statusBadge {
-  font-size: var(--wb-type-micro-size);
-  font-weight: 600;
-  padding: var(--wb-space-2) var(--wb-space-3);
-  border-radius: var(--wb-radius-sm);
-}
-
-.statusRunning {
-  background: color-mix(in srgb, var(--wb-info) 15%, transparent);
-  color: var(--wb-info);
-}
-
-.statusDone {
-  background: color-mix(in srgb, var(--wb-success) 15%, transparent);
-  color: var(--wb-success);
-}
-
-.statusFailed {
-  background: color-mix(in srgb, var(--wb-danger) 15%, transparent);
-  color: var(--wb-danger);
-}
 
 .promptRow {
   margin-bottom: var(--wb-space-4);

@@ -82,13 +82,6 @@
   padding-top: var(--wb-space-3);
 }
 
-.fileBody {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--wb-space-3);
-}
 
 .fileMetaLine {
   display: flex;
@@ -114,7 +107,7 @@
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-control);
   padding: 0 var(--wb-space-3);
-  line-height: 16px;
+  line-height: var(--wb-type-caption-leading);
 }
 
 .filePlain {
@@ -139,22 +132,6 @@
   width: 65%;
 }
 
-.empty {
-  padding: var(--wb-space-6) var(--wb-space-4);
-  text-align: center;
-}
-
-.emptyTitle {
-  margin: 0 0 var(--wb-space-4);
-  font-weight: 600;
-  color: var(--wb-fg);
-}
-
-.emptyHint {
-  margin: 0;
-  font-size: var(--wb-type-caption-size);
-  color: var(--wb-fg-muted);
-}
 
 .error {
   margin: 0;
