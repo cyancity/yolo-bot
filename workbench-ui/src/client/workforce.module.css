@@ -397,8 +397,9 @@
 .messageActions { display: flex; position: absolute; top: -12px; right: 0; z-index: 2; gap: var(--wb-space-2); padding: var(--wb-space-3); border: 1px solid var(--wb-line); border-radius: var(--wb-radius-lg); background: var(--wb-surface); box-shadow: 0 2px 8px color-mix(in srgb, var(--wb-fg) 10%, transparent); opacity: 0; pointer-events: none; user-select: none; }
 .msg:hover .messageActions, .msg:focus-within .messageActions { opacity: 1; pointer-events: auto; }
 /* 有正文时操作栏挂在气泡上，贴气泡外沿（员工在右、用户在左），两种风格一致；无正文消息仍按整行定位。 */
-.msgBubble .messageActions { top: 0; left: calc(100% + 8px); right: auto; }
-.msg[data-msg-role='user'] .msgBubble .messageActions { left: auto; right: calc(100% + 8px); }
+/* 统一 Discord 导航与单向流：员工操作栏贴右上角浮动，用户操作栏贴气泡外沿 */
+.msgBubble .messageActions { top: -12px; right: 0; left: auto; }
+.msg[data-msg-role='user'] .msgBubble .messageActions { top: 0; left: auto; right: calc(100% + 8px); }
 @media (max-width: 600px) {
   .msgBubble .messageActions, .msg[data-msg-role='user'] .msgBubble .messageActions { top: -28px; left: auto; right: 4px; }
 }

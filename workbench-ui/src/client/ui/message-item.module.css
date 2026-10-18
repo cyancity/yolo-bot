@@ -106,7 +106,6 @@
 .quote {
   display: block;
   appearance: none;
-  border: 0;
   border: var(--wb-border-width) solid var(--wb-line-soft);
   background: var(--wb-surface-sub);
   color: var(--wb-fg-muted);

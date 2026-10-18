@@ -16,6 +16,6 @@
 }
 
 .self {
-  background: var(--wb-surface-sub);
-  color: var(--wb-fg);
+  background: var(--wb-bubble-self);
+  color: var(--wb-bubble-self-fg);
 }
