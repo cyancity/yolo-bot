@@ -3,9 +3,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--wb-space-3);
-  width: 100%;
-  max-width: var(--wb-thread-max);
-  margin-inline: auto;
   padding: var(--wb-space-4) var(--wb-space-5);
   background: var(--wb-surface);
   border-top: var(--wb-border-width) solid var(--wb-line);
@@ -40,26 +37,6 @@
   min-height: var(--wb-control-height-md);
   max-height: 220px;
   resize: none;
-  font: inherit;
-  font-size: var(--wb-type-body-size);
-  line-height: var(--wb-type-body-leading);
-  color: var(--wb-fg);
-  background: var(--wb-surface);
-  border: var(--wb-border-width) solid var(--wb-line-control);
-  border-radius: var(--wb-radius-composer);
-  padding: var(--wb-space-4) var(--wb-control-pad-x);
-}
-
-.textarea::placeholder { color: var(--wb-fg-placeholder); }
-
-.textarea:focus-visible {
-  outline: var(--wb-border-width) solid var(--wb-focus-ring);
-  outline-offset: var(--wb-space-2);
-}
-
-.textarea:disabled {
-  opacity: var(--wb-opacity-disabled);
-  cursor: not-allowed;
 }
 
 .attachments {
@@ -76,7 +53,7 @@
   align-items: center;
   gap: var(--wb-space-3);
   padding: var(--wb-space-2) var(--wb-space-4);
-  border-radius: var(--wb-radius-control);
+  border-radius: var(--wb-radius-badge);
   background: var(--wb-surface-sub);
   border: var(--wb-border-width) solid var(--wb-line-soft);
   font-size: var(--wb-type-compact-size);

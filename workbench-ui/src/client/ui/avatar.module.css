@@ -4,9 +4,6 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--wb-radius-avatar);
-  background: var(--wb-accent-soft);
-  color: var(--wb-accent-fg);
-  font-weight: var(--wb-weight-semibold);
   flex-shrink: 0;
   overflow: visible;
   user-select: none;
@@ -19,8 +16,6 @@
   border-radius: var(--wb-radius-avatar);
   display: block;
 }
-
-.initial { line-height: 1; }
 
 .unavailable { filter: grayscale(0.8); opacity: 0.7; }
 

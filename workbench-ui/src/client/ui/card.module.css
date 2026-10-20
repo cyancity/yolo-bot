@@ -1,42 +1,4 @@
-.card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  border-radius: var(--wb-radius-card);
-  border: var(--wb-border-width) solid var(--wb-line);
-  background: var(--wb-surface);
-  color: var(--wb-fg);
-  overflow: hidden;
-  transition: background-color var(--wb-motion-fast) var(--wb-motion-ease), border-color var(--wb-motion-fast) var(--wb-motion-ease), box-shadow var(--wb-motion-fast) var(--wb-motion-ease);
-}
-
-.default {
-  background: var(--wb-surface);
-  border-color: var(--wb-line);
-}
-
-.subtle {
-  background: var(--wb-surface-sub);
-  border-color: transparent;
-}
-
-.interactive {
-  cursor: pointer;
-}
-
-.interactive:hover {
-  background: var(--wb-hover);
-  border-color: var(--wb-line-control);
-}
-
-.selected {
-  border-color: var(--wb-accent);
-  background: var(--wb-selected-bg);
-}
-
+.card { width: 100%; min-width: 0; }
 .header {
   display: flex;
   flex-direction: column;

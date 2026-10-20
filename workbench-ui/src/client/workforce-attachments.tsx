@@ -1,11 +1,12 @@
 import { Button } from './ui/primitives.ts'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { FileTypeIcon, ImageLightbox, ReadBlock, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Image, MaterialFileTypeIcon, Tag } from '@lobehub/ui'
+import { ReadBlock, fileSizeText } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReadBlockLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
-import { Badge, Dialog, Menu, Tooltip, tokenScopeClass } from './ui/index.tsx'
 import { WF } from './workforce-strings.ts'
+import { Dialog, Menu, Tooltip, useTokenScopeAttrs } from './ui/index.tsx'
 import css from './workforce-attachments.module.css'
 
 /** Narrow desktop carrier, bound once by the apply-side face; no model tool receives paths. */
@@ -406,7 +407,6 @@ export function formatFileSize(size?: number): string {
 }
 
 interface PreviewImage { readonly src: string; readonly alt: string }
-const LIGHTBOX_LABELS = { get dialog() { return WF.attachments.imagePreview }, get close() { return WF.attachments.closeImagePreview } }
 const READ_WINDOW = 40
 const READ_LABELS: ReadBlockLabels = {
   get codeLabel() { return WF.attachments.textCode },
@@ -481,56 +481,45 @@ export function WorkforceFilePreview({ url, name, onClose, mime }: {
   const normMime = normalizeMimeValue(mime)
   const kind = attachmentKind(cleanName.includes('.') ? cleanName : url, normMime)
   const close = useCallback(() => onClose(), [onClose])
+  const scopeAttrs = useTokenScopeAttrs()
   if (kind === 'image') return <WorkforceImageGallery images={[{ src: url, alt: name }]} initialIndex={0} onClose={close} />
 
-  const extension = extensionOf(cleanName) ?? (extensionOf(attachmentName(url)) ?? 'file')
-  const isMarkdown = extension === 'md' || extension === 'markdown' || /\.md(?:$|\?)/i.test(url) || /\.markdown(?:$|\?)/i.test(url)
-  return (
-    <Dialog
-      open
-      title={name}
-      className={`${tokenScopeClass} ${css.previewDialog}`}
-      onClose={close}
-      closeLabel={WF.attachments.closeFilePreview}
-      size="wide"
-      footer={
-        <div className={css.previewFooter}>
-          <div className={css.previewFooterInfo}>
-            <a
-              className={css.previewDownloadLink}
-              href={downloadHref(url)}
-              download={name}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {WF.attachments.downloadFile}
-            </a>
+  return createPortal(
+    <div {...scopeAttrs}>
+      <Dialog title={name} closeLabel={WF.attachments.closeFilePreview} wide onClose={close}>
+        <div className={css.previewContainer}>
+          <div className={css.previewBody} data-kind={kind} tabIndex={0}>
+            {kind === 'pdf' ? (
+              <FilePdfPreview url={url} name={name} mime={mime} />
+            ) : kind === 'video' ? (
+              <FileVideoPreview url={url} name={name} mime={mime} />
+            ) : kind === 'audio' ? (
+              <FileAudioPreview url={url} name={name} mime={mime} />
+            ) : (
+              <FileTextPreview url={url} name={name} mime={mime} />
+            )}
           </div>
-          <Button variant="plain" type="button" className={css.previewFooterCloseBtn} onClick={close}>
-            {WF.common.close}
-          </Button>
-        </div>
-      }
-    >
-      <div className={css.previewContainer}>
-        {isMarkdown && (
-          <div className={css.previewMetaRow}>
-            <Badge variant="pill" tone="accent" className={css.previewBadge}>Markdown</Badge>
+          <div className={css.previewFooter}>
+            <div className={css.previewFooterInfo}>
+              <Tag className={css.previewBadge ?? ''}>{(extensionOf(cleanName) ?? WF.attachments.attachmentDefaultName).toUpperCase()}</Tag>
+              <a
+                className={css.previewDownloadLink}
+                href={downloadHref(url)}
+                download={name}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {WF.attachments.downloadFile}
+              </a>
+            </div>
+            <button type="button" className={css.previewFooterCloseBtn} onClick={close}>
+              {WF.common.close}
+            </button>
           </div>
-        )}
-        <div className={css.previewBody} data-kind={kind} tabIndex={0}>
-          {kind === 'pdf' ? (
-            <FilePdfPreview url={url} name={name} mime={mime} />
-          ) : kind === 'video' ? (
-            <FileVideoPreview url={url} name={name} mime={mime} />
-          ) : kind === 'audio' ? (
-            <FileAudioPreview url={url} name={name} mime={mime} />
-          ) : (
-            <FileTextPreview url={url} name={name} mime={mime} />
-          )}
         </div>
-      </div>
-    </Dialog>
+      </Dialog>
+    </div>,
+    document.body,
   )
 }
 
@@ -789,6 +778,7 @@ export function WorkforceImageGallery({ images, initialIndex, onClose }: {
   readonly onClose: () => void
 }) {
   const [index, setIndex] = useState(initialIndex)
+  const scopeAttrs = useTokenScopeAttrs()
   const move = useCallback((delta: number) => setIndex(value => (value + delta + images.length) % images.length), [images.length])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -802,14 +792,21 @@ export function WorkforceImageGallery({ images, initialIndex, onClose }: {
   }, [move])
   const image = images[index]
   if (!image) return null
-  return <>
-    <ImageLightbox src={image.src} alt={image.alt} labels={LIGHTBOX_LABELS} onClose={onClose} />
-    {images.length > 1 && createPortal(<div className={`${tokenScopeClass} ${css.galleryControls}`}>
-      <Button variant="plain" type="button" aria-label={WF.attachments.prevImage} onClick={() => move(-1)}>‹</Button>
-      <span aria-live="polite">{index + 1} / {images.length}</span>
-      <Button variant="plain" type="button" aria-label={WF.attachments.nextImage} onClick={() => move(1)}>›</Button>
-    </div>, document.body)}
-  </>
+  return createPortal(
+    <div {...scopeAttrs}>
+      <Dialog title={image.alt || WF.attachments.imagePreview} closeLabel={WF.attachments.closeImagePreview} wide onClose={onClose}>
+        <div className={css.galleryBody}>
+          <Image wrapperClassName={css.galleryImage ?? ''} src={image.src} alt={image.alt} preview={false} objectFit="contain" />
+          {images.length > 1 && <div className={css.galleryControls}>
+            <button type="button" aria-label={WF.attachments.prevImage} onClick={() => move(-1)}>‹</button>
+            <span aria-live="polite">{index + 1} / {images.length}</span>
+            <button type="button" aria-label={WF.attachments.nextImage} onClick={() => move(1)}>›</button>
+          </div>}
+        </div>
+      </Dialog>
+    </div>,
+    document.body,
+  )
 }
 
 /**
@@ -958,7 +955,7 @@ export function WorkforceFileLink({
         onClick={() => void handleAction()}
       >
         <span className={css.fileLinkIcon} data-extension={ext}>
-          <FileTypeIcon path={filename} size={15} />
+          <MaterialFileTypeIcon filename={filename} size={17} />
         </span>
         <span className={css.fileLinkText}>{label}</span>
       </Button>
@@ -1107,7 +1104,7 @@ export function WorkforceAttachment({
   return <span className={css.attachment} data-attachment-kind={kind}>
     {media}
     <span className={css.fileCard}>
-      <span className={css.fileIcon} data-extension={extension.toLowerCase()}><FileTypeIcon path={filename} size={28} /></span>
+      <span className={css.fileIcon} data-extension={extension.toLowerCase()}><MaterialFileTypeIcon filename={filename} size={30} /></span>
       <span className={css.fileDetails}>
         <span className={css.fileName} title={filename}>{filename}</span>
         <span className={css.fileMeta}>

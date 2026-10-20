@@ -5,6 +5,7 @@
  */
 import { Button } from './ui/primitives.ts'
 import { useEffect, useId, useRef, useState } from 'react'
+import { Tag } from '@lobehub/ui'
 import type { SearchSource } from './workforce-types.ts'
 import { WF } from './workforce-strings.ts'
 import css from './workforce-websearch.module.css'
@@ -204,7 +205,7 @@ function SourceBoard({ sources, running }: { readonly sources: readonly SearchSo
             )
           })}
         </span>
-        <span className={css.stackCount}>{WF.websearch.sourcesCount(sources.length)}</span>
+        <Tag className={css.stackCount ?? ''}>{WF.websearch.sourcesCount(sources.length)}</Tag>
       </Button>
       {expanded ? (
         <ul className={css.trackList}>
@@ -364,7 +365,7 @@ export function WebSearchBatch({ entries }: { readonly entries: readonly SearchE
           <span className={css.batchOrbs} aria-hidden="true">
             {entries.map(entry => <BatchOrbs key={entry.id} entry={entry} />)}
           </span>
-          <span className={css.stackCount}>{batchCountText(entries)}</span>
+          <Tag className={css.stackCount ?? ''} color={failures.length > 0 ? 'error' : running ? 'processing' : 'default'}>{batchCountText(entries)}</Tag>
         </Button>
         {expanded ? (
           <div className={css.batchPanel}>

@@ -1,43 +1,54 @@
 /* 模型管理面板与 Key 设置弹窗样式 */
 
 .accessContent {
-  width: min(900px, 100%);
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-4);
+  gap: var(--wb-space-5);
 }
 
 .modelsContainer {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-5);
+  gap: var(--wb-space-6);
   padding: var(--wb-space-2) 0;
   color: var(--wb-fg);
   font-family: var(--wb-font-family);
   font-size: var(--wb-type-compact-size);
+  min-width: 0;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-3);
+  gap: var(--wb-space-4);
+  min-width: 0;
+}
+
+.modelControlHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--wb-space-5);
+  flex-wrap: wrap;
 }
 
 .sectionHead {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-2);
+  gap: 2px;
 }
 
 .sectionTitle {
-  font-size: var(--wb-type-compact-size);
-  font-weight: 700;
+  font-size: var(--wb-type-label-size);
+  font-weight: 600;
   color: var(--wb-fg);
 }
 
 .sectionDesc {
-  font-size: var(--wb-type-caption-size);
+  font-size: var(--wb-type-compact-size);
   color: var(--wb-fg-muted);
   line-height: 1.4;
 }
@@ -45,46 +56,35 @@
 .selectWrap {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-4);
+  gap: 6px;
   width: 100%;
 }
 
 .modelSelect {
   width: 100%;
-  height: 36px;
-  padding: 0 var(--wb-space-4);
-  border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-control);
-  background: var(--wb-surface-raised);
-  color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
-  box-sizing: border-box;
-  outline: none;
-}
-
-.modelSelect:focus {
-  border-color: var(--wb-accent);
+  min-height: var(--wb-control-height-md);
 }
 
 .cardsList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wb-space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: var(--wb-space-5);
 }
 
 .card {
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-panel);
   background: var(--wb-surface-raised);
-  padding: var(--wb-space-4) var(--wb-space-5);
+  padding: var(--wb-space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-3);
+  gap: var(--wb-space-4);
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .card:hover {
-  border-color: color-mix(in srgb, var(--wb-fg) 20%, var(--wb-line));
+  border-color: var(--wb-line-control);
+  box-shadow: var(--wb-shadow-popover);
 }
 
 .cardHead {
@@ -104,16 +104,85 @@
 
 .cardTitle {
   font-size: var(--wb-type-compact-size);
-  font-weight: var(--wb-weight-semibold);
+  font-weight: 600;
   color: var(--wb-fg);
 }
-.badgeOk { color: var(--wb-success); }
-.badgeDim { color: var(--wb-fg-muted); }
+
+.badge {
+  margin-inline-end: 0;
+}
+
+/* line-soft 底上的 badge 小字：--wb-fg-muted/--wb-fg-placeholder 在 Latte 实测仅 4.05:1。
+   优先 workforce 的 --wb-sub-fg-sm（深色由 scheme 块恢复纯 sub）；
+   模型弹窗可从根级插座（无 .root/.sidebar 作用域）挂载，token 缺失时
+   回落 --wb-fg（正文色对 line-soft 底必达 AA）。 */
+.badgeKind {
+  background: var(--wb-line-soft);
+  color: var(--wb-sub-fg-sm);
+}
+
+.badgeOk {
+  background: var(--wb-success-bg);
+  color: var(--wb-success);
+}
+
+.badgeDim {
+  background: var(--wb-line-soft);
+  color: var(--wb-sub-fg-sm);
+}
 
 .cardActions {
   display: flex;
   align-items: center;
-  gap: var(--wb-space-4);
+  gap: 6px;
+}
+
+.actionBtn {
+  height: 28px;
+  padding: 0 10px;
+  font-size: var(--wb-type-caption-size);
+  font-weight: 500;
+  border-radius: var(--wb-radius-control);
+  border: 1px solid var(--wb-line);
+  background: var(--wb-surface-raised);
+  color: var(--wb-fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--wb-hover);
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionBtnPrimary {
+  background: var(--wb-accent);
+  border-color: var(--wb-accent);
+  color: var(--wb-on-accent);
+}
+
+.actionBtnPrimary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: var(--wb-accent);
+}
+
+.actionBtnDanger {
+  color: var(--wb-danger);
+  border-color: var(--wb-line);
+}
+
+.actionBtnDanger:hover:not(:disabled) {
+  background: var(--wb-danger-bg);
+  border-color: var(--wb-danger);
 }
 
 .cardBody {
@@ -125,39 +194,28 @@
 .modelsTags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--wb-space-3);
-  margin-top: var(--wb-space-3);
+  gap: 6px;
+  margin-top: 4px;
 }
 
 .modelTag {
-  font-size: var(--wb-type-micro-size);
-  padding: var(--wb-space-2) var(--wb-space-4);
-  border-radius: var(--wb-radius-sm);
-  background: var(--wb-line-soft);
-  color: var(--wb-fg);
+  margin-inline-end: 0;
+  font-size: var(--wb-type-caption-size);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
-.errorBanner {
-  padding: var(--wb-space-4) var(--wb-space-5);
-  border-radius: var(--wb-radius-control);
-  background: var(--wb-danger-bg);
-  border: 1px solid color-mix(in srgb, var(--wb-danger) 40%, transparent);
-  color: var(--wb-danger);
+.emptyHint {
   font-size: var(--wb-type-caption-size);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--wb-space-3);
+  color: var(--wb-fg-placeholder);
+  font-style: italic;
+}
+
+.errorBanner {
+  max-width: 100%;
 }
 
 .successBanner {
-  padding: var(--wb-space-4) var(--wb-space-5);
-  border-radius: var(--wb-radius-control);
-  background: var(--wb-success-bg);
-  border: 1px solid color-mix(in srgb, var(--wb-success) 40%, transparent);
-  color: var(--wb-success);
-  font-size: var(--wb-type-caption-size);
+  max-width: 100%;
 }
 
 .dialogContent {
@@ -168,13 +226,14 @@
   width: min(520px, 100%);
   min-width: 0;
   max-width: 520px;
+  margin-inline: auto;
   box-sizing: border-box;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-4);
+  gap: 6px;
 }
 
 .field label {
@@ -193,12 +252,7 @@
 .keyInput {
   width: 100%;
   height: 36px;
-  padding: 0 var(--wb-space-9) 0 var(--wb-space-4);
-  border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-control);
-  background: var(--wb-surface-raised);
-  color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
+  padding: 0 54px 0 var(--wb-space-4);
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   box-sizing: border-box;
   outline: none;
@@ -211,19 +265,10 @@
 .keyToggleBtn {
   position: absolute;
   right: 6px;
-  background: transparent;
-  border: none;
-  color: var(--wb-fg-muted);
-  font-size: var(--wb-type-caption-size);
-  cursor: pointer;
-  padding: var(--wb-space-3);
-  border-radius: var(--wb-radius-control);
+  z-index: 1;
 }
 
-.keyToggleBtn:hover {
-  background: var(--wb-hover);
-  color: var(--wb-fg);
-}
+.backButton { align-self: flex-start; }
 
 .fieldHint {
   font-size: var(--wb-type-caption-size);
@@ -259,6 +304,7 @@
   flex-wrap: wrap;
 }
 
+.actionBtn:focus-visible,
 .keyToggleBtn:focus-visible,
 .modelSelect:focus-visible,
 .keyInput:focus-visible {
@@ -276,13 +322,12 @@
 }
 
 @media (max-width: 560px) {
-  .onboarding {
-    margin: var(--wb-space-3);
-    padding: var(--wb-space-4);
-  }
-
   .cardActions,
   .modalFooter {
     flex-wrap: wrap;
   }
+
+  .modelControlHead { align-items: flex-start; }
+  .modelControlHead button { flex: none; }
+  .cardsList { grid-template-columns: minmax(0, 1fr); }
 }

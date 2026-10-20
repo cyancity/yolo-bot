@@ -1,11 +1,1 @@
-.checkbox, .radio { display: inline-flex; align-items: center; justify-content: center; flex: none; width: var(--wb-icon-sm); height: var(--wb-icon-sm); border: var(--wb-border-width) solid var(--wb-line-control); background: var(--wb-surface); color: var(--wb-bg); padding: 0; cursor: pointer; }
-.checkbox { border-radius: var(--wb-radius-control); }
-.checkbox[data-state='checked'] { background: var(--wb-fg); border-color: var(--wb-fg); }
-.check, .check svg { display: block; width: var(--wb-icon-sm); height: var(--wb-icon-sm); }
-.radio { border-radius: var(--wb-radius-dot); }
-.radio[data-state='checked'] { border-color: var(--wb-fg); }
-.dot { width: var(--wb-space-4); height: var(--wb-space-4); border-radius: var(--wb-radius-dot); background: var(--wb-fg); }
-.group { display: flex; flex-wrap: wrap; gap: var(--wb-space-5); }
-.option { font-size: var(--wb-type-label-size); line-height: var(--wb-type-label-leading); display: inline-flex; align-items: center; gap: var(--wb-space-4); cursor: pointer; }
-.checkbox:focus-visible, .radio:focus-visible { outline: var(--wb-border-width) solid var(--wb-focus-ring); outline-offset: var(--wb-space-2); }
-.checkbox:disabled, .radio:disabled { opacity: var(--wb-opacity-disabled); cursor: not-allowed; }
+.group { display: flex; flex-wrap: wrap; gap: var(--wb-space-3); }

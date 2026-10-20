@@ -1,12 +1,19 @@
-import { forwardRef, useId, type ChangeEvent, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { Input as AntInput, type InputProps as AntInputProps } from 'antd'
+import { Input as LobeInput, TextArea as LobeTextArea, type TextAreaProps as LobeTextAreaProps } from '@lobehub/ui/es/Input'
+import { forwardRef, useId, type ChangeEvent, type ForwardedRef, type ReactNode, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import css from './input.module.css'
 
-/** shadcn text controls; native props allow incremental migration of existing forms. */
-export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function TextInput({ className, ...props }, ref) {
-  return <input {...props} ref={ref} className={`${css.control} ${className ?? ''}`} />
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
+  if (typeof ref === 'function') ref(value)
+  else if (ref) ref.current = value
+}
+
+export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function TextInput({ className, type, size, ...props }, ref) {
+  return <AntInput {...(props as AntInputProps)} {...(size !== undefined ? { htmlSize: size } : {})} {...(type ? { type } : {})} className={className ?? ''} ref={instance => assignRef(ref, instance?.input ?? null)} />
 })
+
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...props }, ref) {
-  return <textarea {...props} ref={ref} className={`${css.control} ${className ?? ''}`} />
+  return <LobeTextArea {...(props as LobeTextAreaProps)} type="block" className={className ?? ''} ref={instance => assignRef(ref, instance?.resizableTextArea?.textArea ?? null)} />
 })
 
 export interface InputProps {
@@ -38,29 +45,42 @@ export const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputPro
   const shared = {
     id: fieldId,
     value,
-    disabled,
-    readOnly,
-    required,
-    placeholder,
-    autoComplete,
-    'aria-describedby': describedBy,
-    'aria-invalid': error ? true : undefined,
+    ...(disabled !== undefined ? { disabled } : {}),
+    ...(readOnly !== undefined ? { readOnly } : {}),
+    ...(required !== undefined ? { required } : {}),
+    ...(placeholder !== undefined ? { placeholder } : {}),
+    ...(autoComplete !== undefined ? { autoComplete } : {}),
+    ...(describedBy !== undefined ? { 'aria-describedby': describedBy } : {}),
+    ...(error ? { 'aria-invalid': true } : {}),
     onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onValueChange(e.target.value),
-    className: css.control,
   }
   return (
     <div className={css.field} data-invalid={error ? 'true' : undefined}>
       <label className={css.label} htmlFor={fieldId}>
         {label}{required && <span className={css.required} aria-hidden="true"> *</span>}
       </label>
-      {kind === 'multiline' ? (
-        <textarea {...shared} rows={rows} ref={ref as never} />
-      ) : (
-        <div className={css.inputWrap}>
-          <input {...shared} type={kind === 'search' ? 'search' : kind} ref={ref as never} />
-          {trailing && <span className={css.trailing}>{trailing}</span>}
-        </div>
-      )}
+      {kind === 'multiline' ? <LobeTextArea
+        {...shared}
+        className={css.control ?? ''}
+        type="block"
+        {...(error ? { status: 'error' as const } : {})}
+        rows={rows}
+        ref={instance => assignRef(ref, instance?.resizableTextArea?.textArea ?? null)}
+      /> : kind === 'text' ? <LobeInput
+        {...shared}
+        className={css.control ?? ''}
+        type="block"
+        {...(error ? { status: 'error' as const } : {})}
+        {...(trailing !== undefined ? { suffix: trailing } : {})}
+        ref={instance => assignRef(ref, instance?.input ?? null)}
+      /> : <AntInput
+        {...shared}
+        className={css.control ?? ''}
+        type={kind}
+        {...(error ? { status: 'error' as const } : {})}
+        {...(trailing !== undefined ? { suffix: trailing } : {})}
+        ref={instance => assignRef(ref, instance?.input ?? null)}
+      />}
       {hint && <p className={css.hint} id={hintId}>{hint}</p>}
       {error && <p className={css.error} id={errorId} role="alert">{error}</p>}
     </div>

@@ -1,8 +1,9 @@
-import { Button, TextInput } from './ui/primitives.ts'
-import { Select } from './ui/select.tsx'
 /** 工作台唯一模型接入弹窗。编辑 Key、选择模型和清除确认都在同一个 Dialog 内。 */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Dialog, Card, CardHeader, CardTitle, CardContent, Badge, EmptyState, Tabs } from './ui/index.tsx'
+import type { ElementRef } from 'react'
+import { Dialog } from './ui/index.tsx'
+import { Alert, Tag } from '@lobehub/ui'
+import { Button, Input, Select } from 'antd'
 import { API_PREFIX } from './transport.ts'
 import { WF } from './workforce-strings.ts'
 import { WorkforceApi, type DefaultModelSelection } from './workforce-api.ts'
@@ -108,7 +109,7 @@ export function GlobalModelAccess({ source }: { readonly source: WorkforceModels
 export function WorkforceModelsModal({ source }: { readonly source: WorkforceModelsSource }) {
   const { api, state, loading, loaded, error, access, refresh, selectableModels } = useWorkforceModels(source)
   const verification = useModelVerification(state.defaultModel)
-  const defaultSelectRef = useRef<HTMLButtonElement>(null)
+  const defaultSelectRef = useRef<ElementRef<typeof Select>>(null)
   const [page, setPage] = useState<'models' | 'key' | 'clear'>(access?.provider ? 'key' : 'models')
   const [target, setTarget] = useState(access?.provider ?? '')
   const [key, setKey] = useState('')
@@ -168,152 +169,94 @@ export function WorkforceModelsModal({ source }: { readonly source: WorkforceMod
   const verificationError = verification.result?.error
   const title = page === 'key' ? `${targetProvider?.displayName ?? WF.models.title} · ${WF.models.keyTitle}`
     : page === 'clear' ? WF.models.clearKeyTitle : WF.models.modelAccessTitle
-  return <Dialog title={title} closeLabel={WF.common.close} onClose={source.close} busy={busy} fullScreen>
+  return <Dialog title={title} closeLabel={WF.common.close} onClose={source.close} busy={busy} wide>
     <div className={css.accessContent} data-workforce-models-dialog data-model-page={page}>
       <p className={css.onboardingCopy}>{WF.models.onboardingIntro}</p>
       <p className={css.onboardingCopy}>{WF.models.onboardingDshKeys}</p>
       {access?.message && <p className={css.sectionDesc} role="status">{access.message}</p>}
-      {notice && <div className={css.successBanner} role="status">{notice}</div>}
-      {error && <div className={css.errorBanner} role="alert"><span>{error}</span><Button variant="secondary" size="sm" disabled={loading || busy} onClick={() => void refresh()}>{WF.common.retry}</Button></div>}
-      {actionError && <div className={css.errorBanner} role="alert">{actionError}</div>}
-      {page === 'clear' ? (
-        <div className={css.dialogContent}>
-          <p>{WF.models.clearKeyConfirm(targetProvider?.displayName ?? target)} {WF.models.clearKeyAffectsOtherSessions}</p>
-          <div className={css.modalFooter}>
-            <Button variant="secondary" disabled={busy} autoFocus onClick={back}>{WF.common.cancel}</Button>
-            <Button variant="danger" disabled={busy || !keyWritable} onClick={() => void clearKey()}>{busy ? WF.models.clearing : WF.models.confirmClear}</Button>
-          </div>
+      {notice && <Alert className={css.successBanner ?? ''} type="success" showIcon message={notice} />}
+      {error && <Alert className={css.errorBanner ?? ''} type="error" showIcon message={error} action={<Button size="small" disabled={loading || busy} onClick={() => void refresh()}>{WF.common.retry}</Button>} />}
+      {actionError && <Alert className={css.errorBanner ?? ''} type="error" showIcon message={actionError} />}
+      {page === 'key' ? <div className={css.dialogContent}>
+        <Button className={css.backButton ?? ''} disabled={busy} onClick={back}>{WF.nav.back}</Button>
+        <div className={css.field}>
+          <label htmlFor="wf-key-provider">{WF.models.providers}</label>
+          <Select id="wf-key-provider" className={css.modelSelect ?? ''} value={target} disabled={busy || loading} getPopupContainer={trigger => trigger.closest('dialog') ?? trigger.parentElement ?? document.body} onChange={openKey} options={[
+            ...(!keyProviders.some(item => item.id === target) ? [{ value: target, label: targetProvider?.displayName ?? (target || WF.models.selectProviderPlaceholder) }] : []),
+            ...keyProviders.map(item => ({ value: item.id, label: item.displayName })),
+          ]} />
         </div>
-      ) : (
-        <Tabs
-          label={WF.models.modelAccessTitle}
-          value={page}
-          onValueChange={val => setPage(val as 'models' | 'key')}
-          items={[
-            {
-              value: 'models',
-              label: WF.models.modelAccessTitle,
-              panel: (
-                <div className={css.modelsContainer}>
-                  <div className={css.section}>
-                    <label className={css.sectionTitle} htmlFor="wf-default-model">{WF.models.defaultModel}</label>
-                    <span className={css.sectionDesc}>{WF.models.defaultModelHint}</span>
-                    <Select ref={defaultSelectRef} id="wf-default-model" className={css.modelSelect} value={currentValue} disabled={busy || loading || selectableModels.length === 0} onChange={event => void saveDefault(event.target.value)}>
-                      <option value="">{WF.models.selectModel}</option>
-                      {currentValue && !selectableModels.some(item => item.value === currentValue) && <option value={currentValue}>{currentValue} ({WF.models.unavailable})</option>}
-                      {selectableModels.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-                    </Select>
-                    {loaded && !loading && selectableModels.length === 0 && <span className={css.fieldHint}>{WF.models.serviceUnavailableHint}</span>}
-                  </div>
-                  <div className={css.section}>
-                    <div className={css.cardHead}>
-                      <span className={css.sectionDesc}>{WF.models.testConnectionDesc}</span>
-                      <Button variant="secondary" size="sm" disabled={!loaded || loading || busy || verification.busy} onClick={() => void verification.verify()}>{verification.busy ? WF.models.testingConnection : WF.models.testConnection}</Button>
-                    </div>
-                    {verification.result?.verified && <div className={css.successBanner} role="status">{WF.models.testSuccess(verification.result.selection)}</div>}
-                    {verificationError && <div className={css.errorBanner} role="alert"><span>{verificationError.message}</span><Button variant="secondary" size="sm" disabled={busy || verification.busy} onClick={() => {
-                      if (verificationError.action === 'addKey') openKey(verificationError.provider)
-                      else if (verificationError.action === 'changeModel') defaultSelectRef.current?.focus()
-                      else void verification.verify()
-                    }}>{verificationError.action === 'addKey' ? WF.models.manageDshKeys : verificationError.action === 'changeModel' ? WF.models.selectModel : WF.common.retry}</Button></div>}
-                  </div>
-                  <div className={css.section}>
-                    <span className={css.sectionTitle}>{WF.models.providersSectionTitle}</span>
-                    <div className={css.cardsList}>
-                      {state.providers.length === 0 && (
-                        <EmptyState compact description={WF.models.emptyModels} />
-                      )}
-                      {state.providers.map(item => (
-                        <Card key={item.id} className={css.card} data-model-provider={item.id}>
-                          <CardHeader className={css.cardHead}>
-                            <div className={css.cardInfo}>
-                              <CardTitle className={css.cardTitle}>{item.displayName}</CardTitle>
-                              <Badge tone={requiresModelKey(item) ? 'neutral' : 'accent'} variant="pill">
-                                {requiresModelKey(item) ? 'API Key' : WF.models.nativeConnectionBadge}
-                              </Badge>
-                              <Badge
-                                tone={item.configured || !requiresModelKey(item) ? 'success' : 'neutral'}
-                                variant="pill"
-                                className={item.configured || !requiresModelKey(item) ? css.badgeOk : css.badgeDim}
-                              >
-                                {!requiresModelKey(item) ? WF.models.delegatedToDsh : item.configured ? WF.models.hasCredentials : WF.models.notConnected}
-                              </Badge>
-                            </div>
-                            {canEditModelKey(item) && (
-                              <div className={css.cardActions}>
-                                <Button variant="secondary" size="sm" disabled={busy || loading} onClick={() => openKey(item.id)}>
-                                  {item.configured ? WF.models.updateCredentials : WF.models.addCredentials}
-                                </Button>
-                                {item.configured && (
-                                  <Button variant="danger" size="sm" disabled={busy || loading} onClick={() => { setTarget(item.id); setActionError(undefined); setPage('clear') }}>
-                                    {WF.models.clearKey}
-                                  </Button>
-                                )}
-                              </div>
-                            )}
-                          </CardHeader>
-                          <CardContent className={css.cardBody}>
-                            {item.description && <div>{item.description}</div>}
-                            {!requiresModelKey(item) && <div>{WF.models.nativeOrNoKeyNeeded}</div>}
-                            {requiresModelKey(item) && item.writable === false && <div>{WF.models.managedByDsh}</div>}
-                            {item.models.length > 0 ? (
-                              <div className={css.modelsTags}>
-                                {item.models.map(model => (
-                                  <Badge key={model.id} variant="standard" tone="neutral" className={css.modelTag}>
-                                    {model.name ?? model.id}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <EmptyState compact description={WF.models.emptyModels} />
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={css.modalFooter}>
-                    <Button variant="secondary" disabled={loading || busy} onClick={() => { verification.invalidate(); void refresh() }}>{loading || busy ? WF.models.refreshing : WF.models.refreshDshStatus}</Button>
-                    <Button variant="secondary" disabled={busy} onClick={source.close}>{WF.models.skipAccess}</Button>
-                    <Button variant="primary" disabled={busy} onClick={source.close}>{WF.models.finishAndReturn}</Button>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              value: 'key',
-              label: WF.models.keyTitle,
-              panel: (
-                <div className={css.dialogContent}>
-                  <Button variant="secondary" size="sm" disabled={busy} onClick={back}>{WF.nav.back}</Button>
-                  <div className={css.field}>
-                    <label htmlFor="wf-key-provider">{WF.models.providers}</label>
-                    <Select id="wf-key-provider" className={css.modelSelect} value={target} disabled={busy || loading} onChange={event => openKey(event.target.value)}>
-                      {!keyProviders.some(item => item.id === target) && <option value={target}>{targetProvider?.displayName ?? (target || WF.models.selectProviderPlaceholder)}</option>}
-                      {keyProviders.map(item => <option key={item.id} value={item.id}>{item.displayName}</option>)}
-                    </Select>
-                  </div>
-                  {loaded && !loading && !keyWritable && <p className={css.fieldHint}>{targetProvider && !requiresModelKey(targetProvider)
-                    ? WF.models.nativeOrNoKeyNeeded
-                    : WF.models.managedByDsh}</p>}
-                  {keyWritable && <div className={css.field}>
-                    <label htmlFor="wf-model-key-input">API Key</label>
-                    <div className={css.keyInputWrap}>
-                      <TextInput id="wf-model-key-input" type={showKey ? 'text' : 'password'} className={css.keyInput} value={key} placeholder={WF.models.keyPlaceholder} autoComplete="off" spellCheck={false} autoFocus disabled={busy} onChange={event => setKey(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveKey() }} />
-                      <Button variant="plain" type="button" className={css.keyToggleBtn} disabled={busy} onClick={() => setShowKey(value => !value)}>{showKey ? WF.models.hideKey : WF.models.showKey}</Button>
-                    </div>
-                    <span className={css.fieldHint}>{WF.models.keyStorageNotice}</span>
-                  </div>}
-                  <div className={css.modalFooter}>
-                    <Button variant="secondary" disabled={busy} onClick={source.close}>{WF.models.skipAccess}</Button>
-                    <Button variant="primary" disabled={busy || loading || !keyWritable || !key.trim()} onClick={() => void saveKey()}>{busy ? WF.models.saving : WF.models.saveToDsh}</Button>
-                  </div>
-                </div>
-              ),
-            },
-          ]}
-        />
-      )}
+        {loaded && !loading && !keyWritable && <p className={css.fieldHint}>{targetProvider && !requiresModelKey(targetProvider)
+          ? WF.models.nativeOrNoKeyNeeded
+          : WF.models.managedByDsh}</p>}
+        {keyWritable && <div className={css.field}>
+          <label htmlFor="wf-model-key-input">API Key</label>
+          <div className={css.keyInputWrap}>
+            <Input id="wf-model-key-input" type={showKey ? 'text' : 'password'} className={css.keyInput} value={key} placeholder={WF.models.keyPlaceholder} autoComplete="off" spellCheck={false} autoFocus disabled={busy} onChange={event => setKey(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveKey() }} />
+            <Button type="text" size="small" className={css.keyToggleBtn ?? ''} disabled={busy} onClick={() => setShowKey(value => !value)}>{showKey ? WF.models.hideKey : WF.models.showKey}</Button>
+          </div>
+          <span className={css.fieldHint}>{WF.models.keyStorageNotice}</span>
+        </div>}
+        <div className={css.modalFooter}>
+          <Button disabled={busy} onClick={source.close}>{WF.models.skipAccess}</Button>
+          <Button type="primary" loading={busy} disabled={loading || !keyWritable || !key.trim()} onClick={() => void saveKey()}>{busy ? WF.models.saving : WF.models.saveToDsh}</Button>
+        </div>
+      </div> : page === 'clear' ? <div className={css.dialogContent}>
+        <p>{WF.models.clearKeyConfirm(targetProvider?.displayName ?? target)} {WF.models.clearKeyAffectsOtherSessions}</p>
+        <div className={css.modalFooter}>
+          <Button disabled={busy} autoFocus onClick={back}>{WF.common.cancel}</Button>
+          <Button danger loading={busy} disabled={!keyWritable} onClick={() => void clearKey()}>{busy ? WF.models.clearing : WF.models.confirmClear}</Button>
+        </div>
+      </div> : <div className={css.modelsContainer}>
+        <div className={css.section}>
+          <div className={css.modelControlHead}>
+            <label className={css.sectionTitle} htmlFor="wf-default-model">{WF.models.defaultModel}</label>
+            <Button loading={verification.busy} disabled={!loaded || loading || busy} onClick={() => void verification.verify()}>{verification.busy ? WF.models.testingConnection : WF.models.testConnection}</Button>
+          </div>
+          <span className={css.sectionDesc}>{WF.models.defaultModelHint}</span>
+          <Select ref={defaultSelectRef} id="wf-default-model" className={css.modelSelect ?? ''} value={currentValue || undefined} placeholder={WF.models.selectModel} disabled={busy || loading || selectableModels.length === 0} getPopupContainer={trigger => trigger.closest('dialog') ?? trigger.parentElement ?? document.body} onChange={value => { if (value) void saveDefault(value) }} options={[
+            ...(currentValue && !selectableModels.some(item => item.value === currentValue) ? [{ value: currentValue, label: `${currentValue} (${WF.models.unavailable})` }] : []),
+            ...selectableModels.map(item => ({ value: item.value, label: item.label })),
+          ]} />
+          {loaded && !loading && selectableModels.length === 0 && <span className={css.fieldHint}>{WF.models.serviceUnavailableHint}</span>}
+        </div>
+        <div className={css.section}>
+          <span className={css.sectionDesc}>{WF.models.testConnectionDesc}</span>
+          {verification.result?.verified && <Alert className={css.successBanner ?? ''} type="success" showIcon message={WF.models.testSuccess(verification.result.selection)} />}
+          {verificationError && <Alert className={css.errorBanner ?? ''} type="error" showIcon message={verificationError.message} action={<Button size="small" disabled={busy || verification.busy} onClick={() => {
+            if (verificationError.action === 'addKey') openKey(verificationError.provider)
+            else if (verificationError.action === 'changeModel') defaultSelectRef.current?.focus()
+            else void verification.verify()
+          }}>{verificationError.action === 'addKey' ? WF.models.manageDshKeys : verificationError.action === 'changeModel' ? WF.models.selectModel : WF.common.retry}</Button>} />}
+        </div>
+        <div className={css.section}>
+          <span className={css.sectionTitle}>{WF.models.providersSectionTitle}</span>
+          <div className={css.cardsList}>{state.providers.map(item => <div key={item.id} className={css.card} data-model-provider={item.id}>
+            <div className={css.cardHead}>
+              <div className={css.cardInfo}>
+                <span className={css.cardTitle}>{item.displayName}</span>
+                <Tag className={css.badge ?? ''}>{requiresModelKey(item) ? 'API Key' : WF.models.nativeConnectionBadge}</Tag>
+                <Tag className={css.badge ?? ''} color={item.configured || !requiresModelKey(item) ? 'success' : 'default'}>{!requiresModelKey(item) ? WF.models.delegatedToDsh : item.configured ? WF.models.hasCredentials : WF.models.notConnected}</Tag>
+              </div>
+              {canEditModelKey(item) && <div className={css.cardActions}>
+                <Button size="small" disabled={busy || loading} onClick={() => openKey(item.id)}>{item.configured ? WF.models.updateCredentials : WF.models.addCredentials}</Button>
+                {item.configured && <Button size="small" danger disabled={busy || loading} onClick={() => { setTarget(item.id); setActionError(undefined); setPage('clear') }}>{WF.models.clearKey}</Button>}
+              </div>}
+            </div>
+            <div className={css.cardBody}>
+              {item.description && <div>{item.description}</div>}
+              {!requiresModelKey(item) && <div>{WF.models.nativeOrNoKeyNeeded}</div>}
+              {requiresModelKey(item) && item.writable === false && <div>{WF.models.managedByDsh}</div>}
+              {item.models.length > 0 ? <div className={css.modelsTags}>{item.models.map(model => <Tag key={model.id} className={css.modelTag ?? ''}>{model.name ?? model.id}</Tag>)}</div> : <span className={css.emptyHint}>{WF.models.emptyModels}</span>}
+            </div>
+          </div>)}</div>
+        </div>
+        <div className={css.modalFooter}>
+          <Button loading={loading || busy} onClick={() => { verification.invalidate(); void refresh() }}>{loading || busy ? WF.models.refreshing : WF.models.refreshDshStatus}</Button>
+          <Button disabled={busy} onClick={source.close}>{WF.models.skipAccess}</Button>
+          <Button type="primary" disabled={busy} onClick={source.close}>{WF.models.finishAndReturn}</Button>
+        </div>
+      </div>}
     </div>
   </Dialog>
 }
@@ -333,13 +276,13 @@ export interface ClassifiedModelError {
   readonly provider?: string | undefined
 }
 const MODEL_ERRORS: Record<ModelErrorCategory, ClassifiedModelError> = {
-  missing_key: { category: 'missing_key', get message() { return WF.models.errorMissingKey }, action: 'addKey' },
-  invalid_key: { category: 'invalid_key', get message() { return WF.models.errorInvalidKey }, action: 'addKey' },
-  quota: { category: 'quota', get message() { return WF.models.errorQuota }, action: 'changeModel' },
-  network: { category: 'network', get message() { return WF.models.errorNetwork }, action: 'retry' },
-  model_unavailable: { category: 'model_unavailable', get message() { return WF.models.errorModelUnavailable }, action: 'changeModel' },
-  missing_model: { category: 'missing_model', get message() { return WF.models.errorMissingModel }, action: 'changeModel' },
-  unknown: { category: 'unknown', get message() { return WF.models.errorUnknown }, action: 'retry' },
+  missing_key: { category: 'missing_key', message: WF.models.errorMissingKey, action: 'addKey' },
+  invalid_key: { category: 'invalid_key', message: WF.models.errorInvalidKey, action: 'addKey' },
+  quota: { category: 'quota', message: WF.models.errorQuota, action: 'changeModel' },
+  network: { category: 'network', message: WF.models.errorNetwork, action: 'retry' },
+  model_unavailable: { category: 'model_unavailable', message: WF.models.errorModelUnavailable, action: 'changeModel' },
+  missing_model: { category: 'missing_model', message: WF.models.errorMissingModel, action: 'changeModel' },
+  unknown: { category: 'unknown', message: WF.models.errorUnknown, action: 'retry' },
 }
 
 /** 同时处理宿主错误码和原生供应商消息；只返回安全的产品文案。 */

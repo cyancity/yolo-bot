@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import LobeAvatar from '@lobehub/ui/es/Avatar'
 import css from './avatar.module.css'
 
 export interface AvatarProps {
@@ -13,15 +14,13 @@ export interface AvatarProps {
   readonly className?: string
 }
 
-/** 静态身份头像：图片失败回退名字首字。员工的动态终端头像走 WorkforceAvatar。 */
+/** 静态身份头像：图片失败回退名字首字。员工的动态 Morph Bot 头像走 WorkforceAvatar。 */
 export function Avatar({ name, src, size = 36, presence, decorative = true, color, className }: AvatarProps) {
   const [imgFailed, setImgFailed] = useState(false)
   const initial = (name.trim()[0] ?? '?').toUpperCase()
   const style: CSSProperties = {
     width: `${size}px`,
     height: `${size}px`,
-    fontSize: `${Math.max(10, Math.round(size * 0.42))}px`,
-    ...(color ? { background: color } : {}),
   }
   return (
     <span
@@ -31,11 +30,15 @@ export function Avatar({ name, src, size = 36, presence, decorative = true, colo
       aria-label={decorative ? undefined : name}
       aria-hidden={decorative ? true : undefined}
     >
-      {src && !imgFailed ? (
-        <img src={src} alt="" className={css.img} onError={() => setImgFailed(true)} />
-      ) : (
-        <span className={css.initial} aria-hidden="true">{initial}</span>
-      )}
+      <LobeAvatar
+        avatar={src && !imgFailed
+          ? <img src={src} alt="" className={css.img} onError={() => setImgFailed(true)} />
+          : initial}
+        title={name}
+        size={size}
+        shape="circle"
+        {...(color ? { background: color } : {})}
+      />
       {presence === 'working' && <span className={css.dot} aria-hidden="true" />}
     </span>
   )

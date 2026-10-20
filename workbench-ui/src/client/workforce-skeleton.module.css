@@ -12,9 +12,9 @@
 .bone {
   background: linear-gradient(
     90deg,
-    var(--wb-line-soft) 25%,
-    color-mix(in srgb, var(--wb-hover) 80%, var(--wb-surface)) 45%,
-    var(--wb-line-soft) 65%
+    var(--wb-skeleton-base) 25%,
+    var(--wb-skeleton-highlight) 45%,
+    var(--wb-skeleton-base) 65%
   );
   background-size: 200% 100%;
   animation: skeletonShimmer 1.8s ease-in-out infinite;
@@ -24,7 +24,7 @@
 @media (prefers-reduced-motion: reduce) {
   .bone {
     animation: none !important;
-    background: var(--wb-line-soft) !important;
+    background: var(--wb-skeleton-base) !important;
   }
 }
 
@@ -33,8 +33,8 @@
 .streamSkeleton {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-6);
-  padding: var(--wb-space-5) var(--wb-space-6);
+  gap: var(--wb-message-gap);
+  padding: var(--wb-space-5) var(--wb-message-pad-x);
   width: 100%;
   box-sizing: border-box;
 }
@@ -47,9 +47,9 @@
 }
 
 .msgAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--wb-radius-dot);
+  width: var(--wb-avatar-message-size);
+  height: var(--wb-avatar-message-size);
+  border-radius: 50%;
   flex: none;
 }
 
@@ -81,9 +81,9 @@
 .msgBubble {
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-4);
+  gap: 6px;
   padding: var(--wb-bubble-pad-y) var(--wb-bubble-pad-x);
-  border-radius: var(--wb-radius-panel);
+  border-radius: var(--wb-radius-bubble);
   background: var(--wb-surface-raised);
   border: 1px solid var(--wb-line-soft);
   box-sizing: border-box;
@@ -140,8 +140,8 @@
 .empCardSkeleton {
   display: flex;
   align-items: center;
-  gap: var(--wb-space-5);
-  padding: var(--wb-space-5);
+  gap: 14px;
+  padding: var(--wb-card-pad);
   border-radius: var(--wb-radius-panel);
   border: 1px solid var(--wb-line);
   background: var(--wb-surface-raised);

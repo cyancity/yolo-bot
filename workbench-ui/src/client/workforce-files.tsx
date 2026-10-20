@@ -8,7 +8,8 @@
  * 文件行复用 attachments 模块的卡片/门控能力（脚本隐藏、二进制不文本预览）。
  */
 import type { ReactNode } from 'react'
-import { Dialog, EmptyState, ListRow } from './ui/index.tsx'
+import { Alert, Tag } from '@lobehub/ui'
+import { Dialog } from './ui/index.tsx'
 import { WorkforceAttachment, gateAttachment } from './workforce-attachments.tsx'
 import type { Employee, WorkforceFile, WorkforceMessage } from './workforce-types.ts'
 import { WF } from './workforce-strings.ts'
@@ -41,6 +42,12 @@ function fmtFileTime(ts: string): string {
   return date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+function dirOf(path: string): string | undefined {
+  const clean = path.replace(/\/+$/, '')
+  const index = Math.max(clean.lastIndexOf('/'), clean.lastIndexOf('\\'))
+  return index > 0 ? clean.slice(0, index) : undefined
+}
+
 /** 时间线列表：时间 + 真实文件行（路径 / 作者 / 版本 / 来源），复用附件卡片能力。 */
 export function WorkforceFilesTimeline({ files, employees }: {
   readonly files: readonly WorkforceFile[]
@@ -48,18 +55,22 @@ export function WorkforceFilesTimeline({ files, employees }: {
 }) {
   const rows = files.filter(file => gateAttachment(file.name, file.mime).visible)
   if (rows.length === 0) {
-    return <EmptyState title={WF.files.emptyTitle} description={WF.files.emptyHintFiltered} compact />
+    return (
+      <div className={css.empty}>
+        <p className={css.emptyTitle}>{WF.files.emptyTitle}</p>
+        <p className={css.emptyHint}>{WF.files.emptyHintFiltered}</p>
+      </div>
+    )
   }
   return (
-    <div className={css.timeline} role="list" aria-label={WF.files.timelineAria}>
+    <ol className={css.timeline} aria-label={WF.files.timelineAria}>
       {rows.map(file => {
+        const directory = dirOf(file.path)
         const author = employees.find(employee => employee.id === file.employeeId)?.name
         return (
-          <ListRow
-            key={file.id}
-            className={css.fileItem}
-            leading={<span className={css.fileTime}>{fmtFileTime(file.createdAt)}</span>}
-            title={
+          <li key={file.id} className={css.fileItem}>
+            <span className={css.fileTime}>{fmtFileTime(file.createdAt)}</span>
+            <div className={css.fileBody}>
               <WorkforceAttachment
                 url={file.url}
                 locationUrl={file.locationUrl}
@@ -67,18 +78,17 @@ export function WorkforceFilesTimeline({ files, employees }: {
                 sizeBytes={file.sizeBytes}
                 mime={file.mime}
               />
-            }
-            description={
-              <div className={css.fileMetaLine} title={file.path}>
-                <span className={css.fileSource}>{file.source === 'deliverable' ? WF.files.sourceDeliverable : file.source === 'tool' ? WF.files.sourceTool : WF.files.sourceChat}</span>
-                {file.version !== undefined && <span className={css.fileVersion}>v{file.version}</span>}
-                {author !== undefined && <span className={css.fileAuthor}>{author}</span>}
+              <div className={css.fileMetaLine}>
+                <span className={css.filePath} title={file.path}>{directory !== undefined ? `${directory}/` : file.path}</span>
+                <Tag className={css.fileSource ?? ''} color={file.source === 'deliverable' ? 'blue' : file.source === 'tool' ? 'geekblue' : 'default'}>{file.source === 'deliverable' ? WF.files.sourceDeliverable : file.source === 'tool' ? WF.files.sourceTool : WF.files.sourceChat}</Tag>
+                {file.version !== undefined && <Tag className={css.fileVersion ?? ''}>v{file.version}</Tag>}
+                {author !== undefined && <Tag className={css.fileAuthor ?? ''}>{author}</Tag>}
               </div>
-            }
-          />
+            </div>
+          </li>
         )
       })}
-    </div>
+    </ol>
   )
 }
 
@@ -97,7 +107,12 @@ export function WorkforceFilesDrawer({ title, contextLabel, status, error, child
   if (status === 'loading') {
     content = <div className={css.loading} role="status" aria-label={WF.files.loading}><span /><span /><span /></div>
   } else if (status === 'empty') {
-    content = <EmptyState title={WF.files.emptyTitle} description={WF.files.emptyHint} compact />
+    content = (
+      <div className={css.empty}>
+        <p className={css.emptyTitle}>{WF.files.emptyTitle}</p>
+        <p className={css.emptyHint}>{WF.files.emptyHint}</p>
+      </div>
+    )
   } else {
     content = children
   }
@@ -105,7 +120,7 @@ export function WorkforceFilesDrawer({ title, contextLabel, status, error, child
     <Dialog title={title} closeLabel={WF.files.closeDialog} onClose={onClose}>
       <div className={css.drawer}>
         {contextLabel !== undefined && <p className={css.scope}>{contextLabel}</p>}
-        {error !== undefined && <p className={css.error} role="alert">{error}</p>}
+        {error !== undefined && <Alert className={css.errorAlert ?? ''} type="error" showIcon message={error} />}
         {content}
       </div>
     </Dialog>

@@ -1,4 +1,5 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { Button as AntButton, type ButtonProps as AntButtonProps } from 'antd'
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode, type Ref } from 'react'
 import css from './icon-button.module.css'
 import type { Size } from './button.tsx'
 
@@ -17,20 +18,20 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   { label, icon, size = 'md', loading = false, pressed, ghost = true, disabled, className, onClick, ...rest },
   ref,
 ) {
-  return (
-    <button
-      {...rest}
-      ref={ref}
-      type="button"
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      aria-pressed={pressed}
-      aria-busy={loading ? true : undefined}
-      className={`${css.iconButton} ${css[size]} ${ghost ? css.ghost : css.secondary} ${pressed ? css.pressed : ''} ${className ?? ''}`}
-      onClick={loading ? e => e.preventDefault() : onClick}
-    >
-      <span className={css.icon} aria-hidden="true">{icon}</span>
-    </button>
-  )
+  return <AntButton
+    {...(rest as AntButtonProps)}
+    ref={ref as Ref<HTMLButtonElement | HTMLAnchorElement>}
+    htmlType="button"
+    type={pressed || !ghost ? 'default' : 'text'}
+    icon={<span className={css.icon} aria-hidden="true">{icon}</span>}
+    size={size === 'sm' ? 'small' : size === 'lg' ? 'large' : 'middle'}
+    loading={loading}
+    disabled={Boolean(disabled)}
+    aria-label={label}
+    title={label}
+    aria-pressed={pressed}
+    aria-busy={loading ? true : undefined}
+    className={`${css.iconButton} ${css[size] ?? ''} ${className ?? ''}`}
+    onClick={loading ? e => e.preventDefault() : onClick}
+  />
 })

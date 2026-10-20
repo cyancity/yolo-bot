@@ -1,19 +1,19 @@
-import { Button, TextInput } from './ui/primitives.ts'
-import { Select } from './ui/select.tsx'
-import { Dialog } from './ui/index.tsx'
 /**
- * WorkforceChannels：Discord 风格频道列表与分组管理组件。
+ * WorkforceChannels：频道列表与分组管理组件（已对接 Lane Y 宿主契约）。
  * - 支持新建频道、重命名、复制、移动分组、删除（遇到 409 提示「频道里还有执行中的任务」）。
  * - 支持分组折叠/展开、新建分组、重命名/删除分组。
  * - 支持置顶频道与标记已读。
  */
-import { useState, type MouseEvent } from 'react'
+import { useRef, useState, type MouseEvent } from 'react'
+import { List } from '@lobehub/ui'
 import type { HostChannel, HostChannelGroup } from './workforce-api.ts'
 import type { Channel } from './workforce-types.ts'
 import { ConfirmDialog, WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
+import { Button, Dialog, IconButton } from './ui/index.tsx'
+import { Icon } from './ui/icons.tsx'
+import css from './workforce-channels.module.css'
 import { WF } from './workforce-strings.ts'
 import { getLocale } from './i18n.ts'
-import css from './workforce-channels.module.css'
 
 export interface ChannelGroup {
   readonly id: string
@@ -290,7 +290,7 @@ export function WorkforceChannels({
             label: WF.channelUI.duplicateChannel,
             onClick: () => {
               if (onDuplicateChannelReq) runChannelOp(WF.channelUI.duplicateChannel, () => onDuplicateChannelReq(channel.id))
-              else if (onCreateChannelReq) runChannelOp(WF.channelUI.duplicateChannel, () => onCreateChannelReq(`${channel.name}${WF.channelUI.duplicateCopySuffix}`, channel.groupId))
+              else if (onCreateChannelReq) runChannelOp(WF.channelUI.duplicateChannel, () => onCreateChannelReq(`${channel.name} ${WF.channelUI.duplicateCopySuffix}`, channel.groupId))
             },
           }] : []),
           {
@@ -384,25 +384,35 @@ export function WorkforceChannels({
   const renderChannelButton = (channel: { id: string; name: string; groupId: string | null; pinned: boolean; unread: boolean }) => {
     const isActive = activeChannelId === channel.id
     return (
-      <Button variant="plain"
+      <List.Item
         key={channel.id}
-        type="button"
-        className={`${css.channelItem} ${isActive ? css.channelItemActive : ''}`}
+        active={isActive}
+        align="center"
+        avatar={<span className={css.hashIcon} aria-hidden="true">#</span>}
+        className={css.channelItem}
+        padding={6}
+        role="button"
+        tabIndex={0}
+        aria-current={isActive ? 'page' : undefined}
         onClick={() => onSelectChannel(channel.id)}
         onContextMenu={e => openChannelContextMenu(e, channel)}
-      >
-        <span className={css.hashIcon}>#</span>
-        <span className={css.channelName}>{channel.name}</span>
-        {channel.pinned && (
-          <span className={css.pinBadge} title={WF.channelUI.pinned}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="17" x2="12" y2="22"/>
-              <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onSelectChannel(channel.id)
+          }
+        }}
+        title={<span className={css.channelTitle}>
+          <span className={css.channelName}>{channel.name}</span>
+          {channel.pinned && <span className={css.pinBadge} title={WF.channelUI.pinned}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="12" y1="17" x2="12" y2="22" />
+              <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
             </svg>
-          </span>
-        )}
-        {channel.unread && <span className={css.unreadDot} title={WF.channelUI.hasUnread} />}
-      </Button>
+          </span>}
+          {channel.unread && <span className={css.unreadDot} title={WF.channelUI.hasUnread} />}
+        </span>}
+      />
     )
   }
 
@@ -428,44 +438,32 @@ export function WorkforceChannels({
 
   return (
     <div className={css.channelsContainer}>
-      {/* 顶部标题与新建入口 */}
-      {/* 顶部标题与新建入口（标题行点击折叠/展开整个频道区） */}
+      {/* 标题行点击折叠/展开整个频道区。 */}
       <div className={css.topActionRow}>
-        <Button variant="plain" type="button" className={css.sectionToggleBtn} onClick={toggleChannelsSectionCollapse} aria-expanded={!sectionCollapsed}>
+        <button type="button" className={css.sectionToggleBtn} onClick={toggleChannelsSectionCollapse} aria-expanded={!sectionCollapsed}>
           <span className={`${css.chevron} ${sectionCollapsed ? css.chevronCollapsed : ''}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </span>
           <span className={css.topTitle}>{WF.nav.channels}</span>
-        </Button>
+        </button>
         {!sectionCollapsed && (
           <div className={css.topActions}>
-            <Button variant="plain"
-              type="button"
+            <IconButton
               className={css.iconBtn}
-              title={WF.channelUI.newChannelBtn}
-              aria-label={WF.channelUI.newChannelBtn}
+              label={WF.channelUI.newChannelBtn}
+              icon={<Icon name="plus" />}
+              size="sm"
               onClick={() => setCreateChannelModal({ open: true })}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </Button>
-            <Button variant="plain"
-              type="button"
+            />
+            <IconButton
               className={css.iconBtn}
-              title={WF.channelUI.newGroupBtn}
-              aria-label={WF.channelUI.newGroupBtn}
+              label={WF.channelUI.newGroupBtn}
+              icon={<Icon name="folder" />}
+              size="sm"
               onClick={() => setCreateGroupModal(true)}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                <line x1="12" y1="11" x2="12" y2="17"/>
-                <line x1="9" y1="14" x2="15" y2="14"/>
-              </svg>
-            </Button>
+            />
           </div>
         )}
       </div>
@@ -475,10 +473,10 @@ export function WorkforceChannels({
         <div className={css.migrationBanner} role="status">
           <span className={css.migrationText}>{WF.channelUI.legacyGroupsMigration(legacyGroupsToSync.length)}</span>
           <div className={css.migrationActions}>
-            <Button variant="plain" type="button" className={css.syncBtn} disabled={syncingLegacy} onClick={() => void handleSyncLegacyGroups()}>
+            <Button variant="primary" size="sm" className={css.syncBtn} disabled={syncingLegacy} onClick={() => void handleSyncLegacyGroups()}>
               {syncingLegacy ? WF.channelUI.syncing : WF.channelUI.sync}
             </Button>
-            <Button variant="plain" type="button" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>{WF.channelUI.ignore}</Button>
+            <Button variant="ghost" size="sm" className={css.dismissBtn} onClick={handleDismissLegacyGroups}>{WF.channelUI.ignore}</Button>
           </div>
         </div>
       )}
@@ -488,8 +486,8 @@ export function WorkforceChannels({
         <div className={css.errorBanner} role="alert">
           <span className={css.errorMessage}>{opError.message}</span>
           <span className={css.errorActions}>
-            {opError.retry && <Button variant="plain" type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</Button>}
-            <Button variant="plain" type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</Button>
+            {opError.retry && <button type="button" className={css.errorRetryBtn} onClick={() => void opError.retry?.()}>{WF.common.retry}</button>}
+            <button type="button" className={css.errorDismissBtn} onClick={() => setOpError(null)} aria-label={WF.common.close}>×</button>
           </span>
         </div>
       )}
@@ -521,33 +519,28 @@ export function WorkforceChannels({
       )}
       {!sectionCollapsed && (
         <>
-      {/* 未分组频道：自有独立区，不并入任何分组；Discord 惯例排在各分组之前 */}
+      {/* 未分组频道保持独立，排在各分组之前。 */}
       {(() => {
         const unassignedChannels = normalizedChannels.filter(ch => !ch.groupId && !ch.pinned && ch.id !== 'general')
         if (unassignedChannels.length === 0) return null
         return (
           <div className={css.groupBlock}>
-            <div className={css.groupHeader} onClick={() => toggleGroupCollapse(UNGROUPED_KEY)}>
-              <div className={css.groupHeaderLeft}>
+            <div className={css.groupHeader}>
+              <button type="button" className={css.groupHeaderLeft} aria-expanded={!collapsedMap[UNGROUPED_KEY]} onClick={() => toggleGroupCollapse(UNGROUPED_KEY)}>
                 <span className={`${css.chevron} ${collapsedMap[UNGROUPED_KEY] ? css.chevronCollapsed : ''}`}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </span>
                 <span className={css.groupTitle}>{WF.channelUI.ungrouped}</span>
-              </div>
-              <Button variant="plain"
-                type="button"
+              </button>
+              <IconButton
                 className={css.groupAddBtn}
-                title={WF.channelUI.createChannelInUngrouped}
-                aria-label={WF.channelUI.createChannelInUngrouped}
+                label={WF.channelUI.createChannelInUngrouped}
+                icon={<Icon name="plus" />}
+                size="sm"
                 onClick={e => { e.stopPropagation(); setCreateChannelModal({ open: true }) }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </Button>
+              />
             </div>
             {!collapsedMap[UNGROUPED_KEY] && (
               <div className={css.channelList}>
@@ -563,34 +556,25 @@ export function WorkforceChannels({
         const groupChannels = normalizedChannels.filter(ch => ch.groupId === group.id && !ch.pinned && ch.id !== 'general')
         return (
           <div key={group.id} className={css.groupBlock}>
-            <div
-              className={css.groupHeader}
-              onClick={() => toggleGroupCollapse(group.id)}
-              onContextMenu={e => openGroupContextMenu(e, group)}
-            >
-              <div className={css.groupHeaderLeft}>
+            <div className={css.groupHeader} onContextMenu={e => openGroupContextMenu(e, group)}>
+              <button type="button" className={css.groupHeaderLeft} aria-expanded={!group.collapsed} onClick={() => toggleGroupCollapse(group.id)}>
                 <span className={`${css.chevron} ${group.collapsed ? css.chevronCollapsed : ''}`}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </span>
                 <span className={css.groupTitle}>{groupDisplayName(group)}</span>
-              </div>
-              <Button variant="plain"
-                type="button"
+              </button>
+              <IconButton
                 className={css.groupAddBtn}
-                title={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
-                aria-label={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
+                label={WF.channelUI.createChannelInGroup(groupDisplayName(group))}
+                icon={<Icon name="plus" />}
+                size="sm"
                 onClick={e => {
                   e.stopPropagation()
                   setCreateChannelModal({ open: true, defaultGroupId: group.id })
                 }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </Button>
+              />
             </div>
 
             {!group.collapsed && (
@@ -723,67 +707,52 @@ function CreateChannelModal({
   readonly onSubmit: (name: string, groupId?: string | undefined) => void | Promise<void>
 }) {
   const [name, setName] = useState('')
+  const nameRef = useRef<HTMLInputElement>(null)
   // 顶部「新建频道」默认落在未分组；只有从某个分组行点「+」才预选该分组。
   const [groupId, setGroupId] = useState(defaultGroupId ?? '')
-  const [busy, setBusy] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
-    if (!trimmed || busy) return
-    setBusy(true)
-    try {
-      await onSubmit(trimmed, groupId || undefined)
-    } finally {
-      setBusy(false)
-    }
+    if (!trimmed) return
+    void onSubmit(trimmed, groupId || undefined)
   }
 
   return (
-    <Dialog
-      size="sm"
-      title={WF.channelUI.createChannel}
-      closeLabel={WF.common.cancel}
-      onClose={onClose}
-      busy={busy}
-      onSubmit={e => void handleSubmit(e)}
-      secondaryAction={{
-        label: WF.common.cancel,
-        onInvoke: onClose,
-        disabled: busy,
-      }}
-      primaryAction={{
-        label: WF.common.confirm,
-        type: 'submit',
-        disabled: busy || !name.trim(),
-        loading: busy,
-      }}
-    >
-      <div className={css.formItem}>
-        <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
-        <TextInput
-          id="new-channel-name"
-          type="text"
-          value={name}
-          placeholder={WF.channelUI.channelNameExamplePlaceholder}
-          maxLength={30}
-          autoFocus
-          onChange={e => setName(e.target.value)}
-        />
-      </div>
-      <div className={css.formItem}>
-        <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
-        <Select
-          id="channel-group-select"
-          value={groupId}
-          onChange={e => setGroupId(e.target.value)}
-        >
-          <option value="">{WF.channelUI.ungrouped}</option>
-          {groups.map(g => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </Select>
-      </div>
+    <Dialog title={WF.channelUI.createChannel} closeLabel={WF.common.cancel} onClose={onClose} initialFocusRef={nameRef}>
+      <form className={css.dialogForm} onSubmit={handleSubmit}>
+          <div className={css.formItem}>
+            <label className={css.formLabel} htmlFor="new-channel-name">{WF.channelUI.channelNameLabel}</label>
+            <input
+              id="new-channel-name"
+              ref={nameRef}
+              type="text"
+              className={css.inputField}
+              value={name}
+              placeholder={WF.channelUI.channelNameExamplePlaceholder}
+              maxLength={30}
+              onChange={e => setName(e.target.value)}
+            />
+          </div>
+          <div className={css.formItem}>
+            <label className={css.formLabel} htmlFor="channel-group-select">{WF.channelUI.groupSelectLabel}</label>
+            <select
+              id="channel-group-select"
+              className={css.selectField}
+              value={groupId}
+              onChange={e => setGroupId(e.target.value)}
+            >
+              <option value="">{WF.channelUI.ungrouped}</option>
+              {groups.map(g => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className={css.dialogFooter}>
+            <Button variant="ghost" size="sm" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button type="submit" variant="primary" size="sm" className={css.submitBtn} disabled={!name.trim()}>{WF.common.confirm}</Button>
+          </div>
+      </form>
     </Dialog>
   )
 }
@@ -806,6 +775,7 @@ function RenameModal({
 }) {
   const [val, setVal] = useState(initialValue)
   const [busy, setBusy] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -816,35 +786,24 @@ function RenameModal({
   }
 
   return (
-    <Dialog
-      size="sm"
-      title={title}
-      closeLabel={WF.common.cancel}
-      onClose={onClose}
-      busy={busy}
-      onSubmit={e => void handleSubmit(e)}
-      secondaryAction={{
-        label: WF.common.cancel,
-        onInvoke: onClose,
-        disabled: busy,
-      }}
-      primaryAction={{
-        label: WF.common.confirm,
-        type: 'submit',
-        disabled: busy || (!val.trim() && allowEmpty !== true),
-        loading: busy,
-      }}
-    >
-      <div className={css.formItem}>
-        <TextInput
-          type="text"
-          value={val}
-          placeholder={placeholder || WF.channelUI.defaultNamePlaceholder}
-          maxLength={30}
-          autoFocus
-          onChange={e => setVal(e.target.value)}
-        />
-      </div>
+    <Dialog title={title} closeLabel={WF.common.cancel} onClose={onClose} busy={busy} initialFocusRef={inputRef}>
+      <form className={css.dialogForm} onSubmit={e => void handleSubmit(e)}>
+          <div className={css.formItem}>
+            <input
+              type="text"
+              ref={inputRef}
+              className={css.inputField}
+              value={val}
+              placeholder={placeholder || WF.channelUI.defaultNamePlaceholder}
+              maxLength={30}
+              onChange={e => setVal(e.target.value)}
+            />
+          </div>
+          <div className={css.dialogFooter}>
+            <Button variant="ghost" size="sm" className={css.cancelBtn} onClick={onClose}>{WF.common.cancel}</Button>
+            <Button type="submit" variant="primary" size="sm" className={css.submitBtn} disabled={busy || (!val.trim() && allowEmpty !== true)}>{WF.common.confirm}</Button>
+          </div>
+      </form>
     </Dialog>
   )
 }

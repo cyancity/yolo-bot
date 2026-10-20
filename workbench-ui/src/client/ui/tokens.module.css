@@ -1,53 +1,6 @@
-/** Shared assistant-ui / shadcn visual system.
- * Palette follows https://www.assistant-ui.com/elements/thread.
- * The persisted style key selects navigation structure only; both layouts share
- * this visual system. All surfaces and portals consume the same semantic tokens.
- */
-
-html[data-wb-style],
+/* Business layout only. Appearance comes from Lobe ThemeProvider via root.tsx. */
 .root,
 .scope {
-  /* 字体 */
-  --wb-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
-  --wb-font-mono: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
-  --wb-weight-regular: 400;
-  --wb-weight-medium: 500;
-  --wb-weight-semibold: 600;
-
-  /* 字阶：size/weight/leading。正文 5 档 micro/caption/compact/label/body，
-     标题 3 档 section/heading/title；strong、code 是同字号的语义别名。 */
-  --wb-type-micro-size: .6875rem;
-  --wb-type-micro-weight: 400;
-  --wb-type-micro-leading: 1.4545;
-  --wb-type-caption-size: .75rem;
-  --wb-type-caption-weight: 400;
-  --wb-type-caption-leading: 1.5;
-  --wb-type-compact-size: .875rem;
-  --wb-type-compact-weight: 400;
-  --wb-type-compact-leading: 1.4286;
-  --wb-type-label-size: .875rem;
-  --wb-type-label-weight: 500;
-  --wb-type-label-leading: 1.4286;
-  --wb-type-body-size: 1rem;
-  --wb-type-body-weight: 400;
-  --wb-type-body-leading: 1.5;
-  --wb-type-strong-size: 1rem;
-  --wb-type-strong-weight: 600;
-  --wb-type-strong-leading: 1.5;
-  --wb-type-section-size: 1rem;
-  --wb-type-section-weight: 600;
-  --wb-type-section-leading: 1.5;
-  --wb-type-heading-size: 1.125rem;
-  --wb-type-heading-weight: 600;
-  --wb-type-heading-leading: 1.4444;
-  --wb-type-title-size: 1.25rem;
-  --wb-type-title-weight: 600;
-  --wb-type-title-leading: 1.4;
-  --wb-type-code-size: .8125rem;
-  --wb-type-code-weight: 400;
-  --wb-type-code-leading: 1.5385;
-
-  /* 间距 */
   --wb-space-0: 0;
   --wb-space-2: 2px;
   --wb-space-3: 4px;
@@ -57,78 +10,31 @@ html[data-wb-style],
   --wb-space-7: 24px;
   --wb-space-8: 32px;
   --wb-space-9: 48px;
-
-  /* 页面/卡片布局常量（旧 tokens 迁移沿用值） */
-  --wb-page-max: 1152px;
+  --wb-page-max: 1280px;
   --wb-card-min: 260px;
-  --wb-font-xs: .75rem;
-  /* 运行时偏好覆写：气泡圆角（workforce.tsx 内联写入）。 */
-  --wb-bubble-radius: 16px;
-  /* 组件局部小色阶别名；--wb-accent-fg-sm / --wb-sub-fg-sm 按深浅在色表里定义 */
-  --wb-danger-soft: var(--wb-danger-bg);
-  --wb-line-strong: var(--wb-line-control);
-  --wb-surface-soft: color-mix(in srgb, var(--wb-fg) 6%, transparent);
-  /* 与深浅无关的固定色：彩色填充（站点色、生成色）上的文字、媒体底色 */
-  --wb-on-color: #ffffff;
-  --wb-media-bg: #000000;
-
-  /* 控件共享 */
   --wb-icon-sm: 16px;
   --wb-icon-md: 20px;
   --wb-icon-lg: 24px;
   --wb-icon-stroke: 1.75;
-  --wb-border-width: 1px;
-  --wb-focus-width: 2px;
   --wb-focus-offset: 2px;
-  /* 圆角三档 + 胶囊/圆形；panel/control/bubble/overlay 等语义圆角按布局风格取三档之一 */
-  --wb-radius-sm: 4px;
-  --wb-radius-md: 6px;
-  --wb-radius-lg: 8px;
-  --wb-radius-pill: 999px;
   --wb-radius-dot: 50%;
-  --wb-radius-badge: var(--wb-radius-sm);
-  --wb-control-height-sm: 32px;
-  --wb-control-height-md: 36px;
-  --wb-control-height-lg: 44px;
+  --wb-radius-avatar: 50%;
   --wb-control-pad-x: 12px;
-  --wb-card-pad: 12px;
-  --wb-bubble-pad-x: 12px;
+  --wb-card-pad: 16px;
+  --wb-bubble-pad-x: 14px;
   --wb-avatar-message-size: 36px;
-  --wb-rail-width: 56px;
+  --wb-avatar-nav-size: 32px;
+  --wb-rail-width: 60px;
+  --wb-nav-width: 272px;
   --wb-thread-width: 360px;
-  /* 回复预览抽屉：比线程面板宽，够读完整 markdown 回复。 */
-  --wb-preview-width: 560px;
-  /* 单条正文超长时的折叠高度（≈14 行），「展开全文」按此判定。 */
-  --wb-message-clamp-height: 320px;
-  --wb-zoom: 1;
-
-  /* assistant-ui's default thread and shadcn control geometry. */
-  --wb-radius-panel: 12px;
-  --wb-radius-control: var(--wb-radius-md);
-  --wb-radius-card: var(--wb-radius-control);
-  --wb-radius-bubble: 16px;
-  --wb-radius-composer: 16px;
-  --wb-radius-overlay: var(--wb-radius-lg);
-  --wb-radius-avatar: var(--wb-radius-dot);
-  --wb-nav-row-height: 36px;
+  --wb-nav-row-height: 42px;
   --wb-header-height: 56px;
-  --wb-message-gap: 24px;
-  --wb-message-continuation-gap: 8px;
-  --wb-message-pad-x: 16px;
-  --wb-bubble-pad-y: 8px;
-  --wb-composer-min-height: 96px;
-  --wb-avatar-nav-size: 24px;
-  --wb-nav-width: 240px;
-  --wb-thread-max: 44rem;
-  --wb-dialog-sm-width: 420px;
-  --wb-dialog-width: 512px;
-  --wb-dialog-wide-width: 768px;
-  --wb-suggestion-min: 240px;
-  --wb-type-welcome-size: 1.5rem;
-  --wb-thread-gutter: 24px;
-  --wb-opacity-disabled: .5;
-
-  /* 图层（插件局部） */
+  --wb-message-gap: 16px;
+  --wb-message-continuation-gap: 4px;
+  --wb-message-pad-x: 20px;
+  --wb-bubble-pad-y: 10px;
+  --wb-composer-min-height: 104px;
+  --wb-zoom: 1;
   --wb-layer-base: 0;
   --wb-layer-sticky: 10;
   --wb-layer-panel: 20;
@@ -138,178 +44,49 @@ html[data-wb-style],
   --wb-layer-toast: 60;
   --wb-layer-tooltip: 70;
 
-  /* 动效 */
-  --wb-motion-fast: 150ms;
-  --wb-motion-normal: 200ms;
-  --wb-motion-slow: 250ms;
-  --wb-motion-ease: cubic-bezier(.2, 0, 0, 1);
-}
-
-/* 局部 reset：只作用于 .root 子树 */
-.root {
   font-family: var(--wb-font-family);
   font-size: var(--wb-type-body-size);
   line-height: var(--wb-type-body-leading);
   font-weight: var(--wb-weight-regular);
   color: var(--wb-fg);
+  font-feature-settings: 'cv01', 'tnum', 'kern';
+  font-variation-settings: 'opsz' auto, tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
+  text-size-adjust: 100%;
+  scrollbar-color: var(--wb-line-control) transparent;
+}
+
+.root {
   background: var(--wb-bg);
   isolation: isolate;
   position: relative;
-  /* 只声明流容器本底；方向由各挂载点的自有类（workbench.css .root / .sidebar /
-     .region / .page）决定：侧栏是 rail + 频道列横向排列，页面是列纵向。共写一个
-     column 会覆盖 .sidebar 的横向，旧版 tokens 不含这条声明。 */
   display: flex;
   min-height: 0;
   min-width: 0;
   height: 100%;
-  -webkit-font-smoothing: antialiased;
-  text-size-adjust: 100%;
 }
 
 .root *,
 .root *::before,
-.root *::after {
-  box-sizing: border-box;
-}
+.root *::after,
+.scope *,
+.scope *::before,
+.scope *::after { box-sizing: border-box; }
 
-html[data-wb-style][data-wb-scheme='light'],
-.scope[data-wb-scheme='light'],
-.root[data-wb-scheme='light'] {
-  --wb-bg: oklch(.992 .002 106);
-  --wb-rail: var(--wb-bg);
-  --wb-nav: var(--wb-surface-sub);
-  --wb-surface: var(--wb-bg);
-  --wb-surface-sub: oklch(.97 .004 106);
-  --wb-surface-raised: var(--wb-bg);
-  --wb-fg: oklch(.145 .006 106);
-  --wb-fg-muted: oklch(.556 .007 106);
-  --wb-fg-placeholder: var(--wb-fg-muted);
-  --wb-fg-placeholder-aa: var(--wb-fg-muted);
-  --wb-line: oklch(.922 .005 106);
-  --wb-line-soft: var(--wb-line);
-  --wb-line-control: var(--wb-line);
-  --wb-hover: var(--wb-surface-sub);
-  --wb-pressed: oklch(.94 .004 106);
-  --wb-selected-bg: var(--wb-hover);
-  --wb-selected-fg: var(--wb-fg);
-  --wb-accent: oklch(.205 .006 106);
-  --wb-accent-hover: oklch(.32 .006 106);
-  --wb-accent-pressed: var(--wb-fg);
-  --wb-on-accent: oklch(.985 .003 106);
-  --wb-accent-soft: var(--wb-surface-sub);
-  --wb-accent-fg: var(--wb-fg);
-  --wb-link: var(--wb-fg);
-  --wb-focus: oklch(.708 .006 106);
-  --wb-disabled-bg: var(--wb-surface-sub);
-  --wb-disabled-fg: var(--wb-fg-muted);
-  --wb-disabled-line: var(--wb-line);
-  --wb-success: #166534;
-  --wb-success-bg: #f0fdf4;
-  --wb-warning: #854d0e;
-  --wb-warning-bg: #fefce8;
-  --wb-danger: #b91c1c;
-  --wb-danger-bg: #fef2f2;
-  --wb-danger-solid: #dc2626;
-  --wb-on-danger: #ffffff;
-  --wb-info: #1d4ed8;
-  --wb-info-bg: #eff6ff;
-  --wb-quote-bg: var(--wb-surface-sub);
-  --wb-quote-line: var(--wb-line-control);
-  --wb-bubble-peer: transparent;
-  --wb-bubble-self: var(--wb-surface-sub);
-  --wb-bubble-self-fg: var(--wb-fg);
-  --wb-bubble-line: var(--wb-line);
-  --wb-unread-bg: var(--wb-accent);
-  --wb-on-unread: var(--wb-on-accent);
-  --wb-skeleton-base: var(--wb-surface-sub);
-  --wb-skeleton-highlight: var(--wb-line);
-  --wb-overlay: rgb(0 0 0 / 50%);
-  --wb-tooltip-bg: var(--wb-accent);
-  --wb-tooltip-fg: var(--wb-on-accent);
-  --wb-shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
-  --wb-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
-  --wb-shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
-  --wb-accent-fg-sm: var(--wb-fg);
-  --wb-sub-fg-sm: var(--wb-fg-muted);
-  --wb-focus-ring: color-mix(in srgb, var(--wb-focus) 50%, transparent);
-}
+.root ::selection,
+.scope ::selection { color: var(--wb-fg); background: var(--wb-selected-bg); }
+.root :focus-visible,
+.scope :focus-visible { outline-color: var(--wb-focus); }
 
-html[data-wb-style][data-wb-scheme='dark'],
-.scope[data-wb-scheme='dark'],
-.root[data-wb-scheme='dark'] {
-  --wb-bg: oklch(.145 .006 106);
-  --wb-rail: var(--wb-bg);
-  --wb-nav: var(--wb-surface-sub);
-  --wb-surface: var(--wb-bg);
-  --wb-surface-sub: oklch(.205 .006 106);
-  --wb-surface-raised: var(--wb-surface-sub);
-  --wb-fg: oklch(.985 .003 106);
-  --wb-fg-muted: oklch(.708 .006 106);
-  --wb-fg-placeholder: var(--wb-fg-muted);
-  --wb-fg-placeholder-aa: var(--wb-fg-muted);
-  --wb-line: rgb(255 255 255 / 10%);
-  --wb-line-soft: var(--wb-line);
-  --wb-line-control: rgb(255 255 255 / 15%);
-  --wb-hover: oklch(.269 .006 106);
-  --wb-pressed: oklch(.32 .006 106);
-  --wb-selected-bg: var(--wb-hover);
-  --wb-selected-fg: var(--wb-fg);
-  --wb-accent: oklch(.922 .005 106);
-  --wb-accent-hover: oklch(.82 .005 106);
-  --wb-accent-pressed: oklch(.75 .005 106);
-  --wb-on-accent: oklch(.205 .006 106);
-  --wb-accent-soft: var(--wb-hover);
-  --wb-accent-fg: var(--wb-fg);
-  --wb-link: var(--wb-fg);
-  --wb-focus: oklch(.556 .007 106);
-  --wb-disabled-bg: var(--wb-surface-sub);
-  --wb-disabled-fg: var(--wb-fg-muted);
-  --wb-disabled-line: var(--wb-line);
-  --wb-success: #86efac;
-  --wb-success-bg: #10271a;
-  --wb-warning: #fde047;
-  --wb-warning-bg: #2b2511;
-  --wb-danger: #fca5a5;
-  --wb-danger-bg: #2e1616;
-  --wb-danger-solid: #b91c1c;
-  --wb-on-danger: #ffffff;
-  --wb-info: #93c5fd;
-  --wb-info-bg: #152237;
-  --wb-quote-bg: var(--wb-surface-sub);
-  --wb-quote-line: var(--wb-line-control);
-  --wb-bubble-peer: transparent;
-  --wb-bubble-self: var(--wb-hover);
-  --wb-bubble-self-fg: var(--wb-fg);
-  --wb-bubble-line: var(--wb-line);
-  --wb-unread-bg: var(--wb-accent);
-  --wb-on-unread: var(--wb-on-accent);
-  --wb-skeleton-base: var(--wb-surface-sub);
-  --wb-skeleton-highlight: var(--wb-hover);
-  --wb-overlay: rgb(0 0 0 / 50%);
-  --wb-tooltip-bg: var(--wb-accent);
-  --wb-tooltip-fg: var(--wb-on-accent);
-  --wb-shadow-sm: 0 1px 2px rgb(0 0 0 / 10%);
-  --wb-shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 20%), 0 2px 4px -2px rgb(0 0 0 / 20%);
-  --wb-shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 30%), 0 4px 6px -4px rgb(0 0 0 / 30%);
-  --wb-accent-fg-sm: var(--wb-fg);
-  --wb-sub-fg-sm: var(--wb-fg-muted);
-  --wb-focus-ring: color-mix(in srgb, var(--wb-focus) 50%, transparent);
-}
-
-.root ::selection { background: var(--wb-selected-bg); color: var(--wb-selected-fg); }
-.root * { scrollbar-width: thin; scrollbar-color: var(--wb-line-control) transparent; }
-.root input, .root textarea { caret-color: var(--wb-fg); }
-
-/* reduced-motion：时长归零、不做编排动画；loading 仍保留静态标记 */
 @media (prefers-reduced-motion: reduce) {
-  .root {
-    --wb-motion-fast: 0ms;
-    --wb-motion-normal: 0ms;
-    --wb-motion-slow: 0ms;
+  .root, .scope {
+    --wb-motion-fast: 0ms !important;
+    --wb-motion-normal: 0ms !important;
+    --wb-motion-slow: 0ms !important;
   }
 }
 
-/** overlay 容器挂在每个根内部：浮层 portal 到这里继承同一 style/scheme 快照。 */
 .overlayRoot {
   position: absolute;
   inset: 0;
@@ -317,6 +94,4 @@ html[data-wb-style][data-wb-scheme='dark'],
   z-index: var(--wb-layer-overlay);
 }
 
-.overlayRoot > * {
-  pointer-events: auto;
-}
+.overlayRoot > * { pointer-events: auto; }

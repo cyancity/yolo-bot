@@ -1,4 +1,5 @@
 import { Button } from './button.tsx'
+import LobeTag from '@lobehub/ui/es/Tag'
 /**
  * Workbench layout primitives (see docs/design/ui-system.md section 3).
  * Pages are assembled from these; they own spacing, width, hierarchy and
@@ -378,12 +379,12 @@ export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'asset' | 'info' | 'da
 
 const TAG_TONE: Readonly<Record<Tone, string | undefined>> = {
   neutral: undefined,
-  accent: ui.tagAccent,
-  ok: ui.tagOk,
-  warn: ui.tagWarn,
-  asset: ui.tagAsset,
-  info: ui.tagInfo,
-  danger: ui.tagDanger,
+  accent: 'processing',
+  ok: 'success',
+  warn: 'warning',
+  asset: 'processing',
+  info: 'processing',
+  danger: 'error',
 }
 
 /** Pill label (provenance, status, kind). */
@@ -392,7 +393,7 @@ export function Tag({ tone = 'neutral', className, children }: {
   readonly className?: string | undefined
   readonly children: ReactNode
 }) {
-  return <span className={cx(ui.tag, TAG_TONE[tone], className)}>{children}</span>
+  return <span className={cx(ui.tag, className)}><LobeTag size="small" {...(TAG_TONE[tone] ? { color: TAG_TONE[tone] } : {})} style={{ margin: 0 }}>{children}</LobeTag></span>
 }
 
 /** Small labelled number/state tile. */

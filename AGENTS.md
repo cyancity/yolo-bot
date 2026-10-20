@@ -1,5 +1,7 @@
 # AGENTS.md
 
+本仓库是开源 YOLO Bot 核心的唯一开发主线。历史私有核心库停止维护，剩余成果迁入本仓库后归档并清理本地副本。私有工作台通过公开扩展接口提供业务页面，按需更新；独立白标壳目前冻结。核心不包含私有工作台业务。
+
 yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信、线程、员工、负责人派工、材料与成果、记忆、工具与技能框架、原生模型接入和通用 UI。
 
 ## 包与运行时契约
@@ -18,9 +20,9 @@ yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信
 - `workbench-ui/tests/vendor/session-events.ts` 是上游 events.ts 的单文件副本；上游 npm 不发布源码，升级钉版时同步。
 - `pnpm install` 后执行 `pnpm -r typecheck`、`pnpm -r test`、`pnpm -r build`。host 测试限制两文件 worker，避免文件持久化测试抢占 CPU/磁盘；不增加全局测试超时，不放宽断言。
 - 发布包只使用预构建 `lib/` 与 package.json 的 files 白名单。host 输出 `lib/index.mjs`，UI 输出 `lib/index.js`、`lib/client.js`；公开声明分别为 `lib/extension.d.mts` / `lib/extension.d.ts`。用 `pnpm -r exec npm pack --dry-run --json` 核对实际文件清单。
-- UI 样式的颜色、字号、圆角、阴影、间距（padding/margin/gap）只用 `--wb-*` token（刻度见 `docs/design-tokens.md`，定义只在 `ui/tokens.module.css`），不写字面量和 `var()` 兜底值；`pnpm lint`（stylelint）检查，例外写进 `workbench-ui/stylelint.config.mjs` 或行内注明原因。
-- 对话 UI 使用 `@assistant-ui/react` `0.15.29`、`@assistant-ui/react-markdown` `0.14.23`。`ExternalStoreRuntime` 适配 DSH 的消息、发送、工具、附件和任务取消，消息转换显式 `joinStrategy: none`，避免合并不同员工的连续回复；宿主仍持有会话和持久化真源。
-- 基础 UI 统一消费 `src/client/ui/` 的 shadcn/Radix 组合：Button、TextInput、Textarea、Select、Switch、Checkbox、RadioGroup、Dialog、Tabs、Menu、Tooltip 等。官方已支持的行为复用对应 primitive；缺失的业务组件在共享 kit 抽象。基础原生表单标签只放在 kit 实现内，文件选择等有专门浏览器语义的输入可留在业务处。整体采用 assistant-ui 官方默认中性视觉，页面和扩展沿用 `--wb-*` token，不另建主题或控件外观。统一保留 discord 导航结构，不恢复历史 Discord/WeChat 配色、字号或气泡规则。
+- UI 统一使用兼容 React 18 的 `@lobehub/ui@1.171.0` 和 Ant Design 5。颜色、字体、圆角和控件外观直接继承原生 Lobe ThemeProvider；`--wb-*` 外观变量只作原生 token 的兼容别名，不维护第二套配色。布局取值留在共享布局样式，图标使用 lucide。
+- 页面和私有扩展复用 `src/client/ui/` 的公共组件接口；官方组件已有的行为直接复用。宿主仍持有会话和持久化真源，UI 库迁移不删除多人回复分组、成果锚点、中英切换或公开扩展能力。
+- Morph Bot 头像的本次公开分发已由项目维护者确认获得授权；来源与第三方许可说明必须保留，不将上游参考素材擅自声明为本项目 MIT 原创代码。
 - 不新增单测或接口测试；既有核心断言不删、不放宽、不新增 skip。移除功能时删除其专属测试；混合文件保留通用断言，依赖路径变化只调整导入与 fixture。
 
 ## 贡献规范

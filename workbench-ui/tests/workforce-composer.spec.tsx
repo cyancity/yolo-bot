@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { WorkforceComposer, WorkforceMain } from '../src/client/workforce.tsx'
+import { WorkforceMain } from '../src/client/workforce.tsx'
+import { WorkforceComposer } from '../src/client/workforce-composer.tsx'
 import type { WorkforceSource } from '../src/client/workforce-source.ts'
 import type { WorkforceSnapshot } from '../src/client/workforce-types.ts'
 import { WorkforceMessageText } from '../src/client/workforce-message-text.tsx'

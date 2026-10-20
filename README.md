@@ -59,6 +59,23 @@ npx @deepseek-ai/dsh@0.2.1-rc.2 web
 
 升级 DSH 或拉取新源码都不会更新已装的插件。更新时把后端包和界面包换成同一版本一起装。
 
+### 更新已安装的插件
+
+本次版本为 `0.2.0-rc.5`，兼容 DSH `0.2.1-rc.2`。从 [v0.2.0-rc.5 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.5) 下载以下两个文件：
+
+- `cyancity-yolo-bot-0.2.0-rc.5.tgz`
+- `cyancity-yolo-bot-ui-0.2.0-rc.5.tgz`
+
+桌面用户在「插件」页用新版 tgz 更新同名插件，两个包都更新后完全退出并重开 DSH。Web / CLI 用户停止原实例后，在原 profile 重新安装两个包：
+
+```sh
+dsh plugin --profile web add <新版后端tgz绝对路径> <新版界面tgz绝对路径>
+```
+
+将 `web` 换成原来使用的 profile，再按原方式启动 DSH。无需先卸载插件；保留原来的 `DSH_HOME`、profile 和数据目录，员工、频道、会话与材料继续沿用。插件尚未发布到 npm，`pnpm update` 或更新 DSH 本身不会取得这个 Release 的 tgz。
+
+本仓库维护通用 Bot 核心与公开扩展 API。私有工作台通过扩展 API 接入自己的页面和预览卡片，按需更新；白标发行壳暂时冻结。
+
 **3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析、执行。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
 
 <picture>

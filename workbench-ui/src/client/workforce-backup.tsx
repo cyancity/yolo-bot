@@ -1,5 +1,5 @@
-import { Textarea } from './ui/primitives.ts'
 import { useRef, useState } from 'react'
+import { Alert, TextArea } from '@lobehub/ui'
 import { API_PREFIX } from './transport.ts'
 import { Button, Dialog } from './ui/index.tsx'
 import { WF } from './workforce-strings.ts'
@@ -46,10 +46,10 @@ export function WorkforceBackupDialog({ onClose }: { readonly onClose: () => voi
       <p className={css.hint}>{WF.backup.description}</p>
       <p className={css.hint}>{WF.backup.consistency}</p>
       {loading && <p role="status" className={css.hint}>{WF.backup.creating}</p>}
-      {error && <p role="alert" className={css.error}>{error}</p>}
+      {error && <Alert className={css.errorAlert ?? ''} type="error" showIcon message={error} />}
       {directory && <div role="status" className={css.form}>
         <strong>{WF.backup.created}</strong>
-        <label>{WF.backup.path}<Textarea readOnly rows={3} value={directory} /></label>
+        <label>{WF.backup.path}<TextArea readOnly rows={3} value={directory} type="block" /></label>
       </div>}
       <p className={css.hint}>{WF.backup.recover}</p>
       <div className={css.actions}>

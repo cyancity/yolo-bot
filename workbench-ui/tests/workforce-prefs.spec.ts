@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const KEY = 'workforce.preferences'
 // replyGrouping 是新增字段（同一句消息多条员工回复的呈现方式），老数据缺省回落 summary。
-const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, avatarStyle: 'circle', typingEffect: 'hash', showTokenStats: false, replyGrouping: 'summary' }
+const DEFAULTS = { style: 'discord', scheme: 'system', showSteps: false, showTokenStats: false, replyGrouping: 'summary' }
 let backing: Map<string, string>
 let storage: { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void; removeItem: (k: string) => void; clear: () => void }
 
@@ -32,18 +32,18 @@ async function fresh() {
 beforeEach(() => { stubLocalStorage() })
 
 describe('数字员工显示偏好', () => {
-  it('无存储时用默认 discord + system + 不显示步骤 + 终端屏头像', async () => {
+  it('无存储时用默认 discord + system + 不显示步骤', async () => {
     const prefs = await fresh()
     expect(prefs.getWorkforcePrefs()).toEqual(DEFAULTS)
   })
 
   it('读取已存偏好；非法与缺省字段归一化（V1 chatLayout/theme 迁移）', async () => {
     backing.set(KEY, JSON.stringify({ chatLayout: 'wechat', showSteps: true }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, showSteps: true })
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat', showSteps: true })
     backing.set(KEY, JSON.stringify({ chatLayout: 'bogus', showSteps: 'yes' }))
     expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
     backing.set(KEY, JSON.stringify({ chatLayout: 'wechat' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat' })
     // 具名主题迁移为 scheme：深色三件套 → dark，浅色两件套 → light，host/缺失 → system
     backing.set(KEY, JSON.stringify({ chatLayout: 'slack', theme: 'dracula' }))
     expect((await fresh()).getWorkforcePrefs().scheme).toBe('dark')
@@ -53,25 +53,12 @@ describe('数字员工显示偏好', () => {
     expect((await fresh()).getWorkforcePrefs().scheme).toBe('system')
     // V2 直写 style/scheme
     backing.set(KEY, JSON.stringify({ style: 'wechat', scheme: 'light' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, scheme: 'light' })
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat', scheme: 'light' })
     backing.set(KEY, JSON.stringify({ style: 'bogus', scheme: 'bogus' }))
     expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
-    // 头像风格：只有显式 circle 才是圆形，缺省与非法值都归一化为终端屏
-    backing.set(KEY, JSON.stringify({ avatarStyle: 'bogus' }))
-    expect((await fresh()).getWorkforcePrefs().avatarStyle).toBe('terminal')
-    backing.set(KEY, JSON.stringify({ avatarStyle: 'circle' }))
-    expect((await fresh()).getWorkforcePrefs().avatarStyle).toBe('circle')
-    backing.set(KEY, JSON.stringify({ avatarStyle: 'terminal' }))
-    expect((await fresh()).getWorkforcePrefs().avatarStyle).toBe('terminal')
-    backing.set(KEY, JSON.stringify({ typingEffect: 'cli' }))
-    expect((await fresh()).getWorkforcePrefs().typingEffect).toBe('cli')
-    backing.set(KEY, JSON.stringify({ typingEffect: 'binary' }))
-    expect((await fresh()).getWorkforcePrefs().typingEffect).toBe('binary')
-    backing.set(KEY, JSON.stringify({ typingEffect: 'bogus' }))
-    expect((await fresh()).getWorkforcePrefs().typingEffect).toBe('hash')
     // V2 不再存 sidebarMode / bubbleRadius：风格即结构，圆角由 token 定
     backing.set(KEY, JSON.stringify({ sidebarMode: 'chat', bubbleRadius: 25, style: 'wechat' }))
-    expect((await fresh()).getWorkforcePrefs()).toEqual(DEFAULTS)
+    expect((await fresh()).getWorkforcePrefs()).toEqual({ ...DEFAULTS, style: 'wechat' })
     // 多人回复呈现方式：只有两个显式值才改写，缺省/非法回落摘要卡片
     backing.set(KEY, JSON.stringify({ replyGrouping: 'expanded' }))
     expect((await fresh()).getWorkforcePrefs().replyGrouping).toBe('expanded')

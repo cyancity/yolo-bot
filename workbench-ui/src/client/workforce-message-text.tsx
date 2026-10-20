@@ -1,7 +1,6 @@
 import { isValidElement, memo, useCallback, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Markdown, { type Components } from 'react-markdown'
-import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CodeBlock } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Employee, Task, TaskDeliverable } from './workforce-types.ts'
@@ -200,9 +199,8 @@ function MessageCodeBlock({ children }: { readonly children?: ReactNode }) {
 /** GFM for both roles; model-authored HTML remains inert literal text.
  *  memo 后未变化正文零重渲染；内部对 <Markdown> 元素再按 text 记忆化，
  *  即使外层因 tasks/employees 引用变化重渲染，也不重解析 markdown。 */
-export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false, hasDeliverables = false, assistant = false }: {
+export const WorkforceMessageText = memo(function WorkforceMessageText({ text, employees, onDm, tasks = [], hasAttachments = false, hasDeliverables = false }: {
   readonly text: string
-  readonly assistant?: boolean | undefined
   readonly employees: readonly Employee[]
   readonly onDm: (id: string) => void
   readonly tasks?: readonly Task[] | undefined
@@ -302,12 +300,9 @@ export const WorkforceMessageText = memo(function WorkforceMessageText({ text, e
     },
   }), [openImage, authorNameOf, hasAttachments, hasDeliverables])
   const cleanedText = useMemo(() => cleanMessageText(text), [text])
-  const preprocess = useCallback(() => cleanedText, [cleanedText])
-  const rendered = useMemo(() => assistant ? (
-    <MarkdownTextPrimitive smooth={false} preprocess={preprocess} remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value === '#workforce-all' || value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''} />
-  ) : (
+  const rendered = useMemo(() => (
     <Markdown remarkPlugins={[remarkGfm, mentionPlugin]} components={components} urlTransform={value => value === '#workforce-all' || value.startsWith('#workforce-employee/') ? value : safeAttachmentUrl(value) ?? ''}>{cleanedText}</Markdown>
-  ), [assistant, preprocess, cleanedText, mentionPlugin, components])
+  ), [cleanedText, mentionPlugin, components])
   return <div ref={rootRef} className={css.messageText}>
     {rendered}
     {gallery && <WorkforceImageGallery images={gallery.images} initialIndex={gallery.index} onClose={closeGallery} />}
