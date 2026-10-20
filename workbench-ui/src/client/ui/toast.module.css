@@ -36,10 +36,10 @@
   font-size: var(--wb-type-compact-size);
 }
 
-.success { color: var(--wb-success); }
-.warning { color: var(--wb-warning); }
-.danger { color: var(--wb-danger); }
-.info { color: var(--wb-info); }
+.success { border-left: 3px solid var(--wb-success); }
+.warning { border-left: 3px solid var(--wb-warning); }
+.danger { border-left: 3px solid var(--wb-danger); }
+.info { border-left: 3px solid var(--wb-info); }
 
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; }

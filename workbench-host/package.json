@@ -1,7 +1,7 @@
 {
   "name": "@cyancity/yolo-bot",
   "description": "Bot host plugin: channels, employees, dispatch, memory, skills and extension services",
-  "version": "0.2.0-rc.4",
+  "version": "0.2.0-rc.5",
   "type": "module",
   "engines": {
     "dsh": "0.2.1-rc.2"

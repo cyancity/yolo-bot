@@ -1,76 +1,34 @@
-import * as SelectPrimitive from '@radix-ui/react-select'
-import { Children, Fragment, forwardRef, isValidElement, useState, type ChangeEvent, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { Select as AntSelect } from 'antd'
+import { Children, forwardRef, isValidElement, useState, type ChangeEvent, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { useOverlayTarget } from './root.tsx'
-import { Icon } from './icons.tsx'
-import css from './select.module.css'
-
-type OptionGroup = { label: string; disabled: boolean }
-type Option = { value: string; label: ReactNode; disabled: boolean; group?: OptionGroup | undefined }
-const EMPTY_VALUE = '__wb_select_empty__'
-const encode = (value: string) => value === '' ? EMPTY_VALUE : value
-
-function readOptions(children: ReactNode, group?: OptionGroup): Option[] {
+type Item = { value: string; label: ReactNode; disabled: boolean; group?: string | undefined }
+function readOptions(children: ReactNode, inheritedDisabled = false, group?: string): Item[] {
   return Children.toArray(children).flatMap(child => {
     if (!isValidElement<{ value?: string | number; children?: ReactNode; disabled?: boolean; label?: string }>(child)) return []
-    if (child.type === 'optgroup') return readOptions(child.props.children, { label: child.props.label ?? '', disabled: child.props.disabled === true })
-    if (child.type !== 'option') return readOptions(child.props.children, group)
-    return [{ value: String(child.props.value ?? child.props.children ?? ''), label: child.props.children, disabled: child.props.disabled === true || group?.disabled === true, group }]
+    if (child.type !== 'option') return readOptions(child.props.children, inheritedDisabled || child.props.disabled === true, child.type === 'optgroup' ? child.props.label : group)
+    return [{ value: String(child.props.value ?? child.props.children ?? ''), label: child.props.children, disabled: inheritedDisabled || child.props.disabled === true, group }]
   })
 }
-
-/** shadcn's Radix Select composition, with the existing native-select props contract. */
-export const Select = forwardRef<HTMLButtonElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select(
-  { children, className, value, defaultValue, onChange, disabled, required, name, form, id, 'aria-label': ariaLabel, 'aria-labelledby': labelledBy, ...rest }, ref,
-) {
+/** Public native-select values and change events are adapted to the native Lobe control. */
+export const Select = forwardRef<HTMLButtonElement, SelectHTMLAttributes<HTMLSelectElement>>(function Select({ children, className, value, defaultValue, onChange, disabled, required, name, form, id, 'aria-label': label, ...rest }, ref) {
   const overlay = useOverlayTarget()
   const options = readOptions(children)
-  const groups: { group: OptionGroup | undefined; start: number; options: Option[] }[] = []
-  for (const [index, option] of options.entries()) {
-    const previous = groups[groups.length - 1]
-    if (previous && previous.group === option.group) previous.options.push(option)
-    else groups.push({ group: option.group, start: index, options: [option] })
+  const dropdownOptions: Array<Item | { label: string; options: Item[] }> = []
+  for (const item of options) {
+    if (!item.group) { dropdownOptions.push(item); continue }
+    const previous = dropdownOptions[dropdownOptions.length - 1]
+    if (previous && 'options' in previous && previous.label === item.group) previous.options.push(item)
+    else dropdownOptions.push({ label: item.group, options: [item] })
   }
-  const renderOption = (option: Option, index: number) => <SelectPrimitive.Item key={`${option.value}:${index}`} value={encode(option.value)} disabled={option.disabled} className={css.item}>
-    <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-    <SelectPrimitive.ItemIndicator className={css.indicator}><Icon name="check" /></SelectPrimitive.ItemIndicator>
-  </SelectPrimitive.Item>
-  const [localValue, setLocalValue] = useState(() => String(defaultValue ?? options.find(option => !option.disabled)?.value ?? ''))
+  const [localValue, setLocalValue] = useState(() => String(defaultValue ?? options.find(item => !item.disabled)?.value ?? ''))
   const selected = String(value ?? localValue)
-  const change = (next: string) => {
-    const decoded = next === EMPTY_VALUE ? '' : next
-    setLocalValue(decoded)
-    if (onChange) {
-      const target = document.createElement('select')
-      for (const option of options) target.add(new Option(String(option.label ?? ''), option.value))
-      target.value = decoded
-      target.disabled = disabled ?? false
-      if (name) target.name = name
-      if (id) target.id = id
-      const nativeEvent = new Event('change', { bubbles: true })
-      onChange({ target, currentTarget: target, nativeEvent, type: 'change', bubbles: true, cancelable: false, defaultPrevented: false,
-        preventDefault: () => nativeEvent.preventDefault(), stopPropagation: () => nativeEvent.stopPropagation(),
-        isDefaultPrevented: () => nativeEvent.defaultPrevented, isPropagationStopped: () => false, persist: () => {},
-      } as ChangeEvent<HTMLSelectElement>)
-    }
-  }
-  return <SelectPrimitive.Root value={encode(selected)} onValueChange={change} disabled={disabled ?? false} required={required ?? false} {...(name ? { name } : {})} {...(form ? { form } : {})}>
-    <SelectPrimitive.Trigger ref={ref} id={id} value={selected} aria-label={ariaLabel} aria-labelledby={labelledBy} aria-describedby={rest['aria-describedby']} aria-invalid={rest['aria-invalid']} title={rest.title} className={`${css.trigger} ${className ?? ''}`}>
-      <SelectPrimitive.Value />
-      <SelectPrimitive.Icon className={css.icon}><Icon name="chevronDown" /></SelectPrimitive.Icon>
-    </SelectPrimitive.Trigger>
-    <SelectPrimitive.Portal container={overlay ?? undefined}>
-      <SelectPrimitive.Content className={css.content} position="popper" sideOffset={4} align="start">
-        <SelectPrimitive.ScrollUpButton className={css.scroll}><Icon name="chevronDown" /></SelectPrimitive.ScrollUpButton>
-        <SelectPrimitive.Viewport className={css.viewport}>
-          {groups.map(({ group, start, options: items }) => group
-            ? <SelectPrimitive.Group key={start} className={css.group}>
-                <SelectPrimitive.Label className={css.groupLabel}>{group.label}</SelectPrimitive.Label>
-                {items.map((option, index) => renderOption(option, start + index))}
-              </SelectPrimitive.Group>
-            : <Fragment key={start}>{items.map((option, index) => renderOption(option, start + index))}</Fragment>)}
-        </SelectPrimitive.Viewport>
-        <SelectPrimitive.ScrollDownButton className={css.scroll}><Icon name="chevronDown" /></SelectPrimitive.ScrollDownButton>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
-  </SelectPrimitive.Root>
+  return <><AntSelect {...(id ? { id } : {})} value={selected} options={dropdownOptions} {...(disabled !== undefined ? { disabled } : {})} className={className ?? ''} aria-label={label} aria-labelledby={rest['aria-labelledby']} aria-describedby={rest['aria-describedby']} aria-invalid={rest['aria-invalid']} {...(rest.title ? { title: rest.title } : {})} getPopupContainer={trigger => trigger.closest('dialog') ?? overlay ?? document.body} ref={instance => { const element = instance?.nativeElement as unknown as HTMLButtonElement | null; if (typeof ref === 'function') ref(element); else if (ref) ref.current = element }} onChange={next => {
+    setLocalValue(next)
+    if (!onChange) return
+    const target = document.createElement('select')
+    for (const option of options) target.add(new Option(String(option.label ?? ''), option.value))
+    target.value = next; target.disabled = disabled ?? false; if (name) target.name = name; if (id) target.id = id
+    const nativeEvent = new Event('change', { bubbles: true })
+    onChange({ target, currentTarget: target, nativeEvent, type: 'change', bubbles: true, cancelable: false, defaultPrevented: false, preventDefault: () => nativeEvent.preventDefault(), stopPropagation: () => nativeEvent.stopPropagation(), isDefaultPrevented: () => nativeEvent.defaultPrevented, isPropagationStopped: () => false, persist: () => {} } as ChangeEvent<HTMLSelectElement>)
+  }} />{name && <select hidden tabIndex={-1} aria-hidden="true" name={name} form={form} value={selected} required={required} disabled={disabled} onChange={() => {}}>{options.map((item, index) => <option key={index} value={item.value}>{typeof item.label === 'string' ? item.label : item.value}</option>)}</select>}</>
 })

@@ -7,7 +7,7 @@
  */
 import { Badge, Button, Card, CardContent, Chip } from './ui/index.tsx'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { FileTypeIcon } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Alert, MaterialFileTypeIcon, Tag } from '@lobehub/ui'
 import { WorkforceApi } from './workforce-api.ts'
 import { WF } from './workforce-strings.ts'
 import { WorkforceFilePreview, WorkforceNativeFileMenu, attachmentOpenMode, openNativeDeliverable, revealNativeFile, gateAttachment } from './workforce-attachments.tsx'
@@ -147,7 +147,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
   )
 
   const head = <>
-    <span className={css.fileIcon} data-extension={extension}><FileTypeIcon path={item.name} size={22} /></span>
+    <span className={css.fileIcon} data-extension={extension}><MaterialFileTypeIcon filename={item.name} size={22} /></span>
     <Button variant="plain" type="button" className={css.fileName} title={WF.deliverables.openFileTitle(item.name)} onClick={() => void openDeliverable(view.shownVersion)}>{item.name}</Button>
     {versionPill}
     <Badge variant="pill" tone="neutral" className={css.authorTag}>{authorName(view.authorId, employees)}</Badge>
@@ -171,7 +171,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
           <div className={css.publishNote}>{LABELS.publishNote}</div>
           {view.versions.map(version => (
             <div key={version.version} className={css.versionRow} data-current={version.version === item.publishedVersion}>
-              <span className={css.versionNo}>v{version.version}</span>
+              <Tag className={css.versionNo ?? ''} color={version.version === item.publishedVersion ? 'success' : 'default'}>v{version.version}</Tag>
               <span className={css.versionAuthor}>{authorName(version.authorId, employees)}</span>
               <span className={css.versionTime}>{fmtStamp(version.createdAt)}</span>
               <span className={css.versionChars}>{WF.deliverables.charCount(version.charCount)}</span>
@@ -205,7 +205,7 @@ function DeliverableCard({ taskId, item, employees, api, onPublished }: {
           </Button>
         </CardContent>
       )}
-      {error && <span className={css.error} role="alert">{error}</span>}
+      {error && <Alert className={css.errorAlert ?? ''} type="error" showIcon message={error} />}
       {previewVersion !== undefined && (
         <WorkforceFilePreview
           url={api.deliverableUrl(taskId, item.name, previewVersion)}

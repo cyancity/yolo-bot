@@ -1,5 +1,6 @@
 /** Core interface settings inside the official settings shell. */
 import { useState } from 'react'
+import { Radio as LobeRadio, Select as LobeSelect } from 'antd'
 import type { ComposedProps } from '@deepseek-ai/dsh-client-ui-slots'
 import type { EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 import type { WorkbenchNavActions, WorkbenchNavState } from './nav.ts'
@@ -7,10 +8,11 @@ import type { WorkbenchChromeProps } from '../extension.ts'
 import type { PrefsSource, ZoomPref } from './prefs.ts'
 import type { PreferenceFields } from '../extension.ts'
 import { ZOOM_CHOICES, normalizeZoom, normalizeLocale, LOCALE_FIELD, SIDEBAR_TAKEOVER_FIELD } from './prefs.ts'
-import { Select, Switch, RadioGroup, WorkbenchSurface, Panel, PanelSection } from './ui/index.tsx'
+import { Switch, WorkbenchSurface } from './ui/index.tsx'
 import { useZoom } from './ui/zoom.ts'
 import { S } from './strings.ts'
-import { useWorkforcePrefs, type WorkforceScheme } from './workforce-prefs.ts'
+import { WF } from './workforce-strings.ts'
+import { useWorkforcePrefs, type WorkforceScheme, type WorkforceStyle } from './workforce-prefs.ts'
 import css from './settings.module.css'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -33,58 +35,46 @@ export function WorkbenchSettingsSection(props: WorkbenchSettingsSectionProps) {
   const [prefs, setPrefs] = useWorkforcePrefs()
   const [error, setError] = useState<string>()
   return <WorkbenchSurface className={css.section} style={{ height: 'auto', display: 'block' }}>
-    <Panel title={S.settings.interface} className={css.panel}>
-      <PanelSection>
-        <div className={css.content}>
-          <label className={css.row}>
-            <span className={css.rowLabel}>{S.nav.zoom}</span>
-            <Select aria-label={S.nav.zoom} value={String(zoomPref)} onChange={event => {
-              const next = event.target.value === 'auto' ? 'auto' : Number(event.target.value)
-              void props.setZoom(next).then(() => setError(undefined), failure => setError(failure instanceof Error ? failure.message : String(failure)))
-            }}>
-              <option value="auto">{S.nav.zoomAuto(zoom)}</option>
-              {ZOOM_CHOICES.map(choice => <option key={choice} value={String(choice)}>{Math.round(choice * 1000) / 10}%</option>)}
-            </Select>
-          </label>
-          <label className={css.row}>
-            <span className={css.rowLabel}>{S.settings.languageLabel}</span>
-            <Select aria-label={S.settings.languageLabel} value={localePref} onChange={event => {
-              const next = normalizeLocale(event.target.value)
-              void props.patchPrefs({ [LOCALE_FIELD]: next })
-            }}>
-              <option value="auto">{S.settings.languageAuto}</option>
-              <option value="zh">{S.settings.languageZh}</option>
-              <option value="en">{S.settings.languageEn}</option>
-            </Select>
-          </label>
-          {error && <p role="alert">{error}</p>}
-          <div className={css.switchRow}>
-            <Switch label={S.settings.sidebarTakeover} checked={takeover}
-              onChange={checked => void props.patchPrefs({ [SIDEBAR_TAKEOVER_FIELD]: checked })} />
-          </div>
-        </div>
-      </PanelSection>
-    </Panel>
-    <Panel title={S.settings.appearance} className={css.panel}>
-      <PanelSection>
-        <div className={css.content}>
-          <div className={css.fieldRow}>
-            <span className={css.rowLabel}>{S.settings.schemeLabel}</span>
-            <RadioGroup label={S.settings.schemeLabel} value={prefs.scheme}
-              onValueChange={value => setPrefs({ scheme: value as WorkforceScheme })}
-              items={[
-                { value: 'system', label: S.settings.schemeSystem },
-                { value: 'light', label: S.settings.schemeLight },
-                { value: 'dark', label: S.settings.schemeDark },
-              ]} />
-          </div>
-          <div className={css.switchRow}>
-            <Switch label={S.settings.showSteps} checked={prefs.showSteps}
-              onChange={checked => setPrefs({ showSteps: checked })} />
-          </div>
-        </div>
-      </PanelSection>
-    </Panel>
+    <section className={css.group}>
+      <h3 className={css.groupTitle}>{S.settings.interface}</h3>
+      <label className={css.row}>
+        <span className={css.rowLabel}>{S.nav.zoom}</span>
+        <LobeSelect aria-label={S.nav.zoom} value={String(zoomPref)} onChange={value => {
+          const next = value === 'auto' ? 'auto' : Number(value)
+          void props.setZoom(next).then(() => setError(undefined), failure => setError(failure instanceof Error ? failure.message : String(failure)))
+        }} options={[
+          { value: 'auto', label: S.nav.zoomAuto(zoom) },
+          ...ZOOM_CHOICES.map(choice => ({ value: String(choice), label: `${Math.round(choice * 1000) / 10}%` })),
+        ]} />
+      </label>
+      <label className={css.row}>
+        <span className={css.rowLabel}>{S.settings.languageLabel}</span>
+        <LobeSelect aria-label={S.settings.languageLabel} value={localePref} onChange={value => void props.patchPrefs({ [LOCALE_FIELD]: normalizeLocale(value) })} options={[{ value: 'auto', label: S.settings.languageAuto }, { value: 'zh', label: S.settings.languageZh }, { value: 'en', label: S.settings.languageEn }]} />
+      </label>
+      {error && <p role="alert">{error}</p>}
+      <Switch label={S.settings.sidebarTakeover} checked={takeover}
+        onChange={checked => void props.patchPrefs({ [SIDEBAR_TAKEOVER_FIELD]: checked })} />
+    </section>
+    <section className={css.group}>
+      <h3 className={css.groupTitle}>{S.settings.appearance}</h3>
+      <fieldset className={css.radioGroup}>
+        <legend className={css.rowLabel}>{WF.settings.layoutTitle}</legend>
+        <LobeRadio.Group className={css.radioOptions ?? ''} value={prefs.style} onChange={event => setPrefs({ style: event.target.value as WorkforceStyle })}>
+          <LobeRadio value="discord">{WF.settings.layoutDiscord}</LobeRadio>
+          <LobeRadio value="wechat">{WF.settings.layoutWechat}</LobeRadio>
+        </LobeRadio.Group>
+      </fieldset>
+      <fieldset className={css.radioGroup}>
+        <legend className={css.rowLabel}>{S.settings.schemeLabel}</legend>
+        <LobeRadio.Group className={css.radioOptions ?? ''} value={prefs.scheme} onChange={event => setPrefs({ scheme: event.target.value as WorkforceScheme })}>
+          <LobeRadio value="system">{S.settings.schemeSystem}</LobeRadio>
+          <LobeRadio value="light">{S.settings.schemeLight}</LobeRadio>
+          <LobeRadio value="dark">{S.settings.schemeDark}</LobeRadio>
+        </LobeRadio.Group>
+      </fieldset>
+      <Switch label={S.settings.showSteps} checked={prefs.showSteps}
+        onChange={checked => setPrefs({ showSteps: checked })} />
+    </section>
     {props.renderSlot('workbench.settings', chrome)}
   </WorkbenchSurface>
 }

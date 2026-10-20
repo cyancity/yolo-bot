@@ -9,7 +9,7 @@ import { memo, type ReactNode } from 'react'
 import css from './workforce-reply-group.module.css'
 import { Icon } from './ui/icons.tsx'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
-import type { AvatarStyle, ReplyGrouping, TypingEffect } from './workforce-prefs.ts'
+import type { ReplyGrouping } from './workforce-prefs.ts'
 import { replyCharCount, replyExcerpt, type ReplyGroup } from './workforce-source.ts'
 import type { Employee, WorkforceActivity, WorkforceMessage } from './workforce-types.ts'
 import { WF } from './workforce-strings.ts'
@@ -19,8 +19,6 @@ export interface ReplyGroupCardProps {
   /** 偏好里的呈现方式：summary 摘要 / expanded 就地展开 / collapsed 只留标题。 */
   readonly mode: ReplyGrouping
   readonly employees: readonly Employee[]
-  readonly avatarStyle?: AvatarStyle | undefined
-  readonly typingEffect?: TypingEffect | undefined
   readonly activities: readonly WorkforceActivity[]
   /** 就地展开时渲染的真实消息行（调用方注入，保持原有 memo 与行行为）。 */
   readonly renderMember: (message: WorkforceMessage) => ReactNode
@@ -31,7 +29,7 @@ export interface ReplyGroupCardProps {
 }
 
 export const ReplyGroupCard = memo(function ReplyGroupCard({
-  group, mode, employees, avatarStyle, typingEffect, activities, renderMember, footer, onToggleExpanded, onOpenPreview,
+  group, mode, employees, activities, renderMember, footer, onToggleExpanded, onOpenPreview,
 }: ReplyGroupCardProps) {
   const expanded = mode === 'expanded'
   const collapsed = mode === 'collapsed'
@@ -87,8 +85,6 @@ export const ReplyGroupCard = memo(function ReplyGroupCard({
                     name={message.senderName}
                     color={employee?.avatarColor}
                     role={employee?.role}
-                    style={avatarStyle}
-                    typingEffect={typingEffect}
                     state={running ? (activity?.state === 'tool' ? 'searching' : activity?.state === 'thinking' ? 'thinking' : 'working') : 'idle'}
                     live={running}
                     size={28}

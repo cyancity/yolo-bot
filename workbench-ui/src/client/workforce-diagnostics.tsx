@@ -1,10 +1,11 @@
-import { Textarea } from './ui/primitives.ts'
 import { useEffect, useId, useState } from 'react'
 import { API_PREFIX } from './transport.ts'
 import { useWorkforceFileSession } from './workforce-attachments.tsx'
-import { Button, Dialog, Select, Switch } from './ui/index.tsx'
-import { WF } from './workforce-strings.ts'
+import { Alert, TextArea } from '@lobehub/ui'
+import { Button, Select, Switch } from 'antd'
+import { Dialog } from './ui/index.tsx'
 import css from './workforce-memory.module.css'
+import { WF } from './workforce-strings.ts'
 
 export interface DiagnosticTaskChoice { readonly id: string; readonly title: string }
 
@@ -110,25 +111,23 @@ export function WorkforceDiagnosticsDialog({ onClose, tasks: suppliedTasks }: {
     <section className={css.editor} aria-label={WF.diagnostics.editorAria}>
       <p className={css.hint}>{WF.diagnostics.hint}</p>
       {/* 没有任务时不放一个点不动的开关，只说明原因 */}
-      {tasks.length > 0 && <Switch label={WF.diagnostics.includeTaskSwitch} checked={includeConversation} onChange={setIncludeConversation} />}
+      {tasks.length > 0 && <label><Switch checked={includeConversation} onChange={setIncludeConversation} /> {WF.diagnostics.includeTaskSwitch}</label>}
       {includeConversation && <div className={css.form}>
         <label htmlFor={selectId}>{WF.diagnostics.selectTaskLabel}</label>
-        <Select id={selectId} value={taskId} onChange={event => setTaskId(event.target.value)}>
-          {tasks.map(task => <option key={task.id} value={task.id}>{task.title || task.id}</option>)}
-        </Select>
+        <Select id={selectId} value={taskId} getPopupContainer={trigger => trigger.closest('dialog') ?? trigger.parentElement ?? document.body} onChange={setTaskId} options={tasks.map(task => ({ value: task.id, label: task.title || task.id }))} />
       </div>}
       {taskError && <p className={css.hint}>{WF.diagnostics.tasksReadFailedNotice(taskError)}</p>}
       {!taskError && !tasksSettled && <p role="status" className={css.hint}>{WF.diagnostics.readingTasksList}</p>}
       {!taskError && tasksSettled && tasks.length === 0 && <p className={css.hint}>{WF.diagnostics.noTasksToAttach}</p>}
       {loading && <p role="status" className={css.hint}>{WF.diagnostics.loading}</p>}
-      {error && <p role="alert" className={css.error}>{error}</p>}
+      {error && <Alert type="error" showIcon message={error} />}
       {partial && <p role="status" className={css.hint}>{WF.diagnostics.partialErrorNotice}</p>}
       <div className={css.form}>
         <label htmlFor={previewId}>{WF.diagnostics.jsonPreview}</label>
-        <Textarea id={previewId} aria-busy={loading} readOnly rows={12} value={preview} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)', maxHeight: '40vh', resize: 'vertical' }} />
+        <TextArea type="block" id={previewId} aria-busy={loading} readOnly rows={12} value={preview} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)', maxHeight: '40vh' }} />
       </div>
       {savedPath && <div className={css.form}>
-        <label>{WF.diagnostics.savedToLocalMachine}<Textarea readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
+        <label>{WF.diagnostics.savedToLocalMachine}<TextArea type="block" readOnly rows={2} value={savedPath} style={{ fontFamily: 'monospace', fontSize: 'var(--wb-font-xs)' }} /></label>
       </div>}
       <div className={css.actions}>
         {fileSession ? (

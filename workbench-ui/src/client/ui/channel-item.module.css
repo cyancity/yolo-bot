@@ -11,7 +11,7 @@
   color: var(--wb-fg-muted);
   text-align: start;
   cursor: pointer;
-  border-radius: var(--wb-radius-panel);
+  border-radius: var(--wb-radius-control);
 }
 
 .item:hover:not(:disabled):not(.selected) { background: var(--wb-hover); color: var(--wb-fg); }
@@ -23,18 +23,18 @@
 
 .selected:hover,
 .item:hover.selected {
-  background: color-mix(in srgb, var(--wb-selected-bg) 92%, var(--wb-fg));
+  background: var(--wb-selected-bg);
   color: var(--wb-selected-fg);
 }
 
-.muted { opacity: var(--wb-opacity-disabled); }
+.muted { opacity: .55; }
 
 .item:focus-visible {
-  outline: var(--wb-border-width) solid var(--wb-focus-ring);
-  outline-offset: var(--wb-space-2);
+  outline: var(--wb-focus-width) solid var(--wb-focus);
+  outline-offset: calc(-1 * var(--wb-focus-offset));
 }
 
-.item:disabled { opacity: var(--wb-opacity-disabled); cursor: not-allowed; }
+.item:disabled { color: var(--wb-disabled-fg); cursor: not-allowed; }
 
 .hash {
   width: var(--wb-avatar-nav-size);
@@ -46,6 +46,8 @@
   color: inherit;
   flex-shrink: 0;
 }
+
+.hash { background: var(--wb-accent-soft); border-radius: var(--wb-radius-control); color: var(--wb-accent-fg); }
 
 .avatarWrap {
   width: var(--wb-avatar-nav-size);
@@ -80,7 +82,8 @@
   color: inherit;
 }
 
-.selected .label, .item:hover:not(:disabled) .label { color: var(--wb-fg); }
+.selected .label { color: var(--wb-selected-fg); }
+.item:hover:not(:disabled):not(.selected) .label { color: var(--wb-fg); }
 
 .time {
   flex-shrink: 0;
@@ -101,8 +104,8 @@
   flex-shrink: 0;
   min-width: 18px;
   height: 18px;
-  padding: 0 var(--wb-space-3);
-  border-radius: var(--wb-radius-lg);
+  padding: 0 5px;
+  border-radius: var(--wb-radius-badge);
   background: var(--wb-unread-bg);
   color: var(--wb-on-unread);
   font-size: var(--wb-type-caption-size);

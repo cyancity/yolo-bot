@@ -1,67 +1,62 @@
-/* Core sidebar theme, conversation navigation and user controls. */
-
-/* Preserve the shell's own tracks and width preferences while a page owns presentation. */
-:global([data-wb-sidebar-presentation='hidden']) {
-  grid-template-columns: var(--wb-independent-grid-columns) !important;
-}
-
-:global([data-wb-sidebar-presentation='hidden']) > :global([data-side='sidebar']) {
-  display: none;
-}
-
-:global([data-wb-sidebar-presentation='hidden']) :global([class*='_root']):has(:global([data-workforce-sidebar])) {
-  width: 100% !important;
-}
-
-:global([data-wb-sidebar-presentation='hidden']) :global([class*='_regionArea']):has(:global([data-workforce-sidebar])) {
-  display: flex !important;
-}
-
-
-/* 侧栏（频道列表栏）背景跟随主题：--wb-nav 介于竖栏(--wb-rail)与内容区(--wb-bg)之间。
-   基础规则在 workforce.module.css，借根元素属性选择器覆盖；
-   channelColumn 自身无背景，随根透出。 */
+/* Lobe-style navigation rail and conversation column. */
 :global([data-workforce-sidebar]) {
   background: var(--wb-nav);
 }
 
-/* 侧栏顶部标题行：基础规则 .workspaceBrand 在 workforce.module.css，那里没有
-   display:flex，导致 .brandNameSpan 的 flex:1 不生效。这里补上 flex 行布局，
-   并把横向内边距对齐下方「频道」行的
-   channelScroll(8px) + topActionRow(8px) = 16px。 */
-:global([data-workforce-sidebar]) :global([class*="workspaceBrand"]) {
-  display: flex;
-  align-items: center;
-  gap: var(--wb-space-4);
-  padding: var(--wb-space-6);
+.navigationRail.navigationRail {
+  width: 64px;
+  padding: 0;
+  gap: 0;
+  background: var(--wb-rail);
+  border-inline-end: 1px solid var(--wb-line-soft);
 }
 
+.lobeRail {
+  min-height: 0;
+}
 
-/* 私信区折叠标题：与「频道」区标题同一套字号字重 */
+.channelColumn.channelColumn {
+  background: var(--wb-nav);
+  border-inline-end: 1px solid var(--wb-line-soft);
+}
+
+.channelHeader.channelHeader {
+  display: flex;
+  align-items: center;
+  min-height: 68px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--wb-line-soft);
+}
+
 .dmSectionHeadBtn {
   display: flex;
   align-items: center;
-  gap: var(--wb-space-3);
+  gap: 6px;
   width: 100%;
-  padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-3);
-  border: none;
+  min-height: 32px;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--wb-radius-control, 8px);
   background: transparent;
   color: var(--wb-fg-muted);
-  font-size: var(--wb-type-caption-size);
-  font-weight: var(--wb-weight-medium);
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
 .dmSectionHeadBtn:hover {
+  background: var(--wb-hover);
   color: var(--wb-fg);
 }
 
-.dmSectionHeadBtn:focus-visible {
+.dmSectionHeadBtn:focus-visible,
+.dmItem:focus-visible,
+.railAvatarBtn:focus-visible {
   outline: 2px solid var(--wb-accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
 .dmChevron {
@@ -71,44 +66,36 @@
   width: 14px;
   height: 14px;
   color: var(--wb-fg-muted);
-  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  transition: transform 150ms ease-out;
 }
 
 .dmChevronCollapsed {
   transform: rotate(-90deg);
 }
 
-/* 宿主注入的 sidebar.settings 齿轮：dsh 用 --dsw-alias-label-primary 着色，
-   其值已在上游 token 桥接里按主题覆盖。这里再兜一层，让它与 rail 其余按钮同色。 */
-.railFoot :global(button) {
-  color: var(--wb-fg-muted);
-}
-
-.railFoot :global(button:hover) {
-  color: var(--wb-fg);
-  background: var(--wb-hover);
-}
-
-
-/* 「频道」与「私信」两区之间的视觉分隔线 */
 .sectionDivider {
   height: 1px;
-  margin: var(--wb-space-4);
-  background: var(--wb-line);
+  margin: 12px 10px 4px;
+  background: var(--wb-line-soft);
   flex: none;
 }
 
-/* 侧栏顶部标题行：品牌名（折叠按钮已移到内容区 header，见第九轮第 7 条）。 */
-.brandNameSpan {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.dmItem.dmItem {
+  min-height: var(--wb-nav-row-height, 36px);
+  gap: 10px;
+  padding: 6px 10px;
 }
+
+.dmTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
 .dmItemDimmed {
-  opacity: 0.45;
-  filter: grayscale(40%);
+  opacity: 0.6;
 }
 
 .dmAvatarWrap {
@@ -116,8 +103,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .dmPinBadge {
@@ -128,49 +115,110 @@
   width: 14px;
   height: 14px;
   color: var(--wb-fg-muted);
-  opacity: 0.8;
 }
 
-/* 侧栏底部用户资料与操作区 */
+.brandNameSpan {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.railFoot :global(button) {
+  color: var(--wb-fg-muted);
+}
+
+.railFoot :global(button:hover) {
+  color: var(--wb-fg);
+  background: var(--wb-hover);
+}
+
 .channelFootArea {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--wb-line);
+  border-top: 1px solid var(--wb-line-soft);
   background: var(--wb-nav);
 }
 
 .railAvatarBtn {
-  width: 38px;
-  height: 38px;
-  display: flex;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--wb-radius-dot);
-  cursor: pointer;
   padding: 0;
-  overflow: hidden;
+  border: 0;
+  border-radius: var(--wb-radius-control, 8px);
+  background: transparent;
+  cursor: pointer;
 }
 
 .railAvatarBtn:hover {
   background: var(--wb-hover);
 }
 
-.railAvatarBtn:focus-visible {
-  outline: 2px solid var(--wb-accent);
-  outline-offset: 2px;
+.mobileBackdrop,
+.mobileClose {
+  display: none;
 }
 
-.formItem {
-  display: flex;
-  flex-direction: column;
-  gap: var(--wb-space-2);
+@media (max-width: 1023.98px) {
+  [data-workforce-sidebar][data-wb-expanded='true'] .mobileBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100vw;
+    height: 100dvh;
+    padding: 0;
+    border: 0;
+    background: var(--wb-overlay);
+    cursor: default;
+  }
+
+  [data-workforce-sidebar][data-wb-expanded='true'] .navigationRail,
+  [data-workforce-sidebar][data-wb-expanded='true'] .channelColumn {
+    position: relative;
+    z-index: 1;
+  }
+
+  [data-workforce-sidebar][data-wb-expanded='true'] .channelColumn {
+    min-width: 0;
+  }
+
+  [data-workforce-sidebar][data-wb-expanded='true'] .channelHeader {
+    padding-right: 48px;
+  }
+
+  [data-workforce-sidebar][data-wb-expanded='true'] .mobileClose {
+    position: absolute;
+    top: 18px;
+    right: 12px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--wb-radius-control);
+    background: var(--wb-hover);
+    color: var(--wb-fg);
+    cursor: pointer;
+  }
+
+  .mobileClose:focus-visible {
+    outline: 2px solid var(--wb-accent);
+    outline-offset: 2px;
+  }
 }
 
-.formLabel {
-  font-size: var(--wb-type-caption-size);
-  color: var(--wb-fg-muted);
+@media (prefers-reduced-motion: reduce) {
+  .dmChevron,
+  .dmItem {
+    transition: none;
+  }
 }
-

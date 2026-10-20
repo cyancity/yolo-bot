@@ -2,9 +2,10 @@
    column inside the DSH settings dialog. Reads the workbench tokens; the
    section root carries .tokens so it works in the dialog's own container. */
 .section { display: flex; flex-direction: column; gap: var(--wb-space-6); padding: var(--wb-space-5) var(--wb-space-6); overflow: auto; }
-.panel { margin: 0; }
-.content { display: flex; flex-direction: column; gap: var(--wb-space-4); }
-.row { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5); line-height: var(--wb-type-body-leading); }
-.rowLabel { color: var(--wb-fg); font-size: var(--wb-type-body-size); }
-.fieldRow { display: flex; flex-direction: column; gap: var(--wb-space-2); }
-.switchRow { padding-top: var(--wb-space-2); }
+.group { display: flex; flex-direction: column; gap: var(--wb-space-3); }
+.groupTitle { margin: 0; font-size: var(--wb-type-label-size); font-weight: var(--wb-weight-semibold); color: var(--wb-fg); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: var(--wb-space-5); line-height: 1.7; }
+.rowLabel { color: var(--wb-fg); }
+.radioGroup { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: var(--wb-space-2); }
+.radioOptions { display: flex; flex-direction: column; gap: var(--wb-space-3); }
+.radioOptions :global(.ant-radio-wrapper) { margin: 0; color: var(--wb-fg); }

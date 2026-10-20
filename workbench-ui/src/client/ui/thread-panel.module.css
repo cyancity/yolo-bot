@@ -1,6 +1,5 @@
 .panel {
-  width: var(--wb-thread-max);
-  max-width: 100%;
+  width: var(--wb-thread-width);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;

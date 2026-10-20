@@ -13,10 +13,6 @@ const TAKEOVER_CSS = `
   --dsh-windows-content-radius: 0px !important;
 }
 
-:root, body {
-  --dsw-specific-sidebar-fill: var(--wb-rail, var(--wb-bg, #1e1f22));
-  --dsw-alias-label-primary: var(--wb-fg, #f2f3f5);
-}
 /* 隐藏 DSH 原生 Windows 标题栏的应用与编辑菜单 */
 [data-windows-menu],
 div[data-windows-menu] {
@@ -46,7 +42,7 @@ nav[class*="_panelList"],
   content: "YOLO BotChat" !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  color: var(--wb-fg, inherit) !important;
+  color: inherit !important;
 }
 
 [class*="_root"]:has([data-workforce-sidebar]) {
@@ -58,6 +54,35 @@ nav[class*="_panelList"],
   padding: 0 !important;
   height: 100% !important;
   flex: 1 1 100% !important;
+}
+
+/* 宿主窄屏 toggle 仍把展开宽度写进 grid；让侧栏占零宽轨道，抽屉浮在完整主区之上。 */
+@media (max-width: 1023.98px) {
+  [class*="_frame"]:has([data-workforce-sidebar][data-wb-expanded="true"]) {
+    grid-template-columns: 0px minmax(0px, 1fr) 0px !important;
+  }
+
+  [class*="_frame"]:has([data-workforce-sidebar][data-wb-expanded="true"]) > [class*="_sidebarCol"] {
+    position: relative;
+    z-index: 21;
+    overflow: visible !important;
+    background: transparent;
+    border: 0;
+  }
+
+  [class*="_frame"]:has([data-workforce-sidebar][data-wb-expanded="true"]) > [class*="_sidebarCol"] > [class*="_root"],
+  [class*="_frame"]:has([data-workforce-sidebar][data-wb-expanded="true"]) > [class*="_sidebarCol"] > [data-workforce-sidebar] {
+    position: absolute;
+    inset: 0 auto 0 0;
+    box-sizing: border-box;
+    width: min(320px, calc(100vw - 48px));
+    height: 100%;
+    box-shadow: 12px 0 36px rgba(0, 0, 0, .18);
+  }
+
+  [class*="_frame"]:has([data-workforce-sidebar][data-wb-expanded="true"]) > [class*="_handle"] {
+    display: none;
+  }
 }
 `
 

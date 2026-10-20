@@ -1,31 +1,27 @@
 /**
  * 数字员工 UI 显示偏好 V2（持久化到浏览器 localStorage，键不变）。
- * 导航结构固定为 discord（分组频道加私信）；配色 scheme（system/light/dark）支持深浅切换，
- * 外观统一使用 assistant-ui 官方默认语义主题。不写 document 级主题属性（由 token 根的 data-wb-*
- * 属性承接）。showSteps、avatarStyle、typingEffect 沿用。
+ * style（discord/wechat）与 scheme（system/light/dark）是两个独立维度，
+ * 各自运行时切换；不写 document 级主题属性（由 token 根的 data-wb-*
+ * 属性承接）。头像统一使用 Morph Bot，旧头像与终端特效偏好在读取时移除。
  *
  * 历史迁移：
- * - style / chatLayout 无论之前为何值，均归一化为唯一保留的 'discord'
+ * - style / chatLayout 历史值映射到 discord 或 wechat
  * - theme 具名深色（catppuccin-mocha/dracula/rose-pine-main）→ scheme 'dark'
  *   具名浅色（catppuccin-latte/rose-pine-dawn）→ scheme 'light'
  *   'host'/缺失 → scheme 'system'
  */
 import { useSyncExternalStore } from 'react'
 
-export type WorkforceStyle = 'discord'
+export type WorkforceStyle = 'discord' | 'wechat'
 export type WorkforceScheme = 'system' | 'light' | 'dark'
 export type ResolvedScheme = 'light' | 'dark'
-export type AvatarStyle = 'circle' | 'terminal'
-export type TypingEffect = 'hash' | 'binary' | 'cli'
-/** 同一句人类消息的多条员工回复（@所有人 时每人各回一条）如何呈现。 */
+/** 同一句人类消息的多条员工回复如何呈现。 */
 export type ReplyGrouping = 'summary' | 'expanded' | 'collapsed'
 
 export interface WorkforcePrefs {
   readonly style: WorkforceStyle
   readonly scheme: WorkforceScheme
   readonly showSteps: boolean
-  readonly avatarStyle: AvatarStyle
-  readonly typingEffect: TypingEffect
   readonly showTokenStats: boolean
   readonly replyGrouping: ReplyGrouping
 }
@@ -49,8 +45,6 @@ const DEFAULT_PREFS: WorkforcePrefs = {
   style: 'discord',
   scheme: 'system',
   showSteps: false,
-  avatarStyle: 'circle',
-  typingEffect: 'hash',
   showTokenStats: false,
   replyGrouping: 'summary',
 }
@@ -68,23 +62,19 @@ export function migrateWorkforcePrefs(parsed: unknown): WorkforcePrefs {
   const raw = parsed as Record<string, unknown>
   if ('style' in raw || 'scheme' in raw) {
     return {
-      style: 'discord',
+      style: raw.style === 'wechat' ? 'wechat' : 'discord',
       scheme: raw.scheme === 'light' || raw.scheme === 'dark' ? raw.scheme : 'system',
       showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
-      avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
-      typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
       showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
       replyGrouping: migrateReplyGrouping(raw.replyGrouping),
     }
   }
-  // V1 迁移：chatLayout / 缺失落到 discord；具名主题进 scheme；sidebarMode 不再使用。
+  // V1 迁移：chatLayout 保留导航偏好；具名主题进 scheme；sidebarMode 不再使用。
   // bubbleRadius 不再使用。
   return {
-    style: 'discord',
+    style: raw.chatLayout === 'wechat' || raw.style === 'wechat' ? 'wechat' : 'discord',
     scheme: migrateThemeToScheme(raw.theme),
     showSteps: typeof raw.showSteps === 'boolean' ? raw.showSteps : false,
-    avatarStyle: 'avatarStyle' in raw ? (raw.avatarStyle === 'circle' ? 'circle' : 'terminal') : 'circle',
-    typingEffect: raw.typingEffect === 'binary' || raw.typingEffect === 'cli' ? raw.typingEffect : 'hash',
     showTokenStats: typeof raw.showTokenStats === 'boolean' ? raw.showTokenStats : false,
     replyGrouping: migrateReplyGrouping(raw.replyGrouping),
   }
@@ -103,7 +93,14 @@ function readInitial(): WorkforcePrefs {
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return migrateWorkforcePrefs(JSON.parse(raw))
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw)
+      const migrated = migrateWorkforcePrefs(parsed)
+      if (parsed && typeof parsed === 'object' && ('avatarStyle' in parsed || 'typingEffect' in parsed)) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated)) } catch {}
+      }
+      return migrated
+    }
   } catch {}
   return DEFAULT_PREFS
 }
@@ -116,11 +113,9 @@ export function getWorkforcePrefs(): WorkforcePrefs {
 
 export function setWorkforcePrefs(patch: Partial<WorkforcePrefs>): void {
   const next: WorkforcePrefs = {
-    style: 'discord',
+    style: patch.style === 'discord' || patch.style === 'wechat' ? patch.style : cachedPrefs.style,
     scheme: patch.scheme === 'light' || patch.scheme === 'dark' || patch.scheme === 'system' ? patch.scheme : cachedPrefs.scheme,
     showSteps: patch.showSteps ?? cachedPrefs.showSteps,
-    avatarStyle: patch.avatarStyle === 'circle' || patch.avatarStyle === 'terminal' ? patch.avatarStyle : cachedPrefs.avatarStyle,
-    typingEffect: patch.typingEffect === 'binary' || patch.typingEffect === 'cli' || patch.typingEffect === 'hash' ? patch.typingEffect : cachedPrefs.typingEffect,
     showTokenStats: patch.showTokenStats ?? cachedPrefs.showTokenStats,
     replyGrouping: patch.replyGrouping === 'expanded' || patch.replyGrouping === 'collapsed' || patch.replyGrouping === 'summary'
       ? patch.replyGrouping
@@ -130,8 +125,6 @@ export function setWorkforcePrefs(patch: Partial<WorkforcePrefs>): void {
     next.style === cachedPrefs.style &&
     next.scheme === cachedPrefs.scheme &&
     next.showSteps === cachedPrefs.showSteps &&
-    next.avatarStyle === cachedPrefs.avatarStyle &&
-    next.typingEffect === cachedPrefs.typingEffect &&
     next.showTokenStats === cachedPrefs.showTokenStats &&
     next.replyGrouping === cachedPrefs.replyGrouping
   ) {

@@ -1,16 +1,8 @@
-/* WorkforceAvatar 样式：
-   - 用户头像：首字母圆形；
-   - 员工头像：参考 Grok「纯色填充圆 + 两个白色小眼睛」，眼睛动作用 CSS keyframes + transform；
-   - 支持 idle（静止呼吸偶尔眨眼）、working（上下左右环视），hover 时触发环视；
-   - 尊重 prefers-reduced-motion，深浅主题自适应。 */
-
+/* Morph Bot 渲染与材质样式限定在头像内，外层设计 token 不参与其颜色计算。 */
 .avatar {
   --sz: 36px;
-  --tone: var(--wb-accent);
   width: var(--sz);
   height: var(--sz);
-  /* 头像外框形状由 --wb-radius-avatar 定义。 */
-  border-radius: var(--wb-radius-avatar);
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -20,206 +12,41 @@
   user-select: none;
 }
 
-/* 用户头像：灰色/中性圆圈 + 字母 */
 .avatarUser {
-  background: var(--wb-hover);
-  color: var(--wb-fg-muted);
-  font-size: calc(var(--sz) * 0.42);
-  font-weight: 700;
-  border: 1px solid var(--wb-line-soft);
-  border-radius: var(--wb-radius-avatar);
+  overflow: hidden;
+  border-radius: 50%;
 }
 
 .avatarUser img {
-  border-radius: var(--wb-radius-avatar);
-}
-
-/* 员工头像外壳 */
-.avatarEmployee {
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-  border-radius: var(--wb-radius-avatar);
-  /* 默认琥珀配色兜底 */
-  --bot-case: #FFAE38;
-  --bot-border: #E08A00;
-  --bot-case-shadow: #B86B00;
-  --bot-bezel: #252830;
-  --bot-screen: #131418;
-  --bot-eye: #FF5459;
-  --bot-scanline: rgba(255, 84, 89, 0.35);
-  /* 插画局部色：圆形白眼、终端字符流、自定义机身描边的加深底 */
-  --bot-eye-circle: #FFFFFF;
-  --bot-typing: #50FA7B; /* Dracula green：0101 与 CLI */
-  --bot-typing-hash: #FF79C6;
-  --bot-shade: #000000;
-}
-
-/* 5 种官方调色盘定义（高饱和实色、完全不透明、明度中偏亮，在深浅背景下一眼可辨）：
-   - retro-cream（文案）：暖橙琥珀
-   - titanium-obsidian（负责人）：深黑曜金属，高亮 border 勾边
-   - cyber-cyan（分析）：亮青
-   - geek-violet（校验）：亮紫
-   - mint-sage（质检/投流）：亮绿
-   圆形风格与终端屏风格共吃该机身色，屏幕/眼睛/bezel 保持原定义。 */
-:global(.palette-retro-cream),
-.avatarEmployee[data-palette='retro-cream'] {
-  --bot-case: #FFAE38;
-  --bot-border: #E08A00;
-  --bot-case-shadow: #B86B00;
-  --bot-bezel: #252830;
-  --bot-screen: #131418;
-  --bot-eye: #FF5459;
-  --bot-scanline: rgba(255, 84, 89, 0.35);
-}
-
-:global(.palette-titanium-obsidian),
-.avatarEmployee[data-palette='titanium-obsidian'] {
-  --bot-case: #2D3139;
-  --bot-border: #6B7280;
-  --bot-case-shadow: #181A1F;
-  --bot-bezel: #1F2127;
-  --bot-screen: #0F1014;
-  --bot-eye: #FFB800;
-  --bot-scanline: rgba(255, 184, 0, 0.35);
-}
-
-:global(.palette-cyber-cyan),
-.avatarEmployee[data-palette='cyber-cyan'] {
-  --bot-case: #00D5EA;
-  --bot-border: #00A6BA;
-  --bot-case-shadow: #008092;
-  --bot-bezel: #1E2E35;
-  --bot-screen: #0C171C;
-  --bot-eye: #00E5FF;
-  --bot-scanline: rgba(0, 229, 255, 0.38);
-}
-
-:global(.palette-geek-violet),
-.avatarEmployee[data-palette='geek-violet'] {
-  --bot-case: #A855F7;
-  --bot-border: #7E22CE;
-  --bot-case-shadow: #581C87;
-  --bot-bezel: #2B213D;
-  --bot-screen: #140E22;
-  --bot-eye: #B066FE;
-  --bot-scanline: rgba(176, 102, 254, 0.35);
-}
-
-:global(.palette-mint-sage),
-.avatarEmployee[data-palette='mint-sage'] {
-  --bot-case: #10B981;
-  --bot-border: #059669;
-  --bot-case-shadow: #047857;
-  --bot-bezel: #1C2D24;
-  --bot-screen: #0C1812;
-  --bot-eye: #10B981;
-  --bot-scanline: rgba(16, 185, 129, 0.35);
-}
-
-/* 中性盘极性对调（参考 Grok：light 下黑机身、dark 下同位置翻白机身）：
-   titanium-obsidian 是中性色，dark 主题下机身翻成近白，描边/阴影换成深灰托轮廓；
-   屏幕仍保持深色（不然眼睛悬浮），眼睛在深屏上的琥珀色保留以保证可读。
-   其余 4 套高饱和彩色机身跨主题不变；自定义 #hex 深色机身不反转（用户选色自负责）。 */
-:global([data-wb-scheme='dark']) .avatarEmployee[data-palette='titanium-obsidian'] {
-  --bot-case: #E8EAF0;
-  --bot-border: #3A4152;
-  --bot-case-shadow: #23262F;
-  --bot-bezel: #3A4152;
-  --bot-screen: #181B22;
-  --bot-eye: #FFB800;
-  --bot-scanline: rgba(255, 184, 0, 0.35);
-}
-/* 圆形无屏幕层：白机身上白胶囊眼看不见，dark obsidian 的圆形眼睛换近黑深灰。 */
-:global([data-wb-scheme='dark']) .avatarEmployee[data-palette='titanium-obsidian'][data-avatar-style='circle'] {
-  --bot-eye-circle: #1E2230;
-}
-
-/* 圆形机身 r=49（grok 规格）+ stroke 1.8：外缘 49.9 已在 viewBox 50 内，描边完整不裁。
-   standalone 与拼格统一 r49，不再需要按场景收半径。 */
-/* 圆形风格只是形状差异：配色一律吃 data-palette（avatarColor 为空时已按 role/name
-   落到 5 盘），不再有独立粉色兜底。白胶囊眼为 Grok 标志特征，所有圆形机身统一白眼。 */
-.avatarEmployee[data-avatar-style='circle'] .botEyeShape {
-  fill: var(--bot-eye-circle);
-}
-
-.avatarEmployee[data-avatar-style='terminal'] {
-  border-radius: calc(var(--sz) * 0.22);
-}
-
-.avatarEmployee[data-avatar-style='circle'] {
-  border-radius: var(--wb-radius-dot);
-  /* 圆形风格：用该配色的机身色填圆、白色胶囊眼（默认未选色机身见上方粉色默认组） */
-}
-
-/* 深色模式下为员工头像外壳增加细描边，保证黑色系机身在深色侧栏下清晰可辨 */
-:global([data-wb-scheme='dark']) .avatarEmployee {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wb-line) 60%, transparent),
-              0 0 0 1px color-mix(in srgb, var(--wb-fg) 12%, transparent);
-}
-
-/* 自定义色覆盖机身（自定义色仍只改机身，其余用 retro-cream） */
-.avatarEmployee[data-custom-color='true'] {
-  --bot-case: var(--bot-case-custom);
-  --bot-border: color-mix(in srgb, var(--bot-case) 82%, var(--bot-shade));
-  --bot-case-shadow: color-mix(in srgb, var(--bot-case) 70%, var(--bot-shade));
-}
-
-/* 3D 舞台与分层容器：由 workforce-avatar-motion 引擎直接写 transform */
-.avatarInner {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-style: preserve-3d;
-  will-change: transform;
-  pointer-events: none;
-}
-
-.avatarSvg {
-  width: 100%;
-  height: 100%;
   display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarEmployee {
+  cursor: default;
+  isolation: isolate;
+  contain: layout style;
+}
+
+.avatarEmployee svg {
+  --fg: #0b0b0b;
+  --bg: #fff;
+  display: block;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   pointer-events: none;
 }
 
-/* 引擎写在各层 <g> 上的 transform 以脸部中心为原点（SVG 默认是左上角，眨眼会把眼睛拽向上方） */
-.avatarSvg [data-layer] {
-  transform-box: view-box;
-  transform-origin: 50px 50px;
+.avatarEmployee :global(.grok-bot-mark__head),
+.avatarEmployee :global(.morph-part),
+.avatarEmployee :global(.morph-glyph) {
+  fill: var(--fg);
 }
 
-/* 单眼独立缩放与透视压缩：分别以单眼自身中心为原点，避免整体缩放导致眨眼跳动 */
-.avatarSvg [data-layer='eye-left'],
-.avatarSvg [data-layer='eye-right'] {
-  transform-box: fill-box;
-  transform-origin: center center;
-}
-
-/* 眼睛：干净实色胶囊，无辉光、无高光（2026-10-11 用户要求去掉半透明辉光层） */
-.botEyeShape {
-  fill: var(--bot-eye);
-  transform-origin: center center;
-}
-
-/* Typing 字符流与终端输出层样式 */
-.layerTypingStream {
-  pointer-events: none;
-  font-family: ui-monospace, SFMono-Regular, "Courier New", monospace;
-}
-
-.typingRows text {
-  fill: var(--bot-typing);
-  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value -- SVG viewBox 单位，不是界面字号 */
-  font-size: 6.6px;
-  font-weight: 600;
-  font-family: ui-monospace, SFMono-Regular, "Courier New", monospace;
-  letter-spacing: 0.5px;
-  opacity: 0.88;
-}
-
-.typingRows[data-variant='hash'] text {
-  fill: var(--hash-grad-url, var(--bot-typing-hash));
-}
+.avatarEmployee :global(.grok-bot-mark__eye) { fill: var(--bg); }
+.avatarEmployee :global(.eye-path) { transform-origin: 0 0; }
+.avatarEmployee :global(.morph-ring) { fill: none; stroke: var(--fg); }
+.avatarEmployee [hidden] { display: none !important; }

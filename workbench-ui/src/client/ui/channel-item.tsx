@@ -1,7 +1,6 @@
-import { Button } from './button.tsx'
 import type { MouseEvent, ReactNode } from 'react'
 import css from './channel-item.module.css'
-import { WF } from '../workforce-strings.ts'
+
 export interface ChannelItemProps {
   readonly id: string
   readonly kind: 'channel' | 'dm'
@@ -9,7 +8,7 @@ export interface ChannelItemProps {
   readonly selected: boolean
   readonly unreadCount?: number
   readonly mentionCount?: number
-  /** 会话行的第二行摘要。 */
+  /** WeChat 会话行的第二行摘要；Discord 行不渲染。 */
   readonly preview?: string
   readonly timestamp?: string
   readonly avatar?: ReactNode
@@ -20,14 +19,14 @@ export interface ChannelItemProps {
   readonly trailing?: ReactNode
 }
 
-/** 导航行：频道行（#号）与私信行共用。 */
+/** 导航行：Discord 频道行（#号，32px）与 WeChat 会话行（头像+摘要，64px）共用。 */
 export function ChannelItem({ kind, label, selected, unreadCount, mentionCount, preview, timestamp, avatar, muted, disabled, onSelect, onContextMenu, trailing }: ChannelItemProps) {
   const unreadText = [
-    unreadCount ? WF.ui.unreadCount(unreadCount) : '',
-    mentionCount ? WF.ui.mentionCount(mentionCount) : '',
-  ].filter(Boolean).join(', ')
+    unreadCount ? `${unreadCount} 条未读` : '',
+    mentionCount ? `${mentionCount} 条提及` : '',
+  ].filter(Boolean).join('，')
   return (
-    <Button variant="plain"
+    <button
       type="button"
       className={`${css.item} ${kind === 'dm' ? css.dm : ''} ${selected ? css.selected : ''} ${muted ? css.muted : ''}`}
       data-kind={kind}
@@ -55,6 +54,6 @@ export function ChannelItem({ kind, label, selected, unreadCount, mentionCount, 
       {(unreadCount ?? 0) > 0 && (
         <span className={css.unread} aria-hidden="true">{unreadCount! > 99 ? '99+' : unreadCount}</span>
       )}
-    </Button>
+    </button>
   )
 }

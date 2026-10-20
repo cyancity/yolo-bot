@@ -3,56 +3,40 @@
  * 数据来自 WorkforceSource（Host 轮询 API），组件不感知 ctx；消息左对齐
  * 署名+头像+时间（不做两方气泡）；工具调用/产物折叠可开。
  */
+import { IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button as LobeButton, Checkbox, Radio } from 'antd'
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps } from 'react'
-import { FileTypeIcon, IconCloseOutlineRegular, IconDeliverDocRegular, IconRefreshOutlineRegular, writeClipboard } from '@deepseek-ai/dsh-client-ui-primitives'
-import { Icon } from './ui/icons.tsx'
-import {
-  ActionBarPrimitive,
-  AssistantRuntimeProvider,
-  AttachmentPrimitive,
-  ComposerPrimitive,
-  MessagePrimitive,
-  unstable_useMentionAdapter,
-  unstable_useSlashCommandAdapter,
-  useExternalStoreRuntime,
-  type CreateAttachment,
-  type DirectiveFormatter,
-  type ThreadMessageLike,
-  type TriggerMatcher,
-  type Unstable_Mention,
-  type Unstable_SlashCommand,
-} from '@assistant-ui/react'
-import { WorkforceAssistantRuntime, AssistantMessageScope, AssistantMessageParts, AssistantToolParts, dshAttachmentAdapter } from './assistant-runtime.tsx'
 import { WorkbenchExtensionPreview, readExtensionPreview } from './extension-preview.tsx'
 import { Button } from './ui/button.tsx'
 import { Bubble } from './ui/bubble.tsx'
-import { Checkbox, RadioGroup } from './ui/choice.tsx'
-import { useUserProfile } from './workforce-profile.tsx'
-import { WF } from './workforce-strings.ts'
+import { RadioGroup } from './ui/choice.tsx'
+import { Icon } from './ui/icons.tsx'
+import type { HostChannel } from './workforce-api.ts'
+import { AttachmentBar, gateAttachment } from './workforce-attachments.tsx'
+import type { AvatarMotionState } from './workforce-avatar-motion.ts'
+import { WorkforceAvatar } from './workforce-avatar.tsx'
+import { WorkforceBackupDialog } from './workforce-backup.tsx'
+import { WorkforceComposer, type ComposerPrefillRequest } from './workforce-composer.tsx'
+import { AnchoredDeliverablesContext, DeliverableChips, anchoredDeliverables, messageDeliverableNames } from './workforce-deliverables.tsx'
+import { WorkforceDiagnosticsDialog } from './workforce-diagnostics.tsx'
+import { workforceContextFiles, WorkforceFilesDrawer, WorkforceFilesTimeline } from './workforce-files.tsx'
+import { readRememberedMemory, RememberedMemoryCard, WorkforceMemoryDialog, type MemorySourceNavigation, type RememberedMemory } from './workforce-memory.tsx'
 import { WorkforceMessageText } from './workforce-message-text.tsx'
+import { classifyModelError, parseModelErrorAction } from './workforce-models.tsx'
+import { useWorkforcePrefs, type ReplyGrouping } from './workforce-prefs.ts'
+import { useUserProfile } from './workforce-profile.tsx'
+import { WorkforceQuestionCard } from './workforce-question-card.tsx'
 import { ReplyGroupCard } from './workforce-reply-group.tsx'
 import { ReplyPreviewDialog } from './workforce-reply-preview.tsx'
-import { WorkforceQuestionCard } from './workforce-question-card.tsx'
-import type { Employee, SkillSummary, Task, WorkforceActivity, WorkforceMessage, WorkforceSkillDraft, WorkforceSnapshot } from './workforce-types.ts'
-import type { HostChannel } from './workforce-api.ts'
+import { MessageStreamSkeleton, useDelayedLoading } from './workforce-skeleton.tsx'
+import { WorkforceSkillDraftsDialog } from './workforce-skill-drafts.tsx'
 import type { PendingReply, WorkforceSource } from './workforce-source.ts'
 import { channelStream, isLeaderNoReplyDraft, mentionsEveryone, replyGroups, threadTask, threadView, visibleReplyCounts } from './workforce-source.ts'
-import { WorkforceAvatar } from './workforce-avatar.tsx'
-import type { AvatarMotionState } from './workforce-avatar-motion.ts'
-import { useWorkforcePrefs, type AvatarStyle, type ReplyGrouping, type TypingEffect } from './workforce-prefs.ts'
-import css from './workforce.module.css'
-import { attachmentKind, formatFileSize, AttachmentBar, gateAttachment } from './workforce-attachments.tsx'
-import { AnchoredDeliverablesContext, DeliverableChips, anchoredDeliverables, messageDeliverableNames } from './workforce-deliverables.tsx'
-import { attachmentMessage, MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
-import attachmentCss from './workforce-composer-attachments.module.css'
-import { classifyModelError, parseModelErrorAction } from './workforce-models.tsx'
-import { MessageStreamSkeleton, useDelayedLoading } from './workforce-skeleton.tsx'
-import { WorkforceMemoryDialog, RememberedMemoryCard, readRememberedMemory, type RememberedMemory, type MemorySourceNavigation } from './workforce-memory.tsx'
-import { WorkforceDiagnosticsDialog } from './workforce-diagnostics.tsx'
-import { WorkforceBackupDialog } from './workforce-backup.tsx'
-import { WorkforceSkillDraftsDialog } from './workforce-skill-drafts.tsx'
-import { WorkforceFilesDrawer, WorkforceFilesTimeline, workforceContextFiles } from './workforce-files.tsx'
+import { WF } from './workforce-strings.ts'
+import type { Employee, Task, WorkforceActivity, WorkforceMessage, WorkforceSkillDraft, WorkforceSnapshot } from './workforce-types.ts'
 import { threadHasWebSearch, WebSearchBatch, WorkforceWebSearch } from './workforce-websearch.tsx'
+import { WorkforceWelcome } from './workforce-welcome.tsx'
+import css from './workforce.module.css'
 /** 联网搜索披露：插件平台 web loader 只有单 chunk 模块表（多文件 require 会让插件整体拒载），
  *  因此不做网络分包；「按需」落在渲染层——hasWebSearch 为假时零挂载零渲染。 */
 /** web_search 工具消息渲染成披露行；同 turn 多条紧凑成一行批量块，独立成行不进 MessageRow（保其 memo）。 */
@@ -159,45 +143,45 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
   return <div className={css.msgFooter} data-message-footer data-task-id={task.id}>
     {task.deliverables.length > 0 && <DeliverableChips task={task} employees={employees} source={source} />}
     {task.status === 'running' && <div className={css.taskActions}>
-      <Button variant="plain" type="button" className={css.taskCancel} disabled={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</Button>
+      <LobeButton type="text" danger className={css.taskCancel ?? ''} disabled={busy} loading={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</LobeButton>
       <span className={css.taskStatus} data-state={task.status}>{WF.employee.running}</span>
     </div>}
     {stopped && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state={task.status}>{WF.taskStatus.stopped(quiet)}</span>
       {onSelectContinuation && (
-        <Button variant="plain"
-          type="button"
-          className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
+        <LobeButton
+          type="text"
+          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </Button>
+        </LobeButton>
       )}
     </div>}
     {task.status === 'failed' && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state="failed">✕ {WF.employee.failed}</span>
       {onSelectContinuation && (
-        <Button variant="plain"
-          type="button"
-          className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
+        <LobeButton
+          type="text"
+          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </Button>
+        </LobeButton>
       )}
     </div>}
     {task.status !== 'running' && !stopped && task.status !== 'failed' && onSelectContinuation && (
       <div className={css.taskActions}>
-        <Button variant="plain"
-          type="button"
-          className={isCurrentContinuation ? css.taskContinueActive : css.taskContinue}
+        <LobeButton
+          type="text"
+          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
           onClick={() => onSelectContinuation(task)}
           title={WF.taskStatus.continueTitle}
         >
           {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </Button>
+        </LobeButton>
       </div>
     )}
     {error && <span className={css.msgFailed} role="alert">{formatErrorReason(error)}</span>}
@@ -260,7 +244,7 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
                   </span>
                   <span>{step.tool ? WF.employee.tool : stepLabel}</span>
                 </div>
-                {step.tool ? <AssistantToolParts message={step} /> : step.text ? <div className={css.stepItemText}>{step.text}</div> : null}
+                {step.text ? <div className={css.stepItemText}>{step.text}</div> : null}
               </div>
             )
           })}
@@ -276,16 +260,12 @@ function SkeletonBubble({
   employee,
   employees,
   activity,
-  style,
-  typingEffect,
   task,
   source,
 }: {
   readonly employee: Employee
   readonly employees: readonly Employee[]
   readonly activity?: WorkforceActivity | undefined
-  readonly style?: AvatarStyle | undefined
-  readonly typingEffect?: TypingEffect | undefined
   readonly task?: Task | undefined
   readonly source: WorkforceSource
 }) {
@@ -322,8 +302,6 @@ function SkeletonBubble({
         isUser={false}
         color={employee.avatarColor}
         role={employee.role}
-        style={style}
-        typingEffect={typingEffect}
         state={avatarMotionState}
         activityState={avatarMotionState}
         live={true}
@@ -1015,9 +993,9 @@ function EarlierMessages({ loading, errors, onEarlier }: {
   // 容器不参与滚动锚定（见 .earlierRow）：它在新插入的历史行上方，被选为锚点会让补页后视口跳回顶端。
   if (errors.length > 0) return (
     <div className={css.earlierRow}>
-      <Button variant="plain" type="button" className={css.earlierRetry} aria-label={WF.employee.older} title={WF.employee.older} onClick={onEarlier}>
+      <LobeButton type="text" className={css.earlierRetry ?? ''} aria-label={WF.employee.older} title={WF.employee.older} onClick={onEarlier}>
         <IconRefreshOutlineRegular size={14} />
-      </Button>
+      </LobeButton>
     </div>
   )
   // 不加载时也保留这一行的高度，只隐藏 spinner：读者停在最顶时若整行卸载，内容会上跳一个行高。
@@ -1039,8 +1017,6 @@ const MessageRow = memo(function MessageRow({
   activityState,
   isLatest,
   isConsecutive,
-  avatarStyle,
-  typingEffect,
   source,
   task,
   taskQuiet,
@@ -1072,8 +1048,6 @@ const MessageRow = memo(function MessageRow({
   readonly activityState?: WorkforceActivity['state'] | undefined
   readonly isLatest?: boolean | undefined
   readonly isConsecutive?: boolean | undefined
-  readonly avatarStyle?: AvatarStyle | undefined
-  readonly typingEffect?: TypingEffect | undefined
   readonly source: WorkforceSource
   readonly task?: Task | undefined
   /** 任务已终结且无交付、无后续可见回复——页脚弱化展示。 */
@@ -1165,54 +1139,23 @@ const MessageRow = memo(function MessageRow({
     {notices !== undefined && notices.length > 0 && <div className={css.msgNoticeOrphan}><MessageNotices notices={notices} anchor={message} resolveRetryTarget={resolveRetryTarget} source={source} onOpenKeyModal={onOpenKeyModal} onOpenModelsModal={onOpenModelsModal} /></div>}
   </div>
   const actionBar = canAct ? (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      className={css.messageActions}
-      role="group"
-      aria-label={WF.message.actions}
-    >
-      <ActionBarPrimitive.Copy asChild copiedDuration={1600}>
-        <Button
-          variant="plain"
-          type="button"
-          title={copied ? WF.message.copied : WF.message.copy}
-          aria-label={copied ? WF.message.copied : WF.message.copy}
-          onClick={() => void copy()}
-        >
-          <svg viewBox="0 0 20 20" aria-hidden="true">
-            {copied ? (
-              <path d="m4 10 4 4 8-9" />
-            ) : (
-              <>
-                <rect x="7" y="7" width="10" height="10" rx="2" />
-                <path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h2" />
-              </>
-            )}
-          </svg>
-        </Button>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <Button
-          variant="plain"
-          type="button"
-          title={regenerating ? WF.message.regenerating : WF.message.regenerate}
-          aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate}
-          disabled={regenerating || message.running === true}
-          onClick={() => void regenerate()}
-        >
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
-        </Button>
-      </ActionBarPrimitive.Reload>
-      <Button variant="plain" type="button" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
+    <div className={css.messageActions} role="group" aria-label={WF.message.actions}>
+      <LobeButton type="text" title={copied ? WF.message.copied : WF.message.copy} aria-label={copied ? WF.message.copied : WF.message.copy} onClick={() => void copy()}>
+        <svg viewBox="0 0 20 20" aria-hidden="true">{copied ? <path d="m4 10 4 4 8-9" /> : <><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h2" /></>}</svg>
+      </LobeButton>
+      <LobeButton type="text" title={regenerating ? WF.message.regenerating : WF.message.regenerate} aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate} disabled={regenerating || message.running === true} onClick={() => void regenerate()}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
+      </LobeButton>
+      <LobeButton type="text" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M7 5V3h6v2M5 5l1 12h8l1-12M8 8v6M12 8v6" /></svg>
-      </Button>
-      <Button variant="plain" type="button" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
+      </LobeButton>
+      <LobeButton type="text" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5-5 5 5M5 12l5 5 5-5" /></svg>
-      </Button>
-    </ActionBarPrimitive.Root>
+      </LobeButton>
+    </div>
   ) : undefined
   return (
-    <AssistantMessageScope message={message}><MessagePrimitive.Root className={`${css.msg} ${isConsecutive ? css.msgConsecutive : ''} ${message.running === true || message.delivery === 'sending' ? css.msgPending : ''}`} data-msg-role={message.role} data-message-id={message.id} data-delivery={message.delivery}>
+    <div className={`${css.msg} ${isConsecutive ? css.msgConsecutive : ''} ${message.running === true || message.delivery === 'sending' ? css.msgPending : ''}`} data-msg-role={message.role} data-message-id={message.id} data-delivery={message.delivery}>
       {isConsecutive ? (
         <div className={css.avatarPlaceholder}>
           <span className={css.consecutiveHoverTime}>{fmtHm(message.ts)}</span>
@@ -1223,8 +1166,6 @@ const MessageRow = memo(function MessageRow({
           isUser={isUser}
           color={emp?.avatarColor}
           role={emp?.role}
-          style={avatarStyle}
-          typingEffect={typingEffect}
           state={resolvedState}
           activityState={resolvedState}
           live={isLatest && (isWorking || message.delivery === 'sending')}
@@ -1264,12 +1205,12 @@ const MessageRow = memo(function MessageRow({
         {hasText && (
           <Bubble side={isUser ? 'self' : 'peer'} className={css.msgBubble} data-clamped={clamped || undefined}>
             <div className={css.msgClamp} ref={clampRef}>
-              <AssistantMessageParts renderText={text => {
-                const fallback = <WorkforceMessageText assistant text={formatErrorReason(text)} employees={employees} onDm={onDm} tasks={tasks}
+              {(() => {
+                const fallback = <WorkforceMessageText text={formatErrorReason(message.text)} employees={employees} onDm={onDm} tasks={tasks}
                   hasAttachments={message.attachments !== undefined && message.attachments.length > 0}
                   hasDeliverables={task !== undefined && task.deliverables.length > 0} />
                 return messagePreview ? <WorkbenchExtensionPreview preview={messagePreview} fallback={fallback} /> : fallback
-              }} />
+              })()}
             </div>
             {clampable && (
               <Button variant="plain" type="button" className={css.msgClampToggle} aria-expanded={!clamped} onClick={() => setExpandedText(value => !value)}>
@@ -1300,11 +1241,7 @@ const MessageRow = memo(function MessageRow({
         )}
         {!hasText && actionBar}
         {actionError && <div className={css.msgFailed} role="alert">{actionError}</div>}
-        <MessagePrimitive.Error>
-          <div className={css.msgFailed} role="alert">
-            {message.error ? formatErrorReason(message.error) : WF.common.failed}
-          </div>
-        </MessagePrimitive.Error>
+        {message.error && <div className={css.msgFailed} role="alert">{formatErrorReason(message.error)}</div>}
         {isUser ? (
           <div className={css.userMsgMeta}>
             {(replyCount ?? 0) > 0 ? (
@@ -1397,13 +1334,12 @@ const MessageRow = memo(function MessageRow({
           />
         )}
       </div>
-    </MessagePrimitive.Root></AssistantMessageScope>
+    </div>
   )
 }, (prev, next) =>
   prev.message === next.message
   && prev.isLatest === next.isLatest && prev.isConsecutive === next.isConsecutive
   && prev.working === next.working && prev.activityState === next.activityState
-  && prev.avatarStyle === next.avatarStyle && prev.typingEffect === next.typingEffect
   && prev.openThreadId === next.openThreadId && prev.replyCount === next.replyCount
   && prev.repliedSnippet === next.repliedSnippet && prev.taskQuiet === next.taskQuiet
   && equalArray(prev.notices, next.notices)
@@ -1462,9 +1398,9 @@ function ModelFailureBanner({ message, onRetry, onOpenKey, onOpenModels }: {
   const failure = classifyModelError(undefined, message)
   return <div className={css.streamError} role="alert">
     <span>{failure?.message ?? message}</span>
-    {failure?.action === 'addKey' && <Button variant="plain" type="button" className={css.empAction} onClick={() => onOpenKey(failure.provider)}>{WF.errorActions.addKey}</Button>}
-    {failure?.action === 'changeModel' && <Button variant="plain" type="button" className={css.empAction} onClick={onOpenModels}>{WF.errorActions.changeModel}</Button>}
-    <Button variant="plain" type="button" className={css.empAction} onClick={onRetry}>{WF.status.retry}</Button>
+    {failure?.action === 'addKey' && <LobeButton type="text" onClick={() => onOpenKey(failure.provider)}>{WF.errorActions.addKey}</LobeButton>}
+    {failure?.action === 'changeModel' && <LobeButton type="text" onClick={onOpenModels}>{WF.errorActions.changeModel}</LobeButton>}
+    <LobeButton type="text" onClick={onRetry}>{WF.status.retry}</LobeButton>
   </div>
 }
 
@@ -1508,19 +1444,19 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
           {errorAction !== undefined && (
             <div className={css.msgErrorActions}>
               {errorAction.kind === 'addKey' && (
-                <Button variant="plain" type="button" className={css.msgErrorActionBtn} onClick={() => onOpenKeyModal?.(errorAction.provider)}>
+                <LobeButton type="text" onClick={() => onOpenKeyModal?.(errorAction.provider)}>
                   🔑 {errorAction.label}
-                </Button>
+                </LobeButton>
               )}
               {errorAction.kind === 'retry' && (
-                <Button variant="plain" type="button" className={css.msgErrorActionBtn} disabled={busy || retryTarget === undefined} onClick={() => void retry()}>
+                <LobeButton type="text" disabled={busy || retryTarget === undefined} loading={busy} onClick={() => void retry()}>
                   🔄 {errorAction.label}
-                </Button>
+                </LobeButton>
               )}
               {(errorAction.kind === 'changeModel' || errorAction.kind === 'editEmployee' || errorAction.kind === 'checkModels') && (
-                <Button variant="plain" type="button" className={css.msgErrorActionBtn} onClick={() => onOpenModelsModal?.()}>
+                <LobeButton type="text" onClick={() => onOpenModelsModal?.()}>
                   ⚙️ {errorAction.label}
-                </Button>
+                </LobeButton>
               )}
             </div>
           )}
@@ -1531,704 +1467,6 @@ function SystemNotice({ notice, retryTarget, source, onOpenKeyModal, onOpenModel
   )
 }
 
-
-export interface ComposerProps {
-  readonly employees: readonly Employee[]
-  /** @ 浮层候选：群聊限定成员名单；缺省 = 全部员工。正文里手写 @ 仍按全员工解析，由宿主校验成员范围。 */
-  readonly mentionable?: readonly Employee[] | undefined
-  /** 频道输入框支持 @所有人，发送时展开为当前频道成员。私信和任务线程不启用。 */
-  readonly allowMentionAll?: boolean
-  readonly onSend: (text: string, employeeIds: readonly string[]) => Promise<void>
-  /** 限定当前会话/私信目标员工的可用技能；undefined 表示不限制（如公共频道）。 */
-  readonly allowedSkills?: readonly string[] | undefined
-  /** Slash 浮层的 skill 目录加载器；缺省时 / 不触发浮层。 */
-  readonly listSkills?: () => Promise<SkillSummary[]>
-  readonly onUploadMaterial: ((name: string, content: string) => Promise<{ id: string; name: string; url: string }>) | undefined
-  readonly onUploadFile?: ((file: File) => Promise<UploadedAttachment>) | undefined
-  readonly autoFocus?: boolean
-  readonly initialDraft?: string | undefined
-  readonly draftKey: string
-  readonly hint?: string | undefined
-  readonly continuationTask?: Task | undefined
-  readonly onContinueThread?: ((text: string, employeeIds: readonly string[]) => Promise<void>) | undefined
-  readonly onResetContinuation?: (() => void) | undefined
-  /** 吸附的任务当前是否存在未应答的提问/审批 */
-  readonly continuationHasPendingQuestion?: boolean | undefined
-}
-
-/** 10 分钟内完成的任务仍默认延续 */
-const CONTINUATION_RECENT_WINDOW_MS = 10 * 60 * 1000
-
-/**
- * 任务大厅默认延续策略：
- * 1. 吸附的任务处于 running 或等待用户回复/提问时，默认延续；
- * 2. 任务 done 且完成在 10 分钟内，默认延续；
- * 3. 其他（done 超过 10 分钟、cancelled、failed 等）默认「新任务」，吸附条仍显示，用户可一键切回延续。
- */
-export function resolveDefaultContinuationMode(
-  task: Task | undefined,
-  hasPendingQuestion = false,
-  now = Date.now(),
-): 'continue' | 'new' {
-  if (!task) return 'new'
-  if (task.status === 'running' || hasPendingQuestion) return 'continue'
-  if (task.status === 'done' && task.updatedAt) {
-    const elapsed = now - Date.parse(task.updatedAt)
-    if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= CONTINUATION_RECENT_WINDOW_MS) {
-      return 'continue'
-    }
-  }
-  return 'new'
-}
-
-interface ComposerAttachment {
-  readonly key: number
-  readonly name: string
-  readonly sizeBytes: number
-  readonly mime: string
-  readonly previewUrl?: string
-  readonly uploaded?: UploadedAttachment
-  readonly error?: string
-}
-
-/**
- * Enter 发送、Shift+Enter 换行；@ 选择员工。文件先上传，成功后附到消息正文。
- * 发送失败保留正文和附件；发送期间新增的草稿与附件不随旧消息清空。
- */
-export function WorkforceComposer(props: ComposerProps) {
-  const isContinuationActive = props.continuationTask !== undefined && props.onContinueThread !== undefined
-  const [continuationMode, setContinuationMode] = useState<'continue' | 'new'>(() =>
-    resolveDefaultContinuationMode(props.continuationTask, props.continuationHasPendingQuestion)
-  )
-  // 只在任务、状态或待答提问变化时重算默认值；运行中 updatedAt 频繁变化，不能覆盖用户手动切换。
-  const continuationFingerprint = props.continuationTask
-    ? `${props.continuationTask.id}:${props.continuationTask.status}:${props.continuationHasPendingQuestion ?? false}`
-    : ''
-  const prevFingerprintRef = useRef(continuationFingerprint)
-  useEffect(() => {
-    if (continuationFingerprint !== prevFingerprintRef.current) {
-      prevFingerprintRef.current = continuationFingerprint
-      setContinuationMode(resolveDefaultContinuationMode(props.continuationTask, props.continuationHasPendingQuestion))
-    }
-  }, [continuationFingerprint])
-  // done 任务的 10 分钟延续窗口到期时切到新任务；用户期间手动切过也以到期为准，吸附条可一键切回。
-  const continuationDoneAt = props.continuationTask?.status === 'done' && !props.continuationHasPendingQuestion ? Date.parse(props.continuationTask.updatedAt ?? '') : NaN
-  useEffect(() => {
-    if (!Number.isFinite(continuationDoneAt)) return
-    const remaining = continuationDoneAt + CONTINUATION_RECENT_WINDOW_MS - Date.now()
-    if (remaining <= 0) return
-    const timer = setTimeout(() => setContinuationMode('new'), remaining)
-    return () => clearTimeout(timer)
-  }, [continuationDoneAt])
-  const [draft, setDraft] = useState(() => {
-    try { return localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? '' } catch { return props.initialDraft ?? '' }
-  })
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? ''
-      setDraft(saved)
-    } catch {
-      setDraft(props.initialDraft ?? '')
-    }
-  }, [props.draftKey, props.initialDraft])
-  useEffect(() => { try { localStorage.setItem(`workforce.draft.${props.draftKey}`, draft) } catch {} }, [draft, props.draftKey])
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ draftKey?: string; text?: string }>).detail
-      if (detail && detail.draftKey === props.draftKey && typeof detail.text === 'string') {
-        setDraft(detail.text)
-        inputRef.current?.focus()
-      }
-    }
-    window.addEventListener('workforce:fill-draft', handler)
-    return () => window.removeEventListener('workforce:fill-draft', handler)
-  }, [props.draftKey])
-  const [sending, setSending] = useState(false)
-  const [error, setError] = useState<string | undefined>()
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const sendRef = useRef(props.onSend)
-  const retrySendRef = useRef<ComposerProps['onSend'] | undefined>(undefined)
-  const draftRevision = useRef(0)
-  sendRef.current = props.onSend
-  const [attachments, setAttachments] = useState<readonly ComposerAttachment[]>([])
-  const attachmentsRef = useRef<readonly ComposerAttachment[]>([])
-  const nextAttachmentKey = useRef(0)
-  const sendingRef = useRef(false)
-  const mountedRef = useRef(true)
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      for (const attachment of attachmentsRef.current) {
-        if (attachment.previewUrl !== undefined) URL.revokeObjectURL(attachment.previewUrl)
-      }
-      attachmentsRef.current = []
-    }
-  }, [])
-
-  const updateAttachments = (next: readonly ComposerAttachment[]): void => {
-    attachmentsRef.current = next
-    setAttachments(next)
-  }
-
-  const removeAttachment = (key: number): void => {
-    const attachment = attachmentsRef.current.find(item => item.key === key)
-    if (attachment?.previewUrl !== undefined) URL.revokeObjectURL(attachment.previewUrl)
-    updateAttachments(attachmentsRef.current.filter(item => item.key !== key))
-  }
-
-  const addFiles = (files: FileList | readonly File[] | null): void => {
-    const upload = props.onUploadFile
-    if (upload === undefined || files === null) return
-    for (const file of Array.from(files)) {
-      const key = nextAttachmentKey.current++
-      const tooLarge = file.size > MAX_ATTACHMENT_BYTES
-      const attachment: ComposerAttachment = {
-        key,
-        name: file.name,
-        sizeBytes: file.size,
-        mime: file.type || 'application/octet-stream',
-        ...(!tooLarge && attachmentKind(file.name, file.type) === 'image' ? { previewUrl: URL.createObjectURL(file) } : {}),
-        ...(tooLarge ? { error: WF.taskStatus.attachmentSizeLimit } : {}),
-      }
-      updateAttachments([...attachmentsRef.current, attachment])
-      if (tooLarge) continue
-      void (async () => {
-        try {
-          const result = await upload(file)
-          if (!mountedRef.current || !attachmentsRef.current.some(item => item.key === key)) return
-          const uploaded: UploadedAttachment = {
-            ...result,
-            sizeBytes: result.sizeBytes ?? file.size,
-            mime: result.mime || file.type || 'application/octet-stream',
-          }
-          updateAttachments(attachmentsRef.current.map(item => item.key === key ? { ...item, uploaded } : item))
-        } catch (cause) {
-          if (!mountedRef.current || !attachmentsRef.current.some(item => item.key === key)) return
-          const reason = cause instanceof Error ? cause.message : String(cause)
-          updateAttachments(attachmentsRef.current.map(item => item.key === key ? { ...item, error: reason } : item))
-        }
-      })()
-    }
-  }
-
-  const uploading = attachments.some(attachment => attachment.uploaded === undefined && attachment.error === undefined)
-  const sendDisabled = sending || attachments.some(attachment => attachment.uploaded === undefined)
-    || (draft.trim() === '' && attachments.length === 0)
-
-  const doSend = async (continueThread = false, retry = false, propagate = false): Promise<void> => {
-    const text = draft.trim()
-    const sentAttachments = attachmentsRef.current
-    if (sendingRef.current || sentAttachments.some(attachment => attachment.uploaded === undefined)
-      || (text === '' && sentAttachments.length === 0)) return
-    // 收集全部 @ 提及：按在正文中的出现位置排序去重成收件人列表（正文仍带 "@名字"）。
-    const boundary = /[\s,，。;；:：!！?？()（）]/
-    const mentionPosition = (name: string, caseInsensitive = false): number => {
-      const marker = `@${name}`
-      const target = caseInsensitive ? text.toLowerCase() : text
-      const search = caseInsensitive ? marker.toLowerCase() : marker
-      for (let at = target.indexOf(search); at >= 0; at = target.indexOf(search, at + 1)) {
-        const next = text[at + marker.length]
-        if (next === undefined || boundary.test(next)) return at
-      }
-      return -1
-    }
-    const posZh = mentionPosition('所有人')
-    const posEn = mentionPosition('everyone', true)
-    const everyoneAt = props.allowMentionAll
-      ? (posZh >= 0 && posEn >= 0 ? Math.min(posZh, posEn) : Math.max(posZh, posEn))
-      : -1
-    const everyoneRecipients = everyoneAt >= 0
-      ? (props.mentionable ?? props.employees).map(employee => ({ id: employee.id, at: everyoneAt }))
-      : []
-    const mentionedIds = [...new Set([...props.employees
-      .map(employee => ({ id: employee.id, at: mentionPosition(employee.name) }))
-      .filter(item => item.at >= 0), ...everyoneRecipients]
-      .sort((a, b) => a.at - b.at)
-      .map(item => item.id))]
-    const sentRevision = draftRevision.current
-    const sentKeys = new Set(sentAttachments.map(attachment => attachment.key))
-    sendingRef.current = true
-    setSending(true)
-    setError(undefined)
-    try {
-      const isContinuing = continuationMode === 'continue' && isContinuationActive
-      const send = retry ? retrySendRef.current : (continueThread || isContinuing) ? props.onContinueThread : sendRef.current
-      if (send === undefined) return
-      retrySendRef.current = send
-      await send(attachmentMessage(text, sentAttachments.map(attachment => attachment.uploaded!)), mentionedIds)
-      retrySendRef.current = undefined
-      if (!mountedRef.current) return
-      for (const attachment of attachmentsRef.current) {
-        if (sentKeys.has(attachment.key) && attachment.previewUrl !== undefined) URL.revokeObjectURL(attachment.previewUrl)
-      }
-      updateAttachments(attachmentsRef.current.filter(attachment => !sentKeys.has(attachment.key)))
-      if (draftRevision.current === sentRevision) {
-        setDraft('')
-      }
-    } catch (e) {
-      // 发送失败：draft 和附件原样保留，可重试。
-      if (mountedRef.current) setError(e instanceof Error ? e.message : String(e))
-      if (propagate) throw e
-    } finally {
-      sendingRef.current = false
-      if (mountedRef.current) setSending(false)
-    }
-  }
-
-  // The composer keeps the host's draft/upload transaction and delegates sending through assistant-ui.
-  const runtimeAttachments = useMemo(() => props.onUploadFile ? dshAttachmentAdapter(props.onUploadFile) : undefined, [props.onUploadFile])
-  const runtime = useExternalStoreRuntime<ThreadMessageLike>({
-    messages: [], convertMessage: message => message, isRunning: sending, isSendDisabled: sendDisabled,
-    onNew: async () => { await doSend(continuationMode === 'continue' && isContinuationActive, false, true) },
-    ...(runtimeAttachments ? { adapters: { attachments: runtimeAttachments } } : {}),
-  })
-
-  useLayoutEffect(() => {
-    const composer = runtime.thread.composer
-    if (composer.getState().text !== draft) composer.setText(draft)
-    const nextIds = new Set(attachments.map(attachment => `wb-upload-${attachment.key}`))
-    for (const attachment of composer.getState().attachments) {
-      if (!nextIds.has(attachment.id)) void composer.getAttachmentByIndex(composer.getState().attachments.findIndex(item => item.id === attachment.id)).remove()
-    }
-    const ids = new Set(composer.getState().attachments.map(attachment => attachment.id))
-    for (const attachment of attachments) {
-      const id = `wb-upload-${attachment.key}`
-      if (!ids.has(id)) void composer.addAttachment({
-        id, name: attachment.name, type: attachment.mime.startsWith('image/') ? 'image' : 'file',
-        contentType: attachment.mime, content: attachment.uploaded ? [{ type: 'text', text: attachmentMessage('', [attachment.uploaded]) }] : [],
-      } satisfies CreateAttachment)
-    }
-  }, [runtime, draft, attachments, error])
-
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <WorkforceComposerInner
-        props={props}
-        draft={draft}
-        setDraft={setDraft}
-        draftRevision={draftRevision}
-        sending={sending}
-        uploading={uploading}
-        error={error}
-        attachments={attachments}
-        addFiles={addFiles}
-        removeAttachment={removeAttachment}
-        continuationMode={continuationMode}
-        setContinuationMode={setContinuationMode}
-        isContinuationActive={isContinuationActive}
-        doSend={doSend}
-        sendDisabled={sendDisabled}
-        inputRef={inputRef}
-      />
-    </AssistantRuntimeProvider>
-  )
-}
-
-interface WorkforceComposerInnerProps {
-  readonly props: ComposerProps
-  readonly draft: string
-  readonly setDraft: (updater: string | ((prev: string) => string)) => void
-  readonly draftRevision: { current: number }
-  readonly sending: boolean
-  readonly uploading: boolean
-  readonly error: string | undefined
-  readonly attachments: readonly ComposerAttachment[]
-  readonly addFiles: (files: FileList | readonly File[] | null) => void
-  readonly removeAttachment: (key: number) => void
-  readonly continuationMode: 'continue' | 'new'
-  readonly setContinuationMode: (mode: 'continue' | 'new') => void
-  readonly isContinuationActive: boolean
-  readonly doSend: (continueThread?: boolean, retry?: boolean, propagate?: boolean) => Promise<void>
-  readonly sendDisabled: boolean
-  readonly inputRef: React.RefObject<HTMLTextAreaElement>
-}
-
-function WorkforceComposerInner({
-  props,
-  draft,
-  setDraft,
-  draftRevision,
-  sending,
-  uploading,
-  error,
-  attachments,
-  addFiles,
-  removeAttachment,
-  continuationMode,
-  setContinuationMode,
-  isContinuationActive,
-  doSend,
-  sendDisabled,
-  inputRef,
-}: WorkforceComposerInnerProps) {
-  const [prefs] = useWorkforcePrefs()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [dragging, setDragging] = useState(false)
-  const [skills, setSkills] = useState<readonly SkillSummary[] | undefined>()
-
-  const atMatcher = useMemo<TriggerMatcher>(() => (text, _triggerChar, cursorPosition) => {
-    const before = text.slice(0, cursorPosition)
-    const at = /@([^\s@]*)$/.exec(before)
-    if (!at) return null
-    const offset = before.length - at[0].length
-    return {
-      query: at[1] ?? '',
-      offset,
-      endOffset: cursorPosition,
-    }
-  }, [])
-
-  const mentionItems = useMemo<Unstable_Mention[]>(() => {
-    const members = props.mentionable ?? props.employees
-    const everyone: Unstable_Mention[] = props.allowMentionAll && members.length > 0
-      ? [{
-          id: 'everyone',
-          type: 'mention',
-          label: WF.composer.atEveryone,
-          description: `${WF.composer.atEveryoneMeta(members.length)} all 所有人`,
-        }]
-      : []
-    const empMentions: Unstable_Mention[] = members.map(emp => ({
-      id: emp.id,
-      type: 'mention',
-      label: `@${emp.name}`,
-      description: emp.title,
-      metadata: {
-        name: emp.name,
-        ...(emp.avatarColor ? { avatarColor: emp.avatarColor } : {}),
-        ...(emp.role ? { role: emp.role } : {}),
-      },
-    }))
-    return [...everyone, ...empMentions]
-  }, [props.employees, props.mentionable, props.allowMentionAll])
-
-  const mentionFormatter = useMemo<DirectiveFormatter>(() => ({
-    serialize: item => (item.label.startsWith('@') ? item.label : `@${item.label}`),
-    parse: text => [{ kind: 'text', text }],
-  }), [])
-
-  const mention = unstable_useMentionAdapter({
-    items: mentionItems,
-    formatter: mentionFormatter,
-    includeModelContextTools: false,
-    onInserted: item => {
-      const insert = item.label.startsWith('@') ? `${item.label} ` : `@${item.label} `
-      setDraft(prev => {
-        const next = prev.replace(/@[^\s@]*$/, insert)
-        draftRevision.current += 1
-        return next
-      })
-    },
-  })
-
-  const slashMatcher = useMemo<TriggerMatcher>(() => (text, _triggerChar, cursorPosition) => {
-    if (props.listSkills === undefined) return null
-    const before = text.slice(0, cursorPosition)
-    const slash = /(?:^|\s)\/([a-z0-9-]*)$/.exec(before)
-    if (!slash) return null
-    if (skills === undefined) {
-      void props.listSkills().then(list => setSkills(list)).catch(() => setSkills([]))
-    }
-    const matchStr = slash[0]
-    const slashIndexInMatch = matchStr.indexOf('/')
-    const offset = before.length - matchStr.length + slashIndexInMatch
-    return {
-      query: slash[1] ?? '',
-      offset,
-      endOffset: cursorPosition,
-    }
-  }, [props.listSkills, skills])
-
-  const slashCommands = useMemo<Unstable_SlashCommand[]>(() => {
-    if (props.listSkills === undefined) return []
-    const allowed = props.allowedSkills !== undefined ? new Set(props.allowedSkills) : undefined
-    return (skills ?? [])
-      .filter(skill => skill.invocation?.userInvocable !== false)
-      .filter(skill => allowed === undefined || allowed.has(skill.name))
-      .map(skill => ({
-        id: skill.name,
-        label: `/${skill.name}`,
-        description: skill.description,
-        execute: () => {},
-      }))
-  }, [skills, props.listSkills, props.allowedSkills])
-
-  const slash = unstable_useSlashCommandAdapter({
-    commands: slashCommands,
-    removeOnExecute: false,
-  })
-
-  const slashFormatter = useMemo<DirectiveFormatter>(() => ({
-    serialize: item => (item.label?.startsWith('/') ? item.label : `/${item.id}`),
-    parse: text => [{ kind: 'text', text }],
-  }), [])
-
-  const continuationPrompt = props.continuationTask?.prompt?.trim() || props.continuationTask?.title || WF.taskStatus.currentTask
-  const continuationFirstLine = continuationPrompt.split(/\r?\n/)[0]?.trim() || continuationPrompt
-
-  return (
-    <div
-      className={`${css.composerWrap}${dragging ? ` ${attachmentCss.dropActive}` : ''}`}
-      onDragOver={event => {
-        if (props.onUploadFile === undefined || !Array.from(event.dataTransfer.types).includes('Files')) return
-        event.preventDefault()
-        event.stopPropagation()
-        event.dataTransfer.dropEffect = 'copy'
-        setDragging(true)
-      }}
-      onDragLeave={event => {
-        const related = event.relatedTarget
-        if (related instanceof Node && event.currentTarget.contains(related)) return
-        const rect = event.currentTarget.getBoundingClientRect()
-        if (event.clientX >= rect.left && event.clientX < rect.right && event.clientY >= rect.top && event.clientY < rect.bottom) return
-        setDragging(false)
-      }}
-      onDrop={event => {
-        if (props.onUploadFile === undefined || event.dataTransfer.files.length === 0) return
-        event.preventDefault()
-        event.stopPropagation()
-        setDragging(false)
-        addFiles(event.dataTransfer.files)
-      }}
-      onPaste={event => {
-        if (props.onUploadFile === undefined || event.clipboardData.files.length === 0) return
-        event.preventDefault()
-        addFiles(event.clipboardData.files)
-      }}
-    >
-      {isContinuationActive && (
-        continuationMode === 'continue' ? (
-          <div className={css.contextRibbon}>
-            <div className={css.contextRibbonPill}>
-              <span className={css.contextRibbonLabel}>{WF.taskStatus.continueLabel}</span>
-              <span className={css.contextRibbonIcon} aria-hidden="true">
-                <Icon name="reply" width={13} height={13} />
-              </span>
-              <span className={css.contextRibbonTitle} title={continuationPrompt}>
-                {continuationFirstLine}
-              </span>
-            </div>
-            <Button variant="plain"
-              type="button"
-              className={css.contextRibbonBtn}
-              onClick={() => {
-                setContinuationMode('new')
-                props.onResetContinuation?.()
-              }}
-              title={WF.taskStatus.startNewTaskTitle}
-            >
-              {WF.taskStatus.startNewTask}
-            </Button>
-          </div>
-        ) : (
-          <div className={css.contextRibbonNew}>
-            <div className={css.contextRibbonPillNew}>
-              <span className={css.contextRibbonIcon}>✨</span>
-              <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
-            </div>
-            <Button variant="plain"
-              type="button"
-              className={css.contextRibbonBtn}
-              onClick={() => setContinuationMode('continue')}
-              title={WF.taskStatus.switchBackContinuationTitle}
-            >
-              {WF.taskStatus.switchBackContinuation}
-            </Button>
-          </div>
-        )
-      )}
-
-      <ComposerPrimitive.TriggerPopoverRoot>
-        <ComposerPrimitive.TriggerPopover
-          char="@"
-          matcher={atMatcher}
-          adapter={mention.adapter}
-          className={css.atMenu}
-          aria-label={WF.composer.atPlaceholder}
-        >
-          <ComposerPrimitive.TriggerPopover.Directive
-            formatter={mention.directive.formatter}
-            onInserted={mention.directive.onInserted}
-          />
-          <ComposerPrimitive.TriggerPopoverItems>
-            {(items) => (
-              items.length === 0 ? (
-                <div className={css.atItem}>{WF.composer.atEmpty}</div>
-              ) : (
-                items.map((item, index) => {
-                  const emp = props.employees.find(e => e.id === item.id)
-                  const isEveryone = item.id === 'everyone'
-                  const icon = isEveryone
-                    ? <Icon name="users" width={22} height={22} />
-                    : emp
-                      ? <WorkforceAvatar name={emp.name} isUser={false} color={emp.avatarColor} role={emp.role} style={prefs.avatarStyle} typingEffect={prefs.typingEffect} size={22} state="listening" live={true} />
-                      : null
-                  return (
-                    <ComposerPrimitive.TriggerPopoverItem
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      className={css.atItem}
-                    >
-                      {icon}
-                      <span className={css.atItemName}>{item.label}</span>
-                      <span className={css.atItemRole}>{isEveryone ? WF.composer.atEveryoneMeta((props.mentionable ?? props.employees).length) : item.description}</span>
-                    </ComposerPrimitive.TriggerPopoverItem>
-                  )
-                })
-              )
-            )}
-          </ComposerPrimitive.TriggerPopoverItems>
-        </ComposerPrimitive.TriggerPopover>
-
-        {props.listSkills !== undefined && (
-          <ComposerPrimitive.TriggerPopover
-            char="/"
-            matcher={slashMatcher}
-            adapter={slash.adapter}
-            isLoading={skills === undefined}
-            className={css.atMenu}
-            aria-label={WF.composer.placeholder}
-          >
-            <ComposerPrimitive.TriggerPopover.Action
-              onExecute={item => {
-                slash.action.onExecute(item)
-                const insert = item.label?.startsWith('/') ? `${item.label} ` : `/${item.id} `
-                setDraft(prev => {
-                  const next = prev.replace(/\/[a-z0-9-]*$/, insert)
-                  draftRevision.current += 1
-                  return next
-                })
-              }}
-              removeOnExecute={false}
-              formatter={slashFormatter}
-            />
-            <ComposerPrimitive.TriggerPopoverItems>
-              {(items) => (
-                items.length === 0 ? (
-                  <div className={css.atItem}>{skills === undefined ? WF.common.loading : WF.composer.atEmpty}</div>
-                ) : (
-                  items.slice(0, 12).map((item, index) => (
-                    <ComposerPrimitive.TriggerPopoverItem
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      className={css.atItem}
-                    >
-                      <span className={css.atItemName}>{item.label}</span>
-                      <span className={css.atItemRole}>{item.description}</span>
-                    </ComposerPrimitive.TriggerPopoverItem>
-                  ))
-                )
-              )}
-            </ComposerPrimitive.TriggerPopoverItems>
-          </ComposerPrimitive.TriggerPopover>
-        )}
-
-        <ComposerPrimitive.Root className={css.composer} data-section="composer">
-          {attachments.length > 0 && (
-            <div className={attachmentCss.attachments} aria-label={WF.taskStatus.attachmentsToSendAria}>
-              <ComposerPrimitive.Attachments>
-                {({ attachment }) => {
-                  const item = attachments.find(a => `wb-upload-${a.key}` === attachment.id)
-                  if (!item) return null
-                  const kind = attachmentKind(item.name, item.mime)
-                  const label = kind === 'image' ? WF.taskStatus.typeImage : kind === 'video' ? WF.taskStatus.typeVideo : kind === 'audio' ? WF.taskStatus.typeAudio
-                    : item.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? WF.taskStatus.typeFile
-                  return (
-                    <AttachmentPrimitive.Root key={item.key} className={attachmentCss.chip} data-attachment-name={item.name}>
-                      {item.previewUrl !== undefined ? (
-                        <img className={attachmentCss.preview} src={item.previewUrl} alt={item.name} />
-                      ) : (
-                        <span className={attachmentCss.kind} title={label}>
-                          <FileTypeIcon path={item.name} size={24} />
-                        </span>
-                      )}
-                      <div className={attachmentCss.details}>
-                        <span className={attachmentCss.name} title={item.name}>
-                          <AttachmentPrimitive.Name />
-                        </span>
-                        <span className={attachmentCss.meta}>
-                          {formatFileSize(item.sizeBytes)} · {item.mime}
-                        </span>
-                        {item.error !== undefined ? (
-                          <span className={attachmentCss.error} role="alert">
-                            {WF.taskStatus.uploadFailedPrefix}{item.error}
-                          </span>
-                        ) : (
-                          <span className={attachmentCss.meta} role="status">
-                            {item.uploaded === undefined ? WF.ui.uploadingState : WF.taskStatus.uploadSuccess}
-                          </span>
-                        )}
-                      </div>
-                      <AttachmentPrimitive.Remove
-                        className={attachmentCss.remove}
-                        aria-label={WF.ui.removeAttachmentAria(item.name)}
-                        onClick={() => removeAttachment(item.key)}
-                      >
-                        ×
-                      </AttachmentPrimitive.Remove>
-                    </AttachmentPrimitive.Root>
-                  )
-                }}
-              </ComposerPrimitive.Attachments>
-            </div>
-          )}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            hidden
-            onChange={event => { addFiles(event.target.files); event.target.value = '' }}
-          />
-
-          <ComposerPrimitive.Input
-            ref={inputRef}
-            addAttachmentOnPaste={false}
-            cancelOnEscape={false}
-            className={css.composerInput}
-            aria-label={WF.composer.placeholder}
-            placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.composer.replyToTask : WF.composer.startNewTaskHint) : WF.composer.placeholder)}
-            value={draft}
-            minRows={2}
-            autoFocus={props.autoFocus === true}
-            onChange={event => {
-              draftRevision.current += 1
-              setDraft(event.target.value)
-            }}
-            onKeyDown={event => {
-              if (event.nativeEvent.isComposing || event.keyCode === 229) return
-              if (event.key === 'Escape' && draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
-                event.preventDefault()
-                setContinuationMode('new')
-                props.onResetContinuation?.()
-              }
-            }}
-          />
-
-          <div className={css.composerTools}>
-            {props.onUploadFile !== undefined && (
-              <Button variant="ghost" type="button" className={css.composerAttach} aria-label={WF.ui.attachmentsAria} title={WF.ui.attachmentsAria} onClick={() => fileInputRef.current?.click()}><Icon name="plus" /></Button>
-            )}
-            <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
-            <ComposerPrimitive.Send asChild><Button variant="primary" className={css.composerSend} disabled={sendDisabled} aria-label={sending ? WF.composer.sending : uploading ? WF.ui.uploadingState : WF.composer.send} title={WF.composer.send}>
-              <Icon name={sending || uploading ? 'refresh' : 'send'} />
-            </Button></ComposerPrimitive.Send>
-          </div>
-        </ComposerPrimitive.Root>
-      </ComposerPrimitive.TriggerPopoverRoot>
-
-      {error !== undefined && (
-        <div className={css.composerError} role="alert">
-          <span>{WF.composer.sendFailed}：{error}</span>
-          <Button variant="plain" type="button" className={css.composerErrorRetry} disabled={sendDisabled} onClick={() => void doSend(false, true)}>{WF.composer.retry}</Button>
-        </div>
-      )}
-    </div>
-  )
-}
 
 /** DM/线程的 thread 面板（右列）：消息 + composer + 产物。 */
 function ThreadPanelContent({ source, threadId, title, employees: employeesProp, onClose, onDm, onOpenKeyModal, onOpenModelsModal, sourceMessageId }: {
@@ -2427,23 +1665,23 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
             })()}
           </div>
           <div className={css.threadHeadActions}>
-            <Button variant="plain"
-              type="button"
-              className={css.threadActionBtn}
+            <LobeButton
+              type="text"
+              className={css.threadActionBtn ?? ''}
               title={WF.taskStatus.threadFiles}
               aria-label={WF.taskStatus.threadFiles}
               onClick={() => setFilesOpen(true)}
             >
               <IconDeliverDocRegular size={14} />
-            </Button>
-            <Button variant="plain"
-              type="button"
-              className={css.threadClose}
+            </LobeButton>
+            <LobeButton
+              type="text"
+              className={css.threadClose ?? ''}
               aria-label={WF.thread.close}
               onClick={onClose}
             >
               <IconCloseOutlineRegular size={16} />
-            </Button>
+            </LobeButton>
           </div>
         </div>
       </div>
@@ -2456,7 +1694,7 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
           </div>
         )
       })()}
-      {view.error && <div className={css.streamError} role="alert">{view.error}<Button variant="plain" type="button" className={css.empAction} onClick={() => source.refresh()}>{WF.common.retry}</Button></div>}
+      {view.error && <div className={css.streamError} role="alert">{view.error}<LobeButton type="text" onClick={() => source.refresh()}>{WF.common.retry}</LobeButton></div>}
       <div className={css.scrollArea}>
       <div className={css.threadScroll} ref={scrollRef} tabIndex={-1}>
         <div className={css.messageList} ref={contentRef}>
@@ -2521,8 +1759,6 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
               repliedSnippet={message.replyTo !== undefined ? replySnippetOf(messagesById, message.replyTo) : undefined}
               isLatest={message.id === latestAgentMessageId}
               isConsecutive={isConsecutive}
-              avatarStyle={prefs.avatarStyle}
-              typingEffect={prefs.typingEffect}
               source={source}
               task={task}
               taskQuiet={task !== undefined && quietTaskIds.has(task.id)}
@@ -2542,15 +1778,13 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
             employee={sk.employee}
             employees={employees}
             activity={sk.activity}
-            style={prefs.avatarStyle}
-            typingEffect={prefs.typingEffect}
             source={source}
             task={footers.get(skeletonKey(sk))}
           />
         ))}
         </div>
       </div>
-        {hasNewMessages && <Button variant="plain" type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</Button>}
+        {hasNewMessages && <LobeButton className={css.newMessages ?? ''} onClick={jumpToBottom}>{WF.message.newMessages}</LobeButton>}
         {replyJump.notice !== undefined && <div className={css.replyJumpNotice} role="status">{replyJump.notice}</div>}
       </div>
       <WorkforceComposer
@@ -2584,72 +1818,6 @@ export type WorkforceSurface =
   | { readonly kind: 'channel'; readonly id: string }
   | { readonly kind: 'dm'; readonly threadId: string; readonly employeeId: string }
 
-function generateStartersForEmployee(emp: Employee): readonly string[] {
-  const role = (emp.role || '').toLowerCase()
-  const title = emp.title || ''
-  const name = emp.name || ''
-
-  if (role.includes('analyst') || title.includes('分析') || name.includes('分析')) {
-    return WF.dmStarters.analyst
-  }
-
-  if (role.includes('writer') || title.includes('文案') || title.includes('执行') || name.includes('文案') || name.includes('执行')) {
-    return WF.dmStarters.writer
-  }
-
-  if (role.includes('leader') || emp.isLeader || title.includes('协调') || title.includes('负责')) {
-    return WF.dmStarters.leader
-  }
-
-  return WF.dmStarters.generic(name)
-}
-
-function EmptyBotCard({ employee, channelTitle, avatarStyle, onSelectStarter }: {
-  readonly employee: Employee | undefined
-  readonly channelTitle?: string | undefined
-  readonly avatarStyle: AvatarStyle
-  readonly onSelectStarter: (text: string) => void
-}) {
-  const starters = useMemo(() => employee ? generateStartersForEmployee(employee) : WF.dmStarters.generic(channelTitle || ''), [employee, channelTitle])
-  return (
-    <div className={css.streamEmptyCard}>
-      <div className={css.emptyCardAvatarWrap}>
-        {employee ? (
-          <WorkforceAvatar
-            name={employee.name}
-            color={employee.avatarColor}
-            role={employee.role}
-            size={40}
-            style={avatarStyle}
-          />
-        ) : (
-          <div className={css.emptyCardChannelIcon}>
-            #
-          </div>
-        )}
-      </div>
-      <div className={css.emptyCardMeta}>
-        <h3 className={css.emptyCardName}>{employee?.name ?? (channelTitle ? `# ${channelTitle}` : WF.brand)}</h3>
-      </div>
-      {starters.length > 0 && (
-        <div className={css.emptyCardStarters}>
-          {starters.map((starter, idx) => (
-            <Button variant="plain"
-              key={idx}
-              type="button"
-              className={css.emptyCardStarterBtn}
-              onClick={() => onSelectStarter(starter)}
-            >
-              <span className={css.emptyCardStarterIcon} aria-hidden="true"><Icon name="chat" /></span>
-              <span className={css.emptyCardStarterText}>{starter}</span>
-            </Button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 /** 主工作区：surface 决定中列内容；thread 面板由页面态选中。 */
 function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, onCloseThread, onOpenThread, onNavigation, onOpenMemorySource, sourceMessageId }: {
   readonly source: WorkforceSource
@@ -2681,6 +1849,11 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
   const [filesOpen, setFilesOpen] = useState(false)
   const [skillDraftList, setSkillDraftList] = useState<readonly WorkforceSkillDraft[] | undefined>()
   const [draftsVersion, setDraftsVersion] = useState(0)
+  const [composerPrefill, setComposerPrefill] = useState<ComposerPrefillRequest>()
+  const nextPrefillId = useRef(0)
+  const finishPrefill = useCallback((request: ComposerPrefillRequest) => {
+    setComposerPrefill(current => current?.draftKey === request.draftKey && current.id === request.id ? undefined : current)
+  }, [])
 
   useEffect(() => {
     if (!settingsOpen && !actionMenuOpen) return
@@ -2830,6 +2003,12 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
     ? snapshot.threads.find(t => t.kind === 'channel' && t.channelId === surface.id)
     : undefined
   const activeThreadId = surface.kind === 'dm' ? surface.threadId : channelThread?.id
+  useEffect(() => { setComposerPrefill(undefined) }, [activeThreadId])
+  const prefillSuggestion = (text: string): void => {
+    if (activeThreadId === undefined || deletedDm) return
+    nextPrefillId.current += 1
+    setComposerPrefill({ draftKey: activeThreadId, id: nextPrefillId.current, text })
+  }
   // 群聊成员名单约束 @ 候选：频道 surface 按其 memberIds 过滤；未配置或私信 = 全员。
   const mentionable = useMemo(() => {
     if (surface.kind !== 'channel') return employees
@@ -2863,8 +2042,9 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
   }, [source, activeThreadId])
   // 面内线程已有元数据但消息页未拉到（切换到冷频道/私信，phase 已 ready）也按装载中给骨架，
   // 否则批量等页期间会先闪「还没有消息」空态。
+  const streamLoading = snapshot.phase === 'loading' || visibleThreads.some(thread => snapshot.messages[thread.id] === undefined)
   const showStreamSkeleton = useDelayedLoading(
-    (snapshot.phase === 'loading' || visibleThreads.some(thread => snapshot.messages[thread.id] === undefined)) && displayItems.length === 0,
+    streamLoading && displayItems.length === 0,
     150,
   )
   const pendingReplies = source.getPendingReplies()
@@ -2890,9 +2070,6 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
   const threadTaskIds = useMemo(() => new Set(snapshot.tasks.filter(task => surface.kind === 'channel'
     ? task.channelId === surface.id : task.threadId === surface.threadId).map(task => task.threadId)),
   [snapshot.tasks, surface])
-  const targetEmployee = dmEmployee ?? (surface.kind === 'channel'
-    ? (employees.find(e => (snapshot.channels.find(c => c.id === surface.id) as HostChannel | undefined)?.memberIds?.includes(e.id)) ?? employees[0])
-    : undefined)
   const isThreadLoading = snapshot.phase === 'loading'
     || (surface.kind === 'dm' && snapshot.messages[surface.threadId] === undefined)
     || (surface.kind === 'channel' && visibleThreads.some(t => snapshot.messages[t.id] === undefined))
@@ -2906,6 +2083,8 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
     || isThreadLoading
     || threadMetadataHasMessages
   const hasSkeleton = skeletons.length > 0
+  const showWelcome = displayItems.length === 0 && snapshot.phase === 'ready' && !streamLoading && !hasSkeleton && !deletedDm
+  const welcomeEmployee = surface.kind === 'dm' ? dmEmployee : channelDefaultRecipient(snapshot.channels, employees, surface.id)
   const latestAgentMessageId = useMemo(() => {
     if (hasSkeleton) return undefined
     for (let i = displayItems.length - 1; i >= 0; i--) {
@@ -3008,24 +2187,20 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
       >
         <div className={`${css.streamHead} ${!hasMessages ? css.streamHeadEmpty : ''}`} data-section="stream-head">
           <div className={css.streamHeadRow}>
-            {hasMessages && (
-              <>
-                <Button variant="plain" type="button" className={css.navigationToggle} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                    <line x1="4" y1="6" x2="20" y2="6"/>
-                    <line x1="4" y1="12" x2="20" y2="12"/>
-                    <line x1="4" y1="18" x2="20" y2="18"/>
-                  </svg>
-                </Button>
-                <h2 className={css.streamTitle}>{surface.kind === 'channel' ? `# ${title}` : title}</h2>
-                <span className={css.streamHeadDivider} aria-hidden="true" />
-                <span className={css.streamDesc}>{desc}</span>
-              </>
-            )}
-            <div className={css.streamSettingsWrap} ref={settingsRef} style={!hasMessages ? { marginLeft: 'auto' } : undefined}>
-              <Button variant="plain"
-                type="button"
-                className={css.streamHeadActionBtn}
+            <LobeButton type="text" className={css.navigationToggle ?? ''} aria-label={WF.workspace.expandChannelNav} onClick={onNavigation}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="4" y1="6" x2="20" y2="6"/>
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <line x1="4" y1="18" x2="20" y2="18"/>
+              </svg>
+            </LobeButton>
+            <h2 className={css.streamTitle}>{surface.kind === 'channel' ? `# ${title}` : title}</h2>
+            <span className={css.streamHeadDivider} aria-hidden="true" />
+            <span className={css.streamDesc}>{desc}</span>
+            <div className={css.streamSettingsWrap} ref={settingsRef}>
+              <LobeButton
+                type="text"
+                className={css.streamHeadActionBtn ?? ''}
                 title={WF.settings.menuLabel}
                 aria-label={WF.settings.menuLabel}
                 aria-expanded={actionMenuOpen}
@@ -3035,13 +2210,13 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                 }}
               >
                 <Icon name="more" width={18} height={18} />
-              </Button>
+              </LobeButton>
               {actionMenuOpen && (
                 <div className={css.headActionDropdown} role="menu" aria-label={WF.taskStatus.actionsAndSettingsAria}>
                   {surface.kind === 'channel' && (
-                    <Button variant="plain"
-                      type="button"
-                      className={css.dropdownItem}
+                    <LobeButton
+                      type="text"
+                      className={css.dropdownItem ?? ''}
                       role="menuitem"
                       onClick={() => {
                         setActionMenuOpen(false)
@@ -3050,11 +2225,11 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                     >
                       <Icon name="memory" width={15} height={15} />
                       <span>{WF.taskStatus.channelMemoryTab}</span>
-                    </Button>
+                    </LobeButton>
                   )}
-                  <Button variant="plain"
-                    type="button"
-                    className={css.dropdownItem}
+                  <LobeButton
+                    type="text"
+                    className={css.dropdownItem ?? ''}
                     role="menuitem"
                     onClick={() => {
                       setActionMenuOpen(false)
@@ -3063,10 +2238,10 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="file" width={15} height={15} />
                     <span>{WF.taskStatus.sessionFilesTab}</span>
-                  </Button>
-                  <Button variant="plain"
-                    type="button"
-                    className={css.dropdownItem}
+                  </LobeButton>
+                  <LobeButton
+                    type="text"
+                    className={css.dropdownItem ?? ''}
                     role="menuitem"
                     onClick={() => {
                       setActionMenuOpen(false)
@@ -3075,11 +2250,11 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="settings" width={15} height={15} />
                     <span>{WF.models.title}</span>
-                  </Button>
+                  </LobeButton>
                   <div className={css.dropdownDivider} />
-                  <Button variant="plain"
-                    type="button"
-                    className={css.dropdownItem}
+                  <LobeButton
+                    type="text"
+                    className={css.dropdownItem ?? ''}
                     role="menuitem"
                     onClick={() => {
                       setActionMenuOpen(false)
@@ -3088,25 +2263,25 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                   >
                     <Icon name="settings" width={15} height={15} />
                     <span>{WF.settings.preferences}</span>
-                  </Button>
+                  </LobeButton>
                 </div>
               )}
               {settingsOpen && (
                 <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.replyGroup.settingsTitle}</div>
-                    <RadioGroup label={WF.replyGroup.settingsTitle} value={prefs.replyGrouping ?? 'summary'} onValueChange={value => setPrefs({ replyGrouping: value as ReplyGrouping })} items={[{ value: 'summary', label: WF.replyGroup.summary }, { value: 'expanded', label: WF.replyGroup.expanded }, { value: 'collapsed', label: WF.replyGroup.collapsed }]} /><div className={css.settingsHint}>{WF.replyGroup.summaryDesc}</div>
+                    <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
+                    <Checkbox className={css.settingsCheckbox ?? ''} checked={prefs.showTokenStats !== false} onChange={e => setPrefs({ showTokenStats: e.target.checked })}>{WF.settings.showTokens}</Checkbox>
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
-                    <label className={css.settingsCheckbox}>
-                      <Checkbox
-                        checked={prefs.showTokenStats !== false}
-                        onCheckedChange={value => setPrefs({ showTokenStats: value === true })}
-                      />
-                      <span>{WF.settings.showTokens}</span>
-                    </label>
+                    <div className={css.settingsSectionTitle}>{WF.settings.layoutTitle}</div>
+                    <Radio className={css.settingsRadio ?? ''} name="wf-layout" value="discord" checked={prefs.style === 'discord'} onChange={() => setPrefs({ style: 'discord' })}>{WF.settings.layoutDiscord}</Radio>
+                    <Radio className={css.settingsRadio ?? ''} name="wf-layout" value="wechat" checked={prefs.style === 'wechat'} onChange={() => setPrefs({ style: 'wechat' })}>{WF.settings.layoutWechat}</Radio>
+                  </div>
+                  <div className={css.settingsSection}>
+                    <div className={css.settingsSectionTitle}>{WF.replyGroup.settingsTitle}</div>
+                    <RadioGroup label={WF.replyGroup.settingsTitle} value={prefs.replyGrouping} onValueChange={value => setPrefs({ replyGrouping: value as ReplyGrouping })} items={[{ value: 'summary', label: WF.replyGroup.summary }, { value: 'expanded', label: WF.replyGroup.expanded }, { value: 'collapsed', label: WF.replyGroup.collapsed }]} />
+                    <div className={css.settingsHint}>{WF.replyGroup.summaryDesc}</div>
                   </div>
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.schemeTitle}</div>
@@ -3114,21 +2289,11 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.settings.avatarStyleTitle}</div>
-                    <RadioGroup label={WF.settings.avatarStyleTitle} value={prefs.avatarStyle} onValueChange={value => setPrefs({ avatarStyle: value as AvatarStyle })} items={[{ value: 'circle', label: WF.settings.avatarStyleCircle }, { value: 'terminal', label: WF.settings.avatarStyleTerminal }]} />
-                  </div>
-                  <div className={css.settingsDivider} />
-                  <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.settings.typingEffectTitle}</div>
-                    <RadioGroup label={WF.settings.typingEffectTitle} value={prefs.typingEffect} onValueChange={value => setPrefs({ typingEffect: value as TypingEffect })} items={[{ value: 'hash', label: WF.settings.typingEffectHash }, { value: 'binary', label: WF.settings.typingEffectBinary }, { value: 'cli', label: WF.settings.typingEffectCli }]} />
-                  </div>
-                  <div className={css.settingsDivider} />
-                  <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.showStepsTitle}</div>
                     <label className={css.settingsCheckbox}>
                       <Checkbox
                         checked={prefs.showSteps}
-                        onCheckedChange={value => setPrefs({ showSteps: value === true })}
+                        onChange={event => setPrefs({ showSteps: event.target.checked })}
                       />
                       <span>{WF.settings.showSteps}</span>
                     </label>
@@ -3136,28 +2301,27 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>{WF.taskStatus.globalMemoryTitle}</Button>
-                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setSkillDraftsOpen(true) }}>
+                    <LobeButton className={css.settingsMenuAction ?? ''} onClick={() => { setSettingsOpen(false); setMemoryScope('global') }}>{WF.taskStatus.globalMemoryTitle}</LobeButton>
+                    <LobeButton className={css.settingsMenuAction ?? ''} onClick={() => { setSettingsOpen(false); setSkillDraftsOpen(true) }}>
                       {WF.skillDrafts.menuTitle}{pendingDraftCount > 0 ? `（${WF.skillDrafts.pendingBadge(pendingDraftCount)}）` : ''}
-                    </Button>
-                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>{WF.diagnostics.title}</Button>
-                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); setBackupOpen(true) }}>{WF.backup.title}</Button>
+                    </LobeButton>
+                    <LobeButton className={css.settingsMenuAction ?? ''} onClick={() => { setSettingsOpen(false); setDiagnosticsOpen(true) }}>{WF.diagnostics.title}</LobeButton>
+                    <LobeButton className={css.settingsMenuAction ?? ''} onClick={() => { setSettingsOpen(false); setBackupOpen(true) }}>{WF.backup.title}</LobeButton>
                   </div>
                   <div className={css.settingsDivider} />
                   <div className={css.settingsSection}>
-                    <div className={css.settingsSectionTitle}>{WF.models.title} (BYOK)</div>
-                    <Button variant="plain"
-                      type="button"
-                      className={css.settingsMenuAction}
+                    <div className={css.settingsSectionTitle}>{WF.models.title}</div>
+                    <LobeButton
+                      className={css.settingsMenuAction ?? ''}
                       onClick={() => {
                         setSettingsOpen(false)
                         openModels()
                       }}
                     >
                       <span>{WF.models.title}</span>
-                      <Icon name="settings" width={14} height={14} />
-                    </Button>
-                    <Button variant="plain" type="button" className={css.settingsMenuAction} onClick={() => { setSettingsOpen(false); openModels() }}>{WF.models.openGuide}</Button>
+                      <span>⚙️</span>
+                    </LobeButton>
+                    <LobeButton className={css.settingsMenuAction ?? ''} onClick={() => { setSettingsOpen(false); openModels() }}>{WF.models.openGuide}</LobeButton>
                   </div>
                 </div>
               )}
@@ -3168,21 +2332,18 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
         {surface.kind === 'dm' && snapshot.messages[surface.threadId]?.error && <ModelFailureBanner message={snapshot.messages[surface.threadId]!.error!} onRetry={() => source.refresh()} onOpenKey={openKey} onOpenModels={openModels} />}
         <div className={css.scrollArea}>
         <div className={css.streamScroll} ref={scrollRef} tabIndex={-1} data-section="main-stream">
-          <div className={css.messageList} ref={contentRef}>
+          <div className={css.messageList} ref={contentRef} data-empty={showWelcome ? 'true' : undefined}>
           <EarlierMessages loading={earlierLoading} errors={earlierErrors} onEarlier={requestEarlier} />
           {showStreamSkeleton ? (
             <MessageStreamSkeleton />
-          ) : !hasMessages ? (
-            <div className={css.streamEmptyArea}>
-              <EmptyBotCard
-                employee={targetEmployee}
-                channelTitle={surface.kind === 'channel' ? title : undefined}
-                avatarStyle={prefs.avatarStyle}
-                onSelectStarter={text => {
-                  window.dispatchEvent(new CustomEvent('workforce:fill-draft', { detail: { draftKey: activeThreadId, text } }))
-                }}
-              />
-            </div>
+          ) : showWelcome ? (
+            <WorkforceWelcome
+              kind={surface.kind}
+              employee={welcomeEmployee}
+              title={title}
+              onSuggestion={prefillSuggestion}
+              disabled={activeThreadId === undefined}
+            />
           ) : (
             visibleItems.map((item, index) => {
               if (item.kind === 'steps') {
@@ -3250,8 +2411,6 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                     repliedSnippet={message.replyTo !== undefined ? replySnippetOf(messagesById, message.replyTo) : undefined}
                     isLatest={message.id === latestAgentMessageId}
                     isConsecutive={isConsecutive}
-                    avatarStyle={prefs.avatarStyle}
-                    typingEffect={prefs.typingEffect}
                     source={source}
                     task={task}
                     taskQuiet={task !== undefined && quietTaskIds.has(task.id)}
@@ -3277,8 +2436,6 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                       group={messageGroup}
                       mode={groupMode(messageGroup.parentId)}
                       employees={employeesStable}
-                      avatarStyle={prefs.avatarStyle}
-                      typingEffect={prefs.typingEffect}
                       activities={activities}
                       onToggleExpanded={() => toggleGroup(messageGroup.parentId)}
                       onOpenPreview={messageId => setPreviewTarget({ groupId: messageGroup.parentId, messageId })}
@@ -3303,9 +2460,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                           repliedSnippet={member.replyTo !== undefined ? replySnippetOf(messagesById, member.replyTo) : undefined}
                           isLatest={member.id === latestAgentMessageId}
                           isConsecutive={false}
-                          avatarStyle={prefs.avatarStyle}
-                          typingEffect={prefs.typingEffect}
-                          source={source}
+                                  source={source}
                           task={footers.get(member.id)}
                           taskQuiet={footers.get(member.id) !== undefined && quietTaskIds.has(footers.get(member.id)!.id)}
                           tasks={tasksStable}
@@ -3331,15 +2486,13 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
               employee={sk.employee}
               employees={employees}
               activity={sk.activity}
-              style={prefs.avatarStyle}
-              typingEffect={prefs.typingEffect}
               source={source}
               task={footers.get(skeletonKey(sk))}
             />
           ))}
           </div>
         </div>
-          {hasNewMessages && <Button variant="plain" type="button" className={css.newMessages} onClick={jumpToBottom}>{WF.message.newMessages}</Button>}
+          {hasNewMessages && <LobeButton className={css.newMessages ?? ''} onClick={jumpToBottom}>{WF.message.newMessages}</LobeButton>}
           {replyJump.notice !== undefined && <div className={css.replyJumpNotice} role="status">{replyJump.notice}</div>}
         </div>
         {deletedDm && <div className={css.taskActions}>{WF.taskStatus.deletedEmployeeNotice}</div>}
@@ -3347,9 +2500,9 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
           <WorkforceComposer
             key={activeThreadId}
             draftKey={activeThreadId}
-            hint={surface.kind === 'channel'
-              ? WF.composer.messageChannel(title)
-              : WF.composer.messageDm(dmEmployee?.name || title)}
+            prefillRequest={composerPrefill}
+            onPrefillApplied={finishPrefill}
+            hint={surface.kind === 'channel' ? undefined : WF.taskStatus.sendDmHint}
             employees={employees}
             mentionable={mentionable}
             allowMentionAll={surface.kind === 'channel'}
@@ -3444,19 +2597,9 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
 }
 
 export function WorkforceMain(props: ComponentProps<typeof WorkforceMainContent>) {
-  const { source, snapshot, surface } = props
-  const view = useMemo(() => surface.kind === 'channel'
-    ? channelStream(snapshot, surface.id)
-    : { messages: threadView(snapshot, surface.threadId).list, threads: snapshot.threads.filter(thread => thread.id === surface.threadId) }, [snapshot, surface])
-  const target = surface.kind === 'dm' ? surface.threadId : view.threads.find(thread => thread.kind === 'channel')?.id
-  return <WorkforceAssistantRuntime key={`${surface.kind}:${surface.kind === 'channel' ? surface.id : surface.threadId}`} source={source} snapshot={snapshot} messages={view.messages} threadIds={view.threads.map(thread => thread.id)} targetThreadId={target}>
-    <WorkforceMainContent {...props} />
-  </WorkforceAssistantRuntime>
+  return <WorkforceMainContent {...props} />
 }
 
 export function ThreadPanel(props: ComponentProps<typeof ThreadPanelContent>) {
-  const snapshot = useSyncExternalStore(props.source.subscribe, props.source.getSnapshot, props.source.getSnapshot)
-  return <WorkforceAssistantRuntime key={props.threadId} source={props.source} snapshot={snapshot} messages={threadView(snapshot, props.threadId).list} threadIds={[props.threadId]} targetThreadId={props.threadId}>
-    <ThreadPanelContent {...props} />
-  </WorkforceAssistantRuntime>
+  return <ThreadPanelContent {...props} />
 }

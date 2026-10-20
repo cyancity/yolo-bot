@@ -1,40 +1,15 @@
+import { Badge as AntBadge } from 'antd'
+import LobeTag from '@lobehub/ui/es/Tag'
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
-import { Slot } from '@radix-ui/react-slot'
+import { Slot } from './slot.tsx'
 import css from './badge.module.css'
-
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'unread'
 export type BadgeVariant = 'standard' | 'pill' | 'dot'
-
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  readonly tone?: Tone
-  readonly variant?: BadgeVariant
-  /** 未读/状态小圆点模式（等价于 variant="dot"） */
-  readonly dot?: boolean
-  /** 数字角标计数（未提供 children 时，自动格式化为 >99 时展示 '99+'） */
-  readonly count?: number
-  /** 计数/短值的可访问完整名称（如「3 条未读」）。 */
-  readonly label?: string
-  readonly asChild?: boolean
-  readonly children?: ReactNode
-}
-
-export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
-  { tone = 'neutral', variant = 'standard', dot = false, count, label, children, className, asChild = false, ...rest },
-  ref,
-) {
-  const Component = asChild ? Slot : 'span'
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> { readonly tone?: Tone; readonly variant?: BadgeVariant; readonly dot?: boolean; readonly count?: number; readonly label?: string; readonly asChild?: boolean; readonly children?: ReactNode }
+const colors = { neutral: undefined, accent: 'processing', success: 'success', warning: 'warning', danger: 'error', info: 'processing', unread: 'processing' } as const
+export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge({ tone = 'neutral', variant = 'standard', dot = false, count, label, children, className, asChild, ...props }, ref) {
   const isDot = dot || variant === 'dot'
-  const effectiveVariant = isDot ? 'dot' : variant
-  const content = isDot ? null : children !== undefined ? children : count !== undefined ? (count > 99 ? '99+' : count) : null
-
-  return (
-    <Component
-      {...rest}
-      ref={ref}
-      className={`${css.badge} ${css[tone] ?? ''} ${effectiveVariant === 'standard' ? '' : css[effectiveVariant]} ${className ?? ''}`}
-      aria-label={label}
-    >
-      {content}
-    </Component>
-  )
+  const content = children ?? (count !== undefined ? count > 99 ? '99+' : count : null)
+  if (asChild) return <Slot {...props} ref={ref} className={className} aria-label={label}>{children}</Slot>
+  return <span {...props} ref={ref} className={`${css.badge} ${className ?? ''}`} aria-label={label}>{isDot ? <AntBadge dot /> : count !== undefined && children === undefined ? <AntBadge count={count} overflowCount={99} /> : <LobeTag size="small" {...(colors[tone] ? { color: colors[tone] } : {})} style={{ margin: 0 }}>{content}</LobeTag>}</span>
 })

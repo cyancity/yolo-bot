@@ -1,5 +1,4 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
-import { MessagePrimitive } from '@assistant-ui/react'
 import { Button } from './button.tsx'
 import css from './message-item.module.css'
 import { Bubble } from './bubble.tsx'
@@ -123,11 +122,6 @@ export const MessageItem = forwardRef<HTMLElement, MessageItemProps>(function Me
             <span className={css.failedText}>{error ?? WF.common.failed}</span>
           </div>
         )}
-        <MessagePrimitive.Error>
-          <div className={css.failedRow} role="alert">
-            <span className={css.failedText}>{error ?? WF.common.failed}</span>
-          </div>
-        </MessagePrimitive.Error>
         {task && (
           <div className={css.taskLine}>
             <Icon name="task" />

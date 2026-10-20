@@ -1,6 +1,8 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
-import { Slot } from '@radix-ui/react-slot'
+import { Slot } from './slot.tsx'
 import css from './card.module.css'
+import { Card as AntCard } from 'antd'
+import { definedProps } from './props.ts'
 
 export type CardVariant = 'default' | 'interactive' | 'subtle'
 
@@ -15,19 +17,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   { variant = 'default', selected = false, asChild = false, className, children, ...rest },
   ref,
 ) {
-  const Component = asChild ? Slot : 'div'
-  return (
-    <Component
-      {...rest}
-      ref={ref}
-      data-variant={variant}
-      data-selected={selected ? '' : undefined}
-      aria-selected={selected ? true : undefined}
-      className={`${css.card} ${css[variant]} ${selected ? css.selected : ''} ${className ?? ''}`}
-    >
-      {children}
-    </Component>
-  )
+  const shared = { ...rest, 'data-variant': variant, 'data-selected': selected ? '' : undefined, 'aria-selected': selected ? true : undefined, className: `${css.card} ${className ?? ''}` }
+  if (asChild) return <Slot {...shared} ref={ref}>{children}</Slot>
+  return <AntCard {...definedProps(shared)} ref={ref} hoverable={variant === 'interactive'} variant={variant === 'subtle' ? 'borderless' : 'outlined'} styles={{ body: { padding: 0 } }}>{children}</AntCard>
 })
 
 export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {

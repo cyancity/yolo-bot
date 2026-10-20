@@ -4,8 +4,10 @@
  * - 支持修改昵称、挑选预设插画头像、上传本地图片自定义头像。
  * - 本地持久化，全局同步（useSyncExternalStore）。
  */
-import { Button, TextInput, Dialog } from './ui/index.tsx'
 import { useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent } from 'react'
+import { Avatar as LobeAvatar, Input as LobeInput } from '@lobehub/ui'
+import { Button as LobeButton } from 'antd'
+import { Dialog } from './ui/index.tsx'
 import css from './workforce-profile.module.css'
 import { WF } from './workforce-strings.ts'
 import { DEFAULT_USER_AVATAR_DATA_URL } from './workforce-user-avatar.ts'
@@ -103,12 +105,12 @@ export const PRESET_AVATARS = [
       <line x1="53" y1="42" x2="60" y2="42" stroke="#000000" stroke-width="2"/>
     </svg>`,
   },
-]
+] as const
 
 export const DEFAULT_AVATAR_DATA_URL = DEFAULT_USER_AVATAR_DATA_URL
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  get name() { return WF.userProfile.defaultName },
+  name: WF.userProfile.defaultName,
   avatarUrl: DEFAULT_USER_AVATAR_DATA_URL,
   isCustomAvatar: false,
 }
@@ -193,22 +195,21 @@ export function UserProfileAvatar({
   const name = current.name || WF.userProfile.defaultName
 
   return (
-    <div
+    <LobeAvatar
       className={`${css.avatarContainer} ${className ?? ''}`}
-      style={{ width: `${size}px`, height: `${size}px`, borderRadius: '50%' }}
-      title={name}
-    >
-      <img
+      size={size}
+      avatar={<img
         src={avatarUrl}
         alt={name}
         className={css.avatarImg}
-        style={{ borderRadius: '50%', objectFit: 'cover' }}
-        onError={e => {
-          // 图片加载失败时回退到默认插画
-          e.currentTarget.src = DEFAULT_AVATAR_DATA_URL
+        onError={event => {
+          if (event.currentTarget.src !== DEFAULT_AVATAR_DATA_URL) {
+            event.currentTarget.src = DEFAULT_AVATAR_DATA_URL
+          }
         }}
-      />
-    </div>
+      />}
+      title={name}
+    />
   )
 }
 
@@ -374,90 +375,83 @@ export function UserProfileModal({
     onClose()
   }
   return (
-    <Dialog
-      size="sm"
-      title={WF.userProfile.title}
-      closeLabel={WF.common.close}
-      onClose={onClose}
-      secondaryAction={{
-        label: WF.common.cancel,
-        onInvoke: onClose,
-      }}
-      primaryAction={{
-        label: WF.common.save,
-        onInvoke: () => void handleSave(),
-      }}
-    >
-      {/* 头像预览与操作 */}
-      <div className={css.avatarSection}>
-        <div className={css.avatarPreview}>
-          <img src={avatarUrl} alt={WF.userProfile.avatarPreview} className={css.avatarImg} />
-        </div>
-        <div className={css.avatarControls}>
-          <div className={css.avatarBtnRow}>
-            <Button
-              variant="secondary"
-              size="sm"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {WF.userProfile.uploadCustom}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              onClick={handleReset}
-            >
-              {WF.userProfile.reset}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
+    <Dialog title={WF.userProfile.title} closeLabel={WF.common.close} onClose={onClose} wide>
+
+        {/* 头像预览与操作 */}
+        <div className={css.avatarSection}>
+          <div className={css.avatarPreview}>
+            <img src={avatarUrl} alt={WF.userProfile.avatarPreview} className={css.avatarImg} />
           </div>
-          <div className={css.avatarHint}>{WF.userProfile.avatarFormatHint}</div>
-        </div>
-      </div>
-
-      {/* 预设动漫插画头像选择 */}
-      <div className={css.presetSection}>
-        <div className={css.presetTitle}>{WF.userProfile.featuredAvatars}</div>
-        <div className={css.presetGrid}>
-          {PRESET_AVATARS.map(item => {
-            const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
-            const isActive = avatarUrl === itemUrl
-            return (
-              <Button
-                variant="plain"
-                key={item.id}
-                type="button"
-                className={`${css.presetItem} ${isActive ? css.presetItemActive : ''}`}
-                title={item.name}
-                onClick={() => handlePickPreset(item.svg)}
+          <div className={css.avatarControls}>
+            <div className={css.avatarBtnRow}>
+              <LobeButton
+                type="primary"
+                onClick={() => fileInputRef.current?.click()}
               >
-                <img src={itemUrl} alt={item.name} className={css.avatarImg} />
-              </Button>
-            )
-          })}
+                {WF.userProfile.uploadCustom}
+              </LobeButton>
+              <LobeButton
+                onClick={handleReset}
+              >
+                {WF.userProfile.reset}
+              </LobeButton>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+            </div>
+            <div className={css.avatarHint}>{WF.userProfile.avatarFormatHint}</div>
+          </div>
         </div>
-      </div>
 
-      {/* 名字输入 */}
-      <div className={css.formSection}>
-        <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
-        <TextInput
-          id="user-profile-name-input"
-          type="text"
-          value={name}
-          maxLength={32}
-          placeholder={WF.userProfile.namePlaceholder}
-          onChange={e => setName(e.target.value)}
-        />
-      </div>
+        {/* 预设动漫插画头像选择 */}
+        <div className={css.presetSection}>
+          <div className={css.presetTitle}>{WF.userProfile.featuredAvatars}</div>
+          <div className={css.presetGrid}>
+            {PRESET_AVATARS.map(item => {
+              const itemUrl = `data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}`
+              const isActive = avatarUrl === itemUrl
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`${css.presetItem} ${isActive ? css.presetItemActive : ''}`}
+                  title={item.name}
+                  onClick={() => handlePickPreset(item.svg)}
+                >
+                  <img src={itemUrl} alt={item.name} className={css.avatarImg} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* 名字输入 */}
+        <div className={css.formSection}>
+          <label htmlFor="user-profile-name-input" className={css.fieldLabel}>{WF.userProfile.displayName}</label>
+          <LobeInput
+            id="user-profile-name-input"
+            type="block"
+            className={css.input ?? ''}
+            value={name}
+            maxLength={32}
+            placeholder={WF.userProfile.namePlaceholder}
+            onChange={e => setName(e.target.value)}
+          />
+        </div>
+
+        {/* 底部按钮 */}
+        <div className={css.modalFooter}>
+          <LobeButton onClick={onClose}>
+            {WF.common.cancel}
+          </LobeButton>
+          <LobeButton type="primary" onClick={handleSave}>
+            {WF.common.save}
+          </LobeButton>
+        </div>
     </Dialog>
   )
 }

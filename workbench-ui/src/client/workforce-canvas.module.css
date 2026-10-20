@@ -13,8 +13,8 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: var(--wb-space-4);
-  padding: var(--wb-space-4) var(--wb-space-5);
+  gap: 10px;
+  padding: 6px 12px;
   background: var(--wb-surface-raised);
   border: 1px solid var(--wb-line);
   border-radius: var(--wb-radius-control);
@@ -24,9 +24,9 @@
 .toolbarBtn {
   display: inline-flex;
   align-items: center;
-  gap: var(--wb-space-3);
+  gap: 6px;
   height: 28px;
-  padding: 0 var(--wb-space-4);
+  padding: 0 10px;
   border: 1px solid var(--wb-line-soft);
   border-radius: var(--wb-radius-control);
   background: var(--wb-surface);
@@ -45,7 +45,7 @@
 }
 
 .toolbarMeta {
-  font-size: var(--wb-type-micro-size);
+  font-size: 11px;
   color: var(--wb-fg-muted);
 }
 
@@ -54,8 +54,8 @@
   box-sizing: border-box;
   background: var(--wb-surface);
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-panel);
-  padding: var(--wb-space-5);
+  border-radius: 10px;
+  padding: 10px 12px;
   box-shadow: 0 4px 14px color-mix(in srgb, var(--wb-fg) 8%, transparent);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
@@ -68,15 +68,16 @@
 }
 
 .turnCardSelected {
-  border: 2px solid var(--wb-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wb-accent) 25%, transparent);
+  border: 1px solid var(--wb-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wb-accent) 20%, transparent);
 }
+
 .handle {
   width: 9px !important;
   height: 9px !important;
   background: var(--wb-accent) !important;
   border: 2px solid var(--wb-surface) !important;
-  border-radius: var(--wb-radius-dot) !important;
+  border-radius: 50% !important;
   top: 36px !important;
   transform: translateY(-50%) !important;
 }
@@ -85,30 +86,51 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--wb-space-4);
+  margin-bottom: 8px;
 }
 
 .channelTag {
-  font-size: var(--wb-type-micro-size);
-  font-weight: var(--wb-weight-semibold);
+  font-size: 11px;
+  font-weight: 600;
   color: var(--wb-fg-muted);
   background: var(--wb-surface-sub);
-  padding: var(--wb-space-2) var(--wb-space-3);
-  border-radius: var(--wb-radius-sm);
+  padding: 1px 6px;
+  border-radius: 4px;
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.statusBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.statusRunning {
+  background: color-mix(in srgb, var(--wb-info) 15%, transparent);
+  color: var(--wb-info);
+}
+
+.statusDone {
+  background: color-mix(in srgb, var(--wb-success) 15%, transparent);
+  color: var(--wb-success);
+}
+
+.statusFailed {
+  background: color-mix(in srgb, var(--wb-danger) 15%, transparent);
+  color: var(--wb-danger);
+}
 
 .promptRow {
-  margin-bottom: var(--wb-space-4);
+  margin-bottom: 6px;
 }
 
 .userBubble {
-  font-size: var(--wb-type-compact-size);
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--wb-fg);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -119,23 +141,22 @@
 .userPrefix {
   font-weight: 600;
   color: var(--wb-fg-muted);
-  margin-right: var(--wb-space-3);
+  margin-right: 4px;
 }
 
 .promptContent {
-  overflow-wrap: anywhere;
-  word-break: normal;
+  word-break: break-all;
 }
 
 .replyRow {
   display: flex;
   align-items: flex-start;
-  gap: var(--wb-space-4);
-  background: color-mix(in srgb, var(--wb-surface-sub) 70%, var(--wb-hover));
-  border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-control);
-  padding: var(--wb-space-4) var(--wb-space-5);
-  margin-top: var(--wb-space-4);
+  gap: 10px;
+  background: var(--wb-surface-sub);
+  border: 1px solid var(--wb-line-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 8px;
 }
 
 .agentAvatarWrap {
@@ -143,11 +164,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--wb-radius-lg);
+  border-radius: 8px;
   background: var(--wb-surface);
   border: 1px solid var(--wb-line);
   box-shadow: 0 2px 6px color-mix(in srgb, var(--wb-fg) 8%, transparent);
-  padding: var(--wb-space-2);
+  padding: 2px;
 }
 
 .agentBubble {
@@ -156,50 +177,49 @@
 }
 
 .agentName {
-  font-size: var(--wb-type-caption-size);
+  font-size: 11px;
   font-weight: 600;
   color: var(--wb-fg);
   display: block;
 }
 
 .replyContent {
-  margin: var(--wb-space-2) 0 0;
-  font-size: var(--wb-type-compact-size);
-  line-height: 1.5;
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
   color: var(--wb-fg-muted);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  word-break: normal;
+  word-break: break-all;
 }
 
 .turnFooter {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--wb-space-4);
-  margin-top: var(--wb-space-4);
-  padding-top: var(--wb-space-4);
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 6px;
   border-top: 1px dashed var(--wb-line-soft);
 }
 
 .toolBadge {
-  font-size: var(--wb-type-micro-size);
+  font-size: 10px;
   color: var(--wb-fg-muted);
   background: var(--wb-surface-sub);
-  padding: var(--wb-space-2) var(--wb-space-3);
-  border-radius: var(--wb-radius-sm);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 .cacheBadge {
-  font-size: var(--wb-type-micro-size);
-  font-weight: 400;
-  color: var(--wb-fg-muted);
-  background: var(--wb-surface-sub);
-  padding: var(--wb-space-2) var(--wb-space-3);
-  border-radius: var(--wb-radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--wb-success);
+  background: color-mix(in srgb, var(--wb-success) 12%, transparent);
+  padding: 1px 5px;
+  border-radius: 3px;
 }
 
 /* Right side slide-out drawer */
@@ -228,7 +248,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--wb-space-5) var(--wb-space-6);
+  padding: 12px 16px;
   border-bottom: 1px solid var(--wb-line);
 }
 
@@ -245,7 +265,7 @@
   color: var(--wb-fg-muted);
   width: 26px;
   height: 26px;
-  border-radius: var(--wb-radius-sm);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,10 +296,10 @@
   background: transparent;
   color: var(--wb-fg-muted);
   cursor: pointer;
-  padding: var(--wb-space-2) var(--wb-space-3);
-  font-size: var(--wb-type-label-size);
+  padding: 2px 6px;
+  font-size: 14px;
   line-height: 1;
-  border-radius: var(--wb-radius-sm);
+  border-radius: 4px;
   transition: all 0.15s ease;
 }
 
@@ -294,9 +314,9 @@
   right: 0;
   background: var(--wb-surface);
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-lg);
+  border-radius: 8px;
   box-shadow: var(--wb-shadow-popover);
-  padding: var(--wb-space-3);
+  padding: 4px;
   min-width: 170px;
   z-index: 1000;
 }
@@ -305,18 +325,17 @@
   width: 100%;
   border: none;
   background: transparent;
-  min-height: var(--wb-control-height-sm);
-  padding: var(--wb-space-3) var(--wb-space-5);
-  border-radius: var(--wb-radius-md);
+  padding: 7px 12px;
+  border-radius: 6px;
   font: inherit;
-  font-size: var(--wb-type-caption-size);
+  font-size: 12px;
   font-weight: 500;
   color: var(--wb-fg);
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: var(--wb-space-4);
+  gap: 8px;
   transition: background 0.1s ease;
 }
 
@@ -328,60 +347,11 @@
 .copiedToast {
   background: var(--wb-tooltip-bg);
   color: var(--wb-tooltip-fg);
-  padding: var(--wb-space-3) var(--wb-space-4);
-  border-radius: var(--wb-radius-md);
-  font-size: var(--wb-type-micro-size);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 500;
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: var(--wb-shadow-sm);
-}
-
-/* React Flow MiniMap: 原生尺寸，边框、底色与节点色弱化融入主题 */
-:global(.react-flow__minimap) {
-  background: var(--wb-surface) !important;
-  border: 1px solid var(--wb-line-soft) !important;
-  border-radius: var(--wb-radius-control) !important;
-}
-
-:global(.react-flow__minimap-node) {
-  fill: color-mix(in srgb, var(--wb-accent) 60%, var(--wb-line-control)) !important;
-  stroke: transparent !important;
-}
-
-:global([data-wb-scheme='dark']) .react-flow__minimap-node {
-  fill: color-mix(in srgb, var(--wb-accent) 45%, var(--wb-surface-raised)) !important;
-  stroke: transparent !important;
-}
-
-/* React Flow Controls: 缩放控件主题化 */
-:global(.react-flow__controls) {
-  border: 1px solid var(--wb-line) !important;
-  border-radius: var(--wb-radius-control) !important;
-  background: var(--wb-surface) !important;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--wb-fg) 10%, transparent) !important;
-  overflow: hidden;
-}
-
-:global(.react-flow__controls-button) {
-  background: var(--wb-surface) !important;
-  border: none !important;
-  border-bottom: 1px solid var(--wb-line) !important;
-  color: var(--wb-fg-muted) !important;
-  fill: var(--wb-fg-muted) !important;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-:global(.react-flow__controls-button:last-child) {
-  border-bottom: none !important;
-}
-
-:global(.react-flow__controls-button:hover) {
-  background: var(--wb-hover) !important;
-  color: var(--wb-fg) !important;
-  fill: var(--wb-fg) !important;
-}
-
-:global(.react-flow__controls-button svg) {
-  fill: currentColor !important;
+  box-shadow: var(--wb-shadow-popover);
 }

@@ -1,5 +1,4 @@
-/* Workbench panel styles — a self-contained light surface for the main
-   column. Class names are kebab-free camelCase (CSS Modules camelize). */
+/* 工作台页与独立侧栏采用同一套 Lobe 语义 token。 */
 
 .root {
   display: flex;
@@ -8,7 +7,7 @@
   min-width: 0;
   background: var(--wb-bg);
   color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
+  font-size: var(--wb-type-body-size);
 }
 
 .body {
@@ -24,17 +23,17 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--wb-surface-raised);
+  background: var(--wb-nav);
   border-right: 1px solid var(--wb-line);
   color: var(--wb-fg);
-  font-size: var(--wb-type-compact-size);
+  font-size: var(--wb-type-body-size);
 }
 
 .sideBrand {
   display: flex;
   align-items: center;
-  gap: var(--wb-space-4);
-  padding: var(--wb-space-5) var(--wb-space-6);
+  gap: 10px;
+  padding: 14px 14px 10px;
   flex: none;
 }
 
@@ -42,31 +41,31 @@
 .sideToggle {
   margin-left: auto;
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: var(--wb-control-height-sm);
+  height: var(--wb-control-height-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: var(--wb-radius-lg);
+  border-radius: var(--wb-radius-control);
   background: transparent;
   color: var(--wb-fg-muted);
   cursor: pointer;
 }
 
 .sideToggle:hover { background: var(--wb-hover); color: var(--wb-fg); }
-.sideToggle:focus-visible { outline: 2px solid var(--wb-accent); outline-offset: 2px; }
+.sideToggle:focus-visible { outline: 2px solid var(--wb-focus); outline-offset: 2px; }
 
 .sideMark {
   width: 30px;
   height: 30px;
-  border-radius: var(--wb-radius-lg);
+  border-radius: var(--wb-radius-control);
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--wb-accent);
   color: var(--wb-on-accent);
-  font-size: var(--wb-type-label-size);
+  font-size: 14px;
   font-weight: 700;
   flex: none;
   overflow: hidden;
@@ -75,7 +74,7 @@
 .sideLogoFallback { display: inline-block; }
 
 .sideName {
-  font-size: var(--wb-type-body-size);
+  font-size: 15px;
   font-weight: 650;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -87,23 +86,23 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--wb-space-3) var(--wb-space-4);
+  padding: 4px 10px;
   display: flex;
   flex-direction: column;
-  gap: var(--wb-space-2);
+  gap: 2px;
 }
 
 .sideItem {
   display: flex;
   align-items: center;
-  gap: var(--wb-space-4);
+  gap: 10px;
   width: 100%;
   text-align: left;
   border: none;
   background: transparent;
-  padding: var(--wb-space-4) var(--wb-space-5);
-  border-radius: var(--wb-radius-lg);
-  font-size: var(--wb-type-compact-size);
+  padding: 8px 10px;
+  border-radius: var(--wb-radius-control);
+  font-size: var(--wb-type-label-size);
   font-family: inherit;
   color: var(--wb-fg);
   cursor: pointer;
@@ -114,18 +113,18 @@
 .sideItem:hover { background: var(--wb-hover); }
 
 .sideItemActive {
-  background: color-mix(in srgb, var(--wb-accent) 10%, transparent);
-  color: var(--wb-accent);
+  background: var(--wb-selected-bg);
+  color: var(--wb-selected-fg);
   font-weight: 600;
 }
 
-.sideItemDisabled, .sideItem[disabled] { cursor: default; color: var(--wb-fg-muted); }
+.sideItemDisabled, .sideItem[disabled] { cursor: default; color: var(--wb-disabled-fg); }
 
 .sideGlyph {
   width: 20px;
   text-align: center;
   flex: none;
-  font-size: var(--wb-type-compact-size);
+  font-size: 13px;
 }
 
 .sideLabel {
@@ -136,40 +135,39 @@
 }
 
 .sideSoon {
-  font-size: var(--wb-type-micro-size);
+  font-size: 10.5px;
   color: var(--wb-fg-muted);
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-pill);
-  padding: var(--wb-space-2) var(--wb-space-4);
+  border-radius: 99px;
+  padding: 1px 7px;
   flex: none;
 }
 
-.sideFoot { flex: none; padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-5); display: flex; flex-direction: column; gap: var(--wb-space-4); }
+.sideFoot { flex: none; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
 
 
 .sideSettings { display: flex; align-items: center; }
 
 /* Collapsed 56px rail: centered icon buttons stacked vertically. */
-.sideCollapsed .sideBrand { padding: var(--wb-space-5) 0 var(--wb-space-4); justify-content: center; flex-wrap: wrap; gap: var(--wb-space-3); }
+.sideCollapsed .sideBrand { padding: 12px 0 6px; justify-content: center; flex-wrap: wrap; gap: 6px; }
 .sideCollapsed .sideToggle { margin-left: 0; }
-.sideCollapsed .sideNav { padding: var(--wb-space-3) var(--wb-space-4); align-items: center; }
-.sideCollapsed .sideItem { justify-content: center; padding: var(--wb-space-4) 0; width: 40px; }
-.sideCollapsed .sideFoot { align-items: center; padding: var(--wb-space-4) var(--wb-space-4) var(--wb-space-5); }
+.sideCollapsed .sideNav { padding: 4px 6px; align-items: center; }
+.sideCollapsed .sideItem { justify-content: center; padding: 9px 0; width: 40px; }
+.sideCollapsed .sideFoot { align-items: center; padding: 6px 6px 10px; }
 .sideCollapsed .sideSettings { justify-content: center; }
 
 .muted { color: var(--wb-fg-muted); font-size: var(--wb-type-compact-size); }
 
-.errorText { color: var(--wb-danger); font-size: var(--wb-type-compact-size); margin-top: var(--wb-space-4); }
+.errorText { color: var(--wb-danger); font-size: var(--wb-type-compact-size); margin-top: 8px; }
 
 
 .secondary {
   background: var(--wb-surface-raised);
   color: var(--wb-fg);
   border: 1px solid var(--wb-line);
-  border-radius: var(--wb-radius-lg);
-  min-height: var(--wb-control-height-sm);
-  padding: var(--wb-space-3) var(--wb-space-5);
-  font-size: var(--wb-type-compact-size);
+  border-radius: var(--wb-radius-control);
+  padding: 7px 14px;
+  font-size: 12.5px;
   cursor: pointer;
 }
 

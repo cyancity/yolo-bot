@@ -1,7 +1,8 @@
 /** Core navigation column: registered page entries, channels, DMs and user identity. */
-import { Button, TextInput } from './ui/primitives.ts'
 import { Icon, type IconName } from './ui/icons.tsx'
-import { useEffect, useDeferredValue, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { List, SideNav } from '@lobehub/ui'
 import type { ComposedProps } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls the 'sidebar' slot spec, SidebarOwnerProps, and the
 // GlobalStandardProps.usePanelInfo merge.
@@ -12,28 +13,29 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 import type { PreferenceFields, WorkbenchChromeProps } from '../extension.ts'
-import { cx, WorkbenchSurface, Dialog } from './ui/index.tsx'
+import { Button, cx, Dialog, useTokenScopeAttrs, WorkbenchSurface } from './ui/index.tsx'
 import { SIDEBAR_TAKEOVER_FIELD, type PrefsSource } from './prefs.ts'
 import { PANEL_ID, type WorkbenchNavActions, type WorkbenchNavState, type WorkbenchView } from './nav.ts'
 import { S } from './strings.ts'
-import { WF } from './workforce-strings.ts'
 import css from './workbench.module.css'
 import sub from './sidebar.module.css'
 import workforceCss from './workforce.module.css'
-import searchCss from './workforce-sidebar-search.module.css'
+import { SidebarHistorySearch } from './sidebar-history-search.tsx'
+import { WF } from './workforce-strings.ts'
+import { IndependentSidebarPresentation } from './sidebar-presentation.tsx'
+import dialogCss from './workforce-channels.module.css'
 import type { WorkforceSource } from './workforce-source.ts'
-import type { Employee, Thread, WorkforceMessage } from './workforce-types.ts'
+import type { Employee, Thread } from './workforce-types.ts'
 import { DEFAULT_CHANNEL } from './nav.ts'
 import { SidebarListSkeleton, useDelayedLoading } from './workforce-skeleton.tsx'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { WorkforceChannels } from './workforce-channels.tsx'
-import { CreateChatModal } from './workforce-create-chat.tsx'
+import { WorkforceChatList, CreateChatModal } from './workforce-chat-list.tsx'
 import { WorkforceContextMenu, type ContextMenuSection } from './workforce-context-menu.tsx'
 import { UserProfileModal, useUserProfile } from './workforce-profile.tsx'
-import { useWorkforcePrefs, type AvatarStyle } from './workforce-prefs.ts'
+import { useWorkforcePrefs } from './workforce-prefs.ts'
 import { DSH_AVATAR_DATA_URL } from './dsh-icon.ts'
-import { IndependentSidebarPresentation } from './sidebar-presentation.tsx'
 type NavHandle = EngineStoreHandle<WorkbenchNavState, WorkbenchNavActions>
 
 /** Registrant inject face for the sidebar occupant. */
@@ -92,12 +94,47 @@ function itemActive(view: WorkbenchView, item: NavItem): boolean {
 const narrowViewport = (): boolean =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1023.98px)').matches
 
+/** Narrow screens keep the host grid full width and present the navigation as a drawer. */
+function MobileSidebarControls({ expanded, canEscape, onClose }: {
+  readonly expanded: boolean
+  readonly canEscape: boolean
+  readonly onClose: () => void
+}) {
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  const canEscapeRef = useRef(canEscape)
+  onCloseRef.current = onClose
+  canEscapeRef.current = canEscape
+
+  useEffect(() => {
+    if (!expanded || !narrowViewport()) return
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeRef.current?.focus()
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || !canEscapeRef.current || document.querySelector('dialog[open]')) return
+      event.preventDefault()
+      onCloseRef.current()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      returnFocus?.focus()
+    }
+  }, [expanded])
+
+  if (!expanded) return null
+  return <>
+    <div className={sub.mobileBackdrop} aria-hidden="true" onClick={onClose} />
+    <button type="button" ref={closeRef} className={sub.mobileClose} aria-label={S.nav.collapse} onClick={onClose}>
+      <Icon name="close" />
+    </button>
+  </>
+}
+
 /** Chevron glyphs for the brand-row collapse control (inline, no icon-table entry). */
 function ToggleGlyph({ collapsed }: { readonly collapsed: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={collapsed ? 'm13 6 6 6-6 6 M5 6v12' : 'M11 6l-6 6 6 6 M19 6v12'} />
-    </svg>
+    <Icon name={collapsed ? 'panelOpen' : 'panelClose'} width={16} height={16} />
   )
 }
 
@@ -129,8 +166,8 @@ function NavRow({ item, active, collapsed, onNavigate }: {
 }) {
   const label = item.label
   return (
-    <Button variant="plain"
-      type="button"
+    <Button
+      variant="ghost"
       className={cx(css.sideItem, active && css.sideItemActive)}
       title={collapsed ? label : undefined}
       aria-label={label}
@@ -153,8 +190,8 @@ export function SidebarBody(props: SidebarBodyProps) {
       <div className={css.sideBrand}>
         <span className={css.sideMark} aria-hidden={collapsed ? undefined : true}>{props.brandMark}</span>
         {!collapsed && <span className={css.sideName}>{props.brandName}</span>}
-        <Button variant="plain"
-          type="button"
+        <Button
+          variant="ghost"
           className={css.sideToggle}
           title={collapsed ? S.nav.expand : S.nav.collapse}
           aria-label={collapsed ? S.nav.expand : S.nav.collapse}
@@ -166,8 +203,8 @@ export function SidebarBody(props: SidebarBodyProps) {
       <nav className={css.sideNav} aria-label={S.brand}>
         {NAV_ITEMS.map(item => <NavRow key={item.label} item={item} collapsed={collapsed}
           active={props.workbenchActive && itemActive(props.view, item)} onNavigate={props.onNavigate} />)}
-        <Button variant="plain"
-          type="button"
+        <Button
+          variant="ghost"
           className={`${css.sideItem} ${props.chatActive ? css.sideItemActive : ''}`}
           title={collapsed ? S.nav.chat : undefined}
           aria-label={S.nav.chat}
@@ -352,16 +389,18 @@ function SidebarChannelColumn({ core, brandName, context }: {
 }) {
   const { view, snapshot, prefs, navigate } = core
   const [createChatOpen, setCreateChatOpen] = useState(false)
+  // 导航结构由 style 决定（sidebar-chat-list 卡 D2 判据）：WeChat 会话优先单列表，
+  // Discord 分组频道 + 私信区。旧 sidebarMode 只作 V1 迁移读取，不再入偏好。
+  const chatStyle = prefs.style === 'wechat'
   return (
-    <div className={workforceCss.channelColumn}>
+    <div className={cx(workforceCss.channelColumn, sub.channelColumn)}>
       {brandName !== undefined && (
-        <div className={workforceCss.workspaceBrand}>
+        <div className={cx(workforceCss.workspaceBrand, sub.channelHeader)}>
           <SidebarHistorySearch
             messages={snapshot.messages}
             threads={snapshot.threads}
             channels={snapshot.channels}
             employees={snapshot.employees}
-            avatarStyle={prefs.avatarStyle}
             onNavigate={navigate}
             onAddChat={() => setCreateChatOpen(true)}
           />
@@ -389,9 +428,47 @@ function SidebarChannelColumn({ core, brandName, context }: {
       <div className={workforceCss.channelScroll}>
         {core.showSidebarSkeleton ? (
           <SidebarListSkeleton />
-        ) : (
-          <>
-            <WorkforceChannels
+        ) : chatStyle ? (
+          <WorkforceChatList
+            channels={snapshot.channels}
+            threads={snapshot.threads}
+            employees={snapshot.employees}
+            messages={snapshot.messages}
+            activeChannelId={view.kind === 'home' ? DEFAULT_CHANNEL : view.kind === 'channel' ? view.id : undefined}
+            activeDmEmployeeId={view.kind === 'dm' ? view.id : undefined}
+            employeeMotion={core.activeActivities}
+            onSelectChannel={channelId => navigate({ kind: 'channel', id: channelId })}
+            onSelectDm={employeeId => navigate({ kind: 'dm', id: employeeId })}
+            onCreateChatReq={async input => {
+              const created = await core.workforce.createChannel(input.name, null, { groupChatName: input.groupChatName, memberIds: input.memberIds })
+              return created.id
+            }}
+            onPatchChannelReq={async (channelId, patch) => {
+              await core.workforce.patchChannel(channelId, patch)
+            }}
+            onMarkChannelReadReq={async (channelId) => {
+              await core.workforce.markChannelRead(channelId)
+            }}
+            onDuplicateChannelReq={async (channelId) => {
+              await core.workforce.duplicateChannel(channelId)
+            }}
+            onDeleteChannelReq={async (channelId) => {
+              await core.workforce.deleteChannel(channelId)
+              if (view.kind === 'channel' && view.id === channelId) {
+                navigate({ kind: 'channel', id: DEFAULT_CHANNEL })
+              }
+            }}
+            onPatchThreadReq={async (threadId, patch) => {
+              await core.workforce.patchThread(threadId, patch)
+            }}
+            onPatchEmployeeReq={async (employeeId, patch) => {
+              if (patch.name !== undefined) {
+                await core.workforce.updateEmployee(employeeId, { name: patch.name })
+              }
+            }}
+          />
+        ) : <>
+          <WorkforceChannels
             channels={snapshot.channels}
             groups={core.workforce.getChannelGroups()}
             activeChannelId={view.kind === 'home' ? DEFAULT_CHANNEL : view.kind === 'channel' ? view.id : undefined}
@@ -429,73 +506,87 @@ function SidebarChannelColumn({ core, brandName, context }: {
             }}
           />
           <div className={sub.sectionDivider} role="separator" aria-orientation="horizontal" />
-          <Button variant="plain" type="button" className={sub.dmSectionHeadBtn} onClick={core.toggleDmSection} aria-expanded={!core.dmCollapsed}>
+          <button type="button" className={sub.dmSectionHeadBtn} onClick={core.toggleDmSection} aria-expanded={!core.dmCollapsed}>
             <span className={`${sub.dmChevron} ${core.dmCollapsed ? sub.dmChevronCollapsed : ''}`}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+              <Icon name="chevronDown" width={10} height={10} />
             </span>
             {WF.nav.dms}
-          </Button>
+          </button>
           {!core.dmCollapsed && core.activeEmployees.map(employee => (
-            <Button variant="plain"
+            <List.Item
               key={employee.id}
-              type="button"
-              className={cx(workforceCss.listItem, view.kind === 'dm' && view.id === employee.id && workforceCss.listItemActive)}
-              onClick={() => navigate({ kind: 'dm', id: employee.id })}
-              onContextMenu={e => core.openDmContextMenu(e, employee.id, employee.name)}
-            >
-              <span className={sub.dmAvatarWrap}>
+              active={view.kind === 'dm' && view.id === employee.id}
+              align="center"
+              avatar={<span className={sub.dmAvatarWrap}>
                 <WorkforceAvatar
                   name={employee.name}
                   color={employee.avatarColor}
                   role={employee.role}
-                  style={prefs.avatarStyle}
                   size={20}
                   state={core.activeActivities[employee.id] ?? 'idle'}
                   live={Boolean(core.activeActivities[employee.id])}
                 />
-              </span>
-              <span className={workforceCss.listLabel}>{employee.name}</span>
-              {employee.isLeader && <span className={workforceCss.employeeLabel}>{WF.common.lead}</span>}
-              {core.pinOf(employee.id) && (
-                <span className={sub.dmPinBadge} title={WF.common.pinned}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="17" x2="12" y2="22"/>
-                    <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
-                  </svg>
-                </span>
-              )}
-            </Button>
+              </span>}
+              className={cx(workforceCss.listItem, sub.dmItem)}
+              padding={6}
+              role="button"
+              tabIndex={0}
+              aria-current={view.kind === 'dm' && view.id === employee.id ? 'page' : undefined}
+              onClick={() => navigate({ kind: 'dm', id: employee.id })}
+              onContextMenu={e => core.openDmContextMenu(e, employee.id, employee.name)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate({ kind: 'dm', id: employee.id })
+                }
+              }}
+              title={<span className={sub.dmTitle}>
+                <span className={workforceCss.listLabel}>{employee.name}</span>
+                {employee.isLeader && employee.name.trim() !== '负责人' && <span className={workforceCss.employeeLabel}>{WF.common.lead}</span>}
+                {core.pinOf(employee.id) && <span className={sub.dmPinBadge} title={WF.common.pinned}>
+                  <Icon name="pin" width={12} height={12} />
+                </span>}
+              </span>}
+            />
           ))}
           {!core.dmCollapsed && core.deletedThreads.map((thread: Thread) => (
-            <Button variant="plain"
+            <List.Item
               key={thread.id}
-              type="button"
-              className={cx(
-                workforceCss.listItem,
-                sub.dmItemDimmed,
-                view.kind === 'dm' && view.id === thread.employeeId && workforceCss.listItemActive
-              )}
-              onClick={() => navigate({ kind: 'dm', id: thread.employeeId! })}
-              onContextMenu={e => core.openDmContextMenu(e, thread.employeeId!, thread.title)}
-            >
-              <span className={sub.dmAvatarWrap}>
+              active={view.kind === 'dm' && view.id === thread.employeeId}
+              align="center"
+              avatar={<span className={sub.dmAvatarWrap}>
                 <WorkforceAvatar
                   name={thread.title || WF.common.employee}
                   tone="#8a8a80"
-                  style={prefs.avatarStyle}
                   size={20}
                   state="sleeping"
                   live={false}
                 />
-              </span>
-              <span className={workforceCss.listLabel}>{thread.title}</span>
-              <span className={workforceCss.employeeLabel}>{WF.common.offline}</span>
-            </Button>
+              </span>}
+              className={cx(
+                workforceCss.listItem,
+                sub.dmItem,
+                sub.dmItemDimmed
+              )}
+              padding={6}
+              role="button"
+              tabIndex={0}
+              aria-current={view.kind === 'dm' && view.id === thread.employeeId ? 'page' : undefined}
+              onClick={() => navigate({ kind: 'dm', id: thread.employeeId! })}
+              onContextMenu={e => core.openDmContextMenu(e, thread.employeeId!, thread.title)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  navigate({ kind: 'dm', id: thread.employeeId! })
+                }
+              }}
+              title={<span className={sub.dmTitle}>
+                <span className={workforceCss.listLabel}>{thread.title}</span>
+                <span className={workforceCss.employeeLabel}>{WF.common.offline}</span>
+              </span>}
+            />
           ))}
-          </>
-        )}
+        </>}
         {snapshot.error && <div className={workforceCss.streamError} role="alert">{snapshot.error}</div>}
       </div>
 
@@ -531,7 +622,7 @@ function SidebarOverlays({ core }: { readonly core: SidebarCore }) {
   </>
 }
 
-/** Bot rename modal using kit Dialog */
+/** Employee rename stays in the browser top layer above the host shell. */
 function RenameBotModal({
   currentName,
   onClose,
@@ -545,6 +636,7 @@ function RenameBotModal({
   const [val, setVal] = useState(currentName)
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const scopeAttrs = useTokenScopeAttrs()
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -563,333 +655,33 @@ function RenameBotModal({
     }
   }
 
-  return (
-    <Dialog
-      size="sm"
-      title={WF.sidebarActions.renameEmployee}
-      closeLabel={WF.common.cancel}
-      onClose={onClose}
-      busy={busy}
-      onSubmit={e => void handleSubmit(e)}
-      secondaryAction={{
-        label: WF.common.cancel,
-        onInvoke: onClose,
-        disabled: busy,
-      }}
-      primaryAction={{
-        label: busy ? WF.models.saving : WF.common.confirm,
-        type: 'submit',
-        disabled: busy || !val.trim(),
-        loading: busy,
-      }}
-    >
-      <div className={sub.formItem}>
-        <label className={sub.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
-        <TextInput
-          id="rename-bot-name-input"
-          ref={inputRef}
-          type="text"
-          value={val}
-          placeholder={WF.common.enterNewName}
-          maxLength={30}
-          onChange={e => setVal(e.target.value)}
-        />
-      </div>
-    </Dialog>
-  )
-}
-
-/** Keyword search matching result */
-interface SearchResultItem {
-  readonly messageId: string
-  readonly threadId: string
-  readonly text: string
-  readonly ts: string
-  readonly role: 'user' | 'agent' | 'system'
-  readonly senderName: string
-  readonly navView: WorkbenchView
-  readonly targetTitle: string
-  readonly avatarEmployee?: Employee | undefined
-}
-
-function formatSearchTime(ts: string): string {
-  try {
-    const date = new Date(ts)
-    if (Number.isNaN(date.getTime())) return ''
-    const now = new Date()
-    const isSameDay =
-      date.getFullYear() === now.getFullYear() &&
-      date.getMonth() === now.getMonth() &&
-      date.getDate() === now.getDate()
-    if (isSameDay) {
-      return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-    }
-    return `${date.getMonth() + 1}/${date.getDate()}`
-  } catch {
-    return ''
-  }
-}
-
-/** Highlight snippet around keyword */
-function HighlightedSnippet({ text, query }: { readonly text: string; readonly query: string }) {
-  const lowerText = text.toLowerCase()
-  const lowerQuery = query.toLowerCase()
-  const index = lowerText.indexOf(lowerQuery)
-  if (index === -1) {
-    return <span>{text.slice(0, 80)}</span>
-  }
-  const start = Math.max(0, index - 20)
-  const end = Math.min(text.length, index + query.length + 40)
-  const prefix = (start > 0 ? '…' : '') + text.slice(start, index)
-  const matched = text.slice(index, index + query.length)
-  const suffix = text.slice(index + query.length, end) + (end < text.length ? '…' : '')
-
-  return (
-    <span>
-      {prefix}
-      <span className={searchCss.highlight}>{matched}</span>
-      {suffix}
-    </span>
-  )
-}
-
-/** Top sidebar search box for chat history */
-function SidebarHistorySearch({
-  messages,
-  threads,
-  channels,
-  employees,
-  avatarStyle,
-  onNavigate,
-  onAddChat,
-}: {
-  readonly messages?: Readonly<Record<string, { readonly list: readonly WorkforceMessage[] }>> | undefined
-  readonly threads: readonly Thread[]
-  readonly channels: readonly { readonly id: string; readonly name: string; readonly groupChatName?: string | null }[]
-  readonly employees: readonly Employee[]
-  readonly avatarStyle?: AvatarStyle | undefined
-  readonly onNavigate: (view: WorkbenchView) => void
-  readonly onAddChat?: (() => void) | undefined
-}) {
-  const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
-  const deferredQuery = useDeferredValue(query)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const employeeMap = useMemo(() => new Map(employees.map(e => [e.id, e])), [employees])
-  const channelMap = useMemo(() => new Map(channels.map(c => [c.id, c])), [channels])
-  const threadMap = useMemo(() => new Map(threads.map(t => [t.id, t])), [threads])
-
-  const results = useMemo<SearchResultItem[]>(() => {
-    const q = deferredQuery.trim().toLowerCase()
-    if (!q || !messages) return []
-
-    const matches: SearchResultItem[] = []
-    for (const [threadId, threadMsgs] of Object.entries(messages)) {
-      if (!threadMsgs?.list) continue
-      const thread = threadMap.get(threadId)
-
-      let navView: WorkbenchView | undefined
-      let targetTitle: string = WF.common.session
-      let avatarEmployee: Employee | undefined
-
-      if (thread?.kind === 'dm' && thread.employeeId) {
-        navView = { kind: 'dm', id: thread.employeeId }
-        const emp = employeeMap.get(thread.employeeId)
-        avatarEmployee = emp
-        targetTitle = emp ? emp.name : (thread.title || WF.nav.dms)
-      } else if (thread?.kind === 'channel' && thread.channelId) {
-        navView = { kind: 'channel', id: thread.channelId }
-        const ch = channelMap.get(thread.channelId)
-        targetTitle = ch?.groupChatName?.trim() || ch?.name || thread.title || WF.nav.channels
-      } else if (thread?.taskId) {
-        if (thread.channelId) {
-          navView = { kind: 'channel', id: thread.channelId }
-          const ch = channelMap.get(thread.channelId)
-          targetTitle = ch?.groupChatName?.trim() || ch?.name || WF.common.channelTask
-        } else if (thread.employeeId) {
-          navView = { kind: 'dm', id: thread.employeeId }
-          const emp = employeeMap.get(thread.employeeId)
-          avatarEmployee = emp
-          targetTitle = emp ? emp.name : WF.common.employeeTask
-        }
-      } else {
-        // Fallback for threadId if matching a channel directly
-        const ch = channelMap.get(threadId)
-        if (ch) {
-          navView = { kind: 'channel', id: ch.id }
-          targetTitle = ch.groupChatName?.trim() || ch.name
-        }
-      }
-
-      if (!navView) continue
-
-      for (const msg of threadMsgs.list) {
-        if (msg.text && msg.text.toLowerCase().includes(q)) {
-          const senderEmp = employeeMap.get(msg.senderId)
-          matches.push({
-            messageId: msg.id,
-            threadId,
-            text: msg.text,
-            ts: msg.ts,
-            role: msg.role,
-            senderName: msg.senderName || senderEmp?.name || (msg.role === 'user' ? WF.common.me : WF.common.bot),
-            navView,
-            targetTitle,
-            avatarEmployee: senderEmp ?? avatarEmployee,
-          })
-          if (matches.length >= 40) break
-        }
-      }
-      if (matches.length >= 40) break
-    }
-
-    // Sort by timestamp descending
-    matches.sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))
-    return matches
-  }, [deferredQuery, messages, threadMap, employeeMap, channelMap])
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handlePointerDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('pointerdown', handlePointerDown)
-    return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [])
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      setQuery('')
-      setOpen(false)
-    }
-  }
-
-  const handleSelectResult = (item: SearchResultItem) => {
-    onNavigate(item.navView)
-    setOpen(false)
-    window.setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent('workforce:jump-to-message', {
-          detail: { messageId: item.messageId, threadId: item.threadId },
-        })
-      )
-    }, 120)
-  }
-
-  const isSearching = query.trim().length > 0
-
-  return (
-    <div className={searchCss.searchContainer} ref={containerRef} onKeyDown={handleKeyDown}>
-      <div className={searchCss.searchRow}>
-        <div className={searchCss.searchBar}>
-          <span className={searchCss.searchIcon} aria-hidden="true">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </span>
-          <TextInput
+  return createPortal(
+    <div {...scopeAttrs}>
+    <Dialog title={WF.sidebarActions.renameEmployee} closeLabel={WF.common.cancel} onClose={onClose} busy={busy} initialFocusRef={inputRef}>
+      <form className={dialogCss.dialogForm} onSubmit={e => void handleSubmit(e)}>
+        <div className={dialogCss.formItem}>
+          <label className={dialogCss.formLabel} htmlFor="rename-bot-name-input">{WF.sidebarActions.employeeName}</label>
+          <input
+            id="rename-bot-name-input"
+            ref={inputRef}
             type="text"
-            className={searchCss.searchInput}
-            placeholder={WF.common.search}
-            value={query}
-            onChange={e => {
-              setQuery(e.target.value)
-              setOpen(true)
-            }}
-            onFocus={() => {
-              if (query.trim()) setOpen(true)
-            }}
+            className={dialogCss.inputField}
+            value={val}
+            placeholder={WF.common.enterNewName}
+            maxLength={30}
+            onChange={e => setVal(e.target.value)}
           />
-          {isSearching && (
-            <Button variant="plain"
-              type="button"
-              className={searchCss.clearBtn}
-              title={WF.common.clearSearch}
-              aria-label={WF.common.clearSearch}
-              onClick={() => {
-                setQuery('')
-                setOpen(false)
-              }}
-            >
-              ×
-            </Button>
-          )}
         </div>
-        {onAddChat && (
-          <Button variant="plain"
-            type="button"
-            className={searchCss.addChatBtn}
-            title={WF.common.createGroupChat}
-            aria-label={WF.common.createGroupChat}
-            onClick={onAddChat}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <line x1="12" y1="8" x2="12" y2="16" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-          </Button>
-        )}
-      </div>
-
-      {open && isSearching && (
-        <div className={searchCss.dropdownPopover} role="listbox">
-          {results.length === 0 ? (
-            <div className={searchCss.noResults}>{WF.common.noMatchingMessages}</div>
-          ) : (
-            results.map(item => (
-              <Button variant="plain"
-                key={`${item.threadId}-${item.messageId}`}
-                type="button"
-                className={searchCss.resultItem}
-                onClick={() => handleSelectResult(item)}
-              >
-                {item.avatarEmployee ? (
-                  <span className={searchCss.resultAvatar}>
-                    <WorkforceAvatar
-                      name={item.avatarEmployee.name}
-                      color={item.avatarEmployee.avatarColor}
-                      role={item.avatarEmployee.role}
-                      style={avatarStyle}
-                      size={20}
-                    />
-                  </span>
-                ) : (
-                  <span className={searchCss.resultAvatar}>
-                    <WorkforceAvatar
-                      name={item.senderName}
-                      tone="#8a8a80"
-                      style={avatarStyle}
-                      size={20}
-                    />
-                  </span>
-                )}
-                <div className={searchCss.resultContent}>
-                  <div className={searchCss.resultMetaRow}>
-                    <span className={searchCss.resultTargetName}>{item.targetTitle}</span>
-                    <span className={searchCss.resultTime}>{formatSearchTime(item.ts)}</span>
-                  </div>
-                  <div className={searchCss.resultAuthorRow}>
-                    <span>{item.senderName}</span>
-                  </div>
-                  <div className={searchCss.resultSnippet}>
-                    <HighlightedSnippet text={item.text} query={deferredQuery.trim()} />
-                  </div>
-                </div>
-              </Button>
-            ))
-          )}
+        <div className={dialogCss.dialogFooter}>
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={busy}>{WF.common.cancel}</Button>
+          <Button type="submit" variant="primary" size="sm" disabled={busy || !val.trim()}>{busy ? WF.models.saving : WF.common.confirm}</Button>
         </div>
-      )}
-    </div>
+      </form>
+    </Dialog>
+    </div>,
+    document.body,
   )
 }
-
 
 /**
  * The 'sidebar' occupant: wires the nav store, panel selection, catalog and
@@ -921,30 +713,29 @@ export function WorkbenchSidebar(props: WorkbenchSidebarProps) {
   }
 
   return (
-    <WorkbenchSurface className={workforceCss.sidebar} data-workforce-sidebar data-wb-style={core.prefs.style}>
+    <WorkbenchSurface className={workforceCss.sidebar} data-workforce-sidebar data-wb-expanded={!props.collapsed && !independent} data-wb-style={core.prefs.style}>
       <IndependentSidebarPresentation hidden={independent} />
-      <nav className={workforceCss.rail} aria-label={WF.common.workbenchNav}>
-        <div className={workforceCss.railUser}>
-          <Button variant="plain"
-            type="button"
-            className={workforceCss.railUserBtn}
-            title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
-            aria-label={WF.common.userProfileAria}
-            onClick={() => core.setProfileModalOpen(true)}
-          >
-            <WorkforceAvatar
-              name={core.userProfile.name || WF.common.user}
-              isUser={true}
-              size={36}
-            />
-          </Button>
-        </div>
-        {core.navigation.entries().map(entry => <span key={entry.id}>
-          {props.renderSlot('workbench.navigation', core.chrome, { only: entry.id })}
-        </span>)}
-        <div className={workforceCss.railFoot}>
-          {props.renderSlot('sidebar.settings', { wide: false })}
-        </div>
+      <MobileSidebarControls expanded={!props.collapsed && !independent} canEscape={core.dmContextMenu === null} onClose={props.toggleColumn} />
+      <nav className={cx(workforceCss.rail, sub.navigationRail)} aria-label={WF.common.workbenchNav}>
+        <SideNav
+          className={sub.lobeRail}
+          style={{ width: '100%', minHeight: 0, height: '100%', padding: '12px 0 8px', background: 'transparent', border: 0 }}
+          avatar={
+            <button
+              type="button"
+              className={workforceCss.railUserBtn}
+              title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
+              aria-label={WF.common.userProfileAria}
+              onClick={() => core.setProfileModalOpen(true)}
+            >
+              <WorkforceAvatar name={core.userProfile.name || WF.common.user} isUser={true} size={36} />
+            </button>
+          }
+          topActions={core.navigation.entries().map(entry => <span key={entry.id}>
+            {props.renderSlot('workbench.navigation', core.chrome, { only: entry.id })}
+          </span>)}
+          bottomActions={props.renderSlot('sidebar.settings', { wide: false })}
+        />
       </nav>
       {!props.collapsed && !independent && (
         <SidebarChannelColumn
@@ -981,45 +772,40 @@ export function WorkbenchSidebarRegion(props: WorkbenchSidebarRegionProps) {
     }
   }
   return (
-    <WorkbenchSurface className={workforceCss.region} data-workforce-sidebar data-wb-style={core.prefs.style}>
+    <WorkbenchSurface className={workforceCss.region} data-workforce-sidebar data-wb-expanded={props.wide && !independent} data-wb-style={core.prefs.style}>
       <IndependentSidebarPresentation hidden={independent} />
-      <nav className={workforceCss.regionRail} aria-label={WF.common.workbenchNav}>
-        <div className={workforceCss.railUser}>
-          <Button variant="plain"
-            type="button"
-            className={workforceCss.railUserBtn}
-            title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
-            aria-label={WF.common.userProfileAria}
-            onClick={() => core.setProfileModalOpen(true)}
-          >
-            <WorkforceAvatar
-              name={core.userProfile.name || WF.common.user}
-              isUser={true}
-              size={36}
-            />
-          </Button>
-        </div>
-        {core.navigation.entries().map(entry => <span key={entry.id}>
-          {safeRender(() => props.renderSlot('workbench.navigation', core.chrome, { only: entry.id }))}
-        </span>)}
-        <div className={workforceCss.railFoot}>
-          <Button variant="plain"
-            type="button"
-            className={workforceCss.railButton}
-            title={S.nav.chat}
-            aria-label={S.nav.chat}
-            data-action="return-native"
-            onClick={onReturnToDsh}
-          >
-            <img
-              src={DSH_AVATAR_DATA_URL}
-              alt={S.nav.chat}
-              width={26}
-              height={26}
-              style={{ borderRadius: '6px', objectFit: 'contain' }}
-            />
-          </Button>
-        </div>
+      <MobileSidebarControls expanded={props.wide && !independent} canEscape={core.dmContextMenu === null} onClose={props.toggleColumn} />
+      <nav className={cx(workforceCss.regionRail, sub.navigationRail)} aria-label={WF.common.workbenchNav}>
+        <SideNav
+          className={sub.lobeRail}
+          style={{ width: '100%', minHeight: 0, height: '100%', padding: '12px 0 8px', background: 'transparent', border: 0 }}
+          avatar={
+            <button
+              type="button"
+              className={workforceCss.railUserBtn}
+              title={WF.common.userProfileTitle(core.userProfile.name || WF.common.user)}
+              aria-label={WF.common.userProfileAria}
+              onClick={() => core.setProfileModalOpen(true)}
+            >
+              <WorkforceAvatar name={core.userProfile.name || WF.common.user} isUser={true} size={36} />
+            </button>
+          }
+          topActions={core.navigation.entries().map(entry => <span key={entry.id}>
+            {safeRender(() => props.renderSlot('workbench.navigation', core.chrome, { only: entry.id }))}
+          </span>)}
+          bottomActions={
+            <button
+              type="button"
+              className={workforceCss.railButton}
+              title={S.nav.chat}
+              aria-label={S.nav.chat}
+              data-action="return-native"
+              onClick={onReturnToDsh}
+            >
+              <img src={DSH_AVATAR_DATA_URL} alt={S.nav.chat} width={26} height={26} style={{ borderRadius: '6px', objectFit: 'contain' }} />
+            </button>
+          }
+        />
       </nav>
       {props.wide && !independent && (
         <SidebarChannelColumn

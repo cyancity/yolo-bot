@@ -1,5 +1,5 @@
 import type { UserConfig } from 'tsdown'
-import { existsSync } from 'node:fs'
+import { copyFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // Host half is a one-line Loader row; the browser half (lib/client.js) is the
@@ -21,6 +21,9 @@ export default async (ctx: { env?: Record<string, unknown> }) => {
     ? {
       ...config,
       minify: true,
+      onSuccess() {
+        copyFileSync(new URL('../THIRD_PARTY_NOTICES.md', import.meta.url), new URL('./lib/THIRD_PARTY_NOTICES.md', import.meta.url))
+      },
       // tsdown forces CJS resolution to node; the lower-level override keeps
       // conditional imports (notably vfile) on their real browser entries.
       inputOptions: { ...config.inputOptions, platform: 'browser' },

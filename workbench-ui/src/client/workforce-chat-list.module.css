@@ -1,0 +1,340 @@
+/* Conversation list built on Lobe List.Item, with the existing two-line data hierarchy. */
+
+.chatRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chatHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+}
+
+.chatTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--wb-fg-muted);
+}
+
+.chatAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--wb-fg-muted);
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.chatAddBtn:hover {
+  background: var(--wb-hover);
+  color: var(--wb-fg);
+}
+
+.chatAddBtn:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: 1px;
+}
+
+.chatList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 2px 8px;
+}
+
+.chatEmpty {
+  padding: 10px 12px;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-placeholder);
+  line-height: 1.5;
+}
+
+.chatItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--wb-nav-row-height);
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 150ms ease-out;
+}
+
+.chatItem:focus-visible {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.chatItemDimmed {
+  opacity: 0.6;
+}
+
+/* 头像整体容器（36x36），承载头像本体并为右上角角标提供绝对定位 */
+.chatAvatarBox,
+.chatAvatar,
+.chatAvatarWrap {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+/* 单人头像：36x36 圆角方形裁剪外壳 */
+.chatSingleAvatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--wb-radius-avatar);
+  overflow: hidden;
+}
+
+/* 微信式群聊组合头像：36x36 浅灰托盘底 */
+.chatGroupAvatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--wb-radius-avatar);
+  overflow: hidden;
+  background: var(--wb-surface-soft);
+  padding: 2.5px;
+  box-sizing: border-box;
+}
+
+.chatAvatarGrid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+}
+
+.chatAvatarGrid[data-count='1'] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.chatAvatarGrid[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  align-items: center;
+}
+
+.chatAvatarGrid[data-count='3'],
+.chatAvatarGrid[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.chatAvatarGrid[data-count='3'] .chatAvatarCell:first-child {
+  grid-column: 1 / -1;
+  width: 50%;
+  justify-self: center;
+}
+
+/* 格子只负责裁剪与微圆角定位；内部 WorkforceAvatar 强制铺满格 */
+.chatAvatarCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 2.5px;
+  overflow: hidden;
+}
+
+.chatAvatarCell > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 无成员兜底：沿用原文字拼格的单格文字样式 */
+.chatAvatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--wb-accent-soft);
+  color: var(--wb-accent);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 头像右上角红色徽标（微信式）：有未读数显示数字，无数字红点 */
+.chatBadgeDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wb-danger);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chatBadgeCount {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--wb-danger);
+  color: var(--wb-on-danger);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  z-index: 2;
+  pointer-events: none;
+}
+.chatBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.chatLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chatNameWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chatName,
+.chatNameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wb-type-label-size);
+  font-weight: var(--wb-weight-medium);
+  min-width: 0;
+}
+
+.chatTag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--wb-fg-placeholder);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chatTime {
+  flex: none;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
+  white-space: nowrap;
+}
+
+.chatPreview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--wb-type-caption-size);
+  color: var(--wb-fg-muted);
+}
+
+.chatPin {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--wb-fg-muted);
+  opacity: 0.8;
+}
+
+.chatUnread {
+  display: none;
+}
+
+.chatHint {
+  font-size: 11px;
+  color: var(--wb-fg-placeholder);
+}
+/* 发起群聊的成员勾选列表：长名单内部滚动，弹窗不撑爆 */
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--wb-line);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--wb-fg);
+  cursor: pointer;
+}
+
+.memberRow:hover {
+  background: var(--wb-hover);
+}
+
+.memberRow:focus-within {
+  outline: 2px solid var(--wb-accent);
+  outline-offset: -2px;
+}
+
+.memberName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatAddBtn,
+  .chatItem {
+    transition: none;
+  }
+}

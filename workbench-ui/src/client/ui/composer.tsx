@@ -1,13 +1,13 @@
+import { WF } from '../workforce-strings.ts'
 /**
  * Composer：输入区壳。唯一发送主按钮（或同位 Stop）；附件、@、提示为弱元素。
  * 草稿、上传、投递状态由调用方持有；@候选等浮层由调用方经 popup 槽渲染。
  */
-import { forwardRef, useId, useLayoutEffect, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { forwardRef, useId, type MutableRefObject, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { TextArea as LobeTextArea, type TextAreaProps as LobeTextAreaProps } from '@lobehub/ui/es/Input'
 import css from './composer.module.css'
-import { AssistantRuntimeProvider, ComposerPrimitive, useExternalStoreRuntime, type ThreadMessageLike } from '@assistant-ui/react'
 import { Button } from './button.tsx'
 import { Icon } from './icons.tsx'
-import { WF } from '../workforce-strings.ts'
 
 export type ComposerState = 'ready' | 'sending' | 'blocked' | 'failed'
 
@@ -56,23 +56,12 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
   },
   ref,
 ) {
-  const { height: _height, minHeight: _minHeight, maxHeight: _maxHeight, ...autosizeStyle } = textareaProps?.style ?? {}
   const uid = useId()
   const taId = `${uid}-input`
   const canSend = text.trim().length > 0 || (attachments?.some(a => a.state === 'ready') ?? false)
   const blocked = state === 'blocked'
-  const runtime = useExternalStoreRuntime<ThreadMessageLike>({ messages: [], convertMessage: message => message, isRunning: state === 'sending', isSendDisabled: blocked || !canSend,
-    onNew: async () => { onSubmit() }, ...(onStop ? { onCancel: async () => onStop() } : {}),
-  })
-  useLayoutEffect(() => {
-    const composer = runtime.thread.composer
-    if (composer.getState().text !== text) composer.setText(text)
-    const ids = new Set(attachments?.filter(attachment => attachment.state === 'ready').map(attachment => attachment.id))
-    for (const [index, attachment] of composer.getState().attachments.entries()) if (!ids.has(attachment.id)) void composer.getAttachmentByIndex(index).remove()
-    for (const attachment of attachments ?? []) if (attachment.state === 'ready' && !composer.getState().attachments.some(item => item.id === attachment.id)) void composer.addAttachment({ id: attachment.id, name: attachment.name, type: 'file', content: [] })
-  }, [runtime, text, attachments, error])
   return (
-    <AssistantRuntimeProvider runtime={runtime}><ComposerPrimitive.Root asChild><div ref={ref} className={css.composer} data-state={state} data-context-key={contextKey} data-composer-card>
+    <div ref={ref} className={css.composer} data-state={state} data-context-key={contextKey} data-composer-card>
       {attachments && attachments.length > 0 && (
         <ul className={css.attachments} aria-label={WF.ui.attachmentsAria}>
           {attachments.map(a => (
@@ -81,14 +70,14 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
               <span className={css.attachName}>{a.name}</span>
               {a.state === 'uploading' && <span className={css.attachState}>{WF.ui.uploadingState}</span>}
               {a.state === 'failed' && (
-                <Button variant="plain" type="button" className={css.attachRetry} onClick={() => onRetryAttachment?.(a.id)}>
-                  {WF.ui.attachmentFailed(a.error)}，{WF.ui.retryAttachment}
-                </Button>
+                <button type="button" className={css.attachRetry} onClick={() => onRetryAttachment?.(a.id)}>
+                  {WF.ui.attachmentFailed(a.error)}, {WF.ui.retryAttachment}
+                </button>
               )}
               {onRemoveAttachment && (
-                <Button variant="plain" type="button" className={css.attachRemove} aria-label={WF.ui.removeAttachmentAria(a.name)} onClick={() => onRemoveAttachment(a.id)}>
-                  ×
-                </Button>
+                <button type="button" className={css.attachRemove} aria-label={WF.ui.removeAttachmentAria(a.name)} onClick={() => onRemoveAttachment(a.id)}>
+                  <Icon name="close" width={14} height={14} />
+                </button>
               )}
             </li>
           ))}
@@ -98,36 +87,40 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
         {tools && <div className={css.tools}>{tools}</div>}
         <div className={css.inputWrap}>
           <label htmlFor={taId} className={css.srOnly}>{label}</label>
-          <ComposerPrimitive.Input
-            addAttachmentOnPaste={false}
-            {...textareaProps}
-            style={autosizeStyle}
-            ref={textareaRef}
+          <LobeTextArea
+            {...(textareaProps as LobeTextAreaProps)}
+            type="block"
+            ref={instance => {
+              const input = instance?.resizableTextArea?.textArea ?? null
+              if (typeof textareaRef === 'function') textareaRef(input)
+              else if (textareaRef) (textareaRef as MutableRefObject<HTMLTextAreaElement | null>).current = input
+            }}
             id={taId}
             data-composer-input
             className={`${css.textarea} ${textareaProps?.className ?? ''}`}
             value={text}
             placeholder={label}
             aria-label={label}
-            aria-invalid={error ? true : undefined}
+            {...(error ? { 'aria-invalid': true } : {})}
             onChange={e => onTextChange(e.target.value)}
           />
           {popup}
         </div>
         {state === 'sending' && onStop ? (
-          <ComposerPrimitive.Cancel asChild><Button variant="secondary" aria-label={stopLabel}>
+          <Button variant="secondary" onClick={onStop} aria-label={stopLabel}>
             <Icon name="stop" />{stopLabel}
-          </Button></ComposerPrimitive.Cancel>
+          </Button>
         ) : (
-          <ComposerPrimitive.Send asChild><Button
+          <Button
             variant="primary"
             disabled={blocked || !canSend}
             loading={state === 'sending'}
+            onClick={onSubmit}
             title={blocked ? blockedReason : undefined}
             data-composer-send
           >
             {state === 'failed' ? retryLabel : sendLabel}
-          </Button></ComposerPrimitive.Send>
+          </Button>
         )}
       </div>
       {(blockedReason || error || hint) && (
@@ -137,6 +130,6 @@ export const Composer = forwardRef<HTMLDivElement, ComposerProps>(function Compo
           {hint && <span className={css.hint}>{hint}</span>}
         </div>
       )}
-    </div></ComposerPrimitive.Root></AssistantRuntimeProvider>
+    </div>
   )
 })
