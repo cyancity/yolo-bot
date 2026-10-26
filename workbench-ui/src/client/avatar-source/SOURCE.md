@@ -1,10 +1,10 @@
 # Morph Bot 头像来源
 
-本目录的渲染 JavaScript 来源于 `~/workspace/github/grok-bot-design-study/demo/morph-bot`，源提交 `10fcbb97c3fc0e9b30ebf2eebf1a4d00772e0e77`。
+本目录的渲染 JavaScript 来源于 `~/workspace/yolo-project/grok-bot-design-study/demo/morph-bot`，源提交 `10fcbb97c3fc0e9b30ebf2eebf1a4d00772e0e77`。
 
 真源基于 [iduu/grokbot-animation](https://github.com/iduu/grokbot-animation) `6c27d96`，并包含默认脸转正、idle 表情池收敛、身体跟随三处行为修正，以及后续形体、材质和物理实现。SVG 模板与配置适配位于相邻的 `workforce-avatar-motion.ts`，不复制语音、TTS 或音频资源。
 
-默认形体 `blob` 以及八套材质选择参考 `~/workspace/danmaku-live/app/renderer/mate.js` 的实际 THEMES：aurora、prism、candy、iridescent-orb、electric-dusk、ocean-signal、mint-violet、peach-sky。配色数值由真源 `materials.js` 维护。
+默认形体 `blob` 以及八套材质选择参考 `~/workspace/yolo-project/danmaku-live/app/renderer/mate.js` 的实际 THEMES：aurora、prism、candy、iridescent-orb、electric-dusk、ocean-signal、mint-violet、peach-sky。配色数值由真源 `materials.js` 维护。
 
 项目维护者已确认，本次 Morph Bot 头像公开分发获得授权。来源素材与上游实现的权利仍归原权利人；此说明不将上游整体或参考素材声明为本项目 MIT 原创代码。
 
