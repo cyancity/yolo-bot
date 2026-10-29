@@ -1,4 +1,5 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { testTmpRoot } from './test-tmp.ts'
 import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -23,7 +24,7 @@ let headers: Map<string, { id: string; cwd: string }>
 const missing = () => Object.assign(new Error('missing'), { code: 'SESSION_QUERY_SESSION_NOT_FOUND' })
 const end = (kind = 'completed', time = 2) => [{ type: 'turn/start', seq: 0, time: 1, data: {} }, { type: 'turn/end', seq: 1, time, data: { reason: { kind } } }]
 beforeEach(async () => {
-  root = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-runtime-'))
+  root = await testTmpRoot('wf-runtime-')
   store = new WorkforceStore(root)
   agents = new Map(); logs = new Map(); headers = new Map()
   const make = async (options: any) => {
@@ -1789,7 +1790,7 @@ it('B3 collectWorkforceDiagnostics：对话段遮蔽密钥与家目录，state �
   expect(bare.counts?.employees).toBe(3)
   expect(bare.employeeModels.every(item => item.id)).toBe(true)
   // state.json 损坏：store 载入即失败 → counts:null + errors.state，信封照常返回
-  const brokenRoot = await mkdtemp(join(process.env.TEMP!, 'wf-diag-'))
+  const brokenRoot = await testTmpRoot('wf-diag-')
   try {
     await mkdir(join(brokenRoot, 'workforce'), { recursive: true })
     await writeFile(join(brokenRoot, 'workforce', 'state.json'), '{ broken json')

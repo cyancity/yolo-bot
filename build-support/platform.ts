@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (packages/client/web/src/platform.ts); sync on dsh pin bump.
 /**
  * Shared browser platform modules. Seeding, bundling externals, and Vite

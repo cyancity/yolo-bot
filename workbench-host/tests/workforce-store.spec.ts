@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { link, mkdtemp, mkdir, readFile, rm, symlink, truncate, writeFile } from 'node:fs/promises'
+import { link, mkdir, readFile, rm, symlink, truncate, writeFile } from 'node:fs/promises'
+import { testTmpRoot } from './test-tmp.ts'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { safeName, WorkforceStore } from '../src/workforce/store.ts'
@@ -7,7 +8,7 @@ import { MAX_MATERIAL_BYTES } from '../src/workforce/material-files.ts'
 
 let root: string, store: WorkforceStore
 beforeEach(async () => {
-  root = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-store-'))
+  root = await testTmpRoot('wf-store-')
   store = new WorkforceStore(root)
   await store.read()
 })
@@ -537,7 +538,7 @@ it('删除员工把运行中任务的直达会话也算在保护范围', async (
 
 it('记忆 CRUD 与容量：旧数据无 memories 键载入为空；scope/scopeId 校验；PATCH 不改作用域与来源；容量按不含空白计数且 scopeId 独立计额', async () => {
   // 旧数据没有 memories 字段：载入默认为空数组
-  const legacyRoot = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-legacy-'))
+  const legacyRoot = await testTmpRoot('wf-legacy-')
   try {
     await mkdir(join(legacyRoot, 'workforce'), { recursive: true })
     await writeFile(join(legacyRoot, 'workforce', 'state.json'), JSON.stringify({ employees: [], channels: [], threads: [], tasks: [], materials: [], bindings: {}, profile: { name: 'u' }, mcpServers: [], enabledTemplates: [], channelGroups: [] }))

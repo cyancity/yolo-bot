@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (scripts/bundle-input-isolation.ts); sync on dsh pin bump.
 /** Experimental ownership of the actual filesystem and package inputs supplied to a bundler. */
 

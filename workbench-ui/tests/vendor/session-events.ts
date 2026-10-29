@@ -1,4 +1,4 @@
-// Vendored from @deepseek-ai/dsh-api-session-controller@0.2.1-rc.2
+// Vendored from @deepseek-ai/dsh-api-session-controller@0.2.1-rc.4
 // (src/client/contract/events.ts; the published package omits source files).
 // Sync on dsh pin bump.
 /** Observable contiguous Session event window consumed by domain assemblers. */

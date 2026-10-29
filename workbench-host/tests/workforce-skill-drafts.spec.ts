@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
-import { lstat, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { testTmpRoot } from './test-tmp.ts'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createWorkforceBackup } from '../src/workforce/backup.ts'
@@ -14,7 +15,7 @@ let headers: Map<string, { id: string; cwd: string }>
 const missing = () => Object.assign(new Error('missing'), { code: 'SESSION_QUERY_SESSION_NOT_FOUND' })
 const end = (kind = 'completed', time = 2) => [{ type: 'turn/start', seq: 0, time: 1, data: {} }, { type: 'turn/end', seq: 1, time, data: { reason: { kind } } }]
 beforeEach(async () => {
-  root = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-skills-'))
+  root = await testTmpRoot('wf-skills-')
   store = new WorkforceStore(root)
   agents = new Map(); logs = new Map(); headers = new Map()
   const make = async (options: any) => {
@@ -301,7 +302,7 @@ it('备份：已安装的工作流技能按 state 记录复制到 workflow-skill
   // 未跟踪的用户技能不复制
   await mkdir(join(runtime.userSkillsRoot, 'hand-made'), { recursive: true })
   await writeFile(join(runtime.userSkillsRoot, 'hand-made', 'SKILL.md'), '---\nname: hand-made\n---\n')
-  const sessions = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-sessions-'))
+  const sessions = await testTmpRoot('wf-sessions-')
   try {
     const persistence = { name: 'session-persistence-jsonl', config: { root: sessions }, flush: vi.fn(async () => {}) }
     const { directory } = await createWorkforceBackup(store, persistence, runtime.userSkillsRoot)
@@ -312,7 +313,7 @@ it('备份：已安装的工作流技能按 state 记录复制到 workflow-skill
 
 it('旧数据无 skillDrafts/installedSkills 字段：迁移补空数组且能正常沉淀', async () => {
   // 写一个不含 字段的旧 state.json：载入补默认空数组（store spec 有同步断言）
-  const legacyRoot = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-skills-legacy-'))
+  const legacyRoot = await testTmpRoot('wf-skills-legacy-')
   try {
     const base = await store.read()
     delete (base as { skillDrafts?: unknown }).skillDrafts

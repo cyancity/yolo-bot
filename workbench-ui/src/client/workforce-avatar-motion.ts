@@ -26,22 +26,22 @@ export interface AvatarMotionHandle {
 
 export function avatarSvgTemplate(id: string): string {
   return `<svg id="${id}" class="grok-bot-mark" viewBox="-15 -15 259 259" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><clipPath id="${id}-head-clip"><path id="head-clip-path"></path></clipPath></defs>
-    <g id="particles-back" aria-hidden="true"></g>
+    <defs><clipPath id="${id}-head-clip"><path id="${id}-head-clip-path"></path></clipPath></defs>
+    <g id="${id}-particles-back" aria-hidden="true"></g>
     <path class="grok-bot-mark__head morph-head" hidden></path>
     <path class="grok-bot-mark__head morph-head" hidden></path>
     ${Array.from({ length: 5 }, () => '<circle class="morph-ring" cx="114.2705" cy="114.2705" r="0" hidden></circle>').join('')}
     ${Array.from({ length: 5 }, () => '<circle class="grok-bot-mark__head morph-part" cx="114.2705" cy="114.2705" r="0" hidden></circle>').join('')}
     ${Array.from({ length: 3 }, () => '<path class="morph-glyph" hidden></path>').join('')}
-    <g id="bot-transform">
-      <path id="head-path" class="grok-bot-mark__head"></path>
+    <g id="${id}-bot-transform">
+      <path id="${id}-head-path" class="grok-bot-mark__head"></path>
       <g clip-path="url(#${id}-head-clip)">
         <path class="grok-bot-mark__eye eye-path"></path>
         <path class="grok-bot-mark__eye eye-path"></path>
       </g>
-      <circle id="notify-badge" cx="114.2705" cy="114.2705" r="0" hidden></circle>
+      <circle id="${id}-notify-badge" cx="114.2705" cy="114.2705" r="0" hidden></circle>
     </g>
-    <g id="particles-front" aria-hidden="true"></g>
+    <g id="${id}-particles-front" aria-hidden="true"></g>
   </svg>`
 }
 
