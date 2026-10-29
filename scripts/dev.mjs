@@ -36,7 +36,7 @@ const state = dataDir === undefined
   ? path.join(repo, 'tmp', 'dev-web')
   : path.resolve(dataDir.replace(/^~(?=$|[\\/])/, homedir()))
 const runtime = path.join(state, 'runtime')
-const runtimeVersion = '0.2.1-rc.4'
+const runtimeVersion = '0.2.1-rc.5'
 const home = path.join(state, 'home')
 const profile = path.join(home, 'profiles', 'web')
 const descriptor = {
