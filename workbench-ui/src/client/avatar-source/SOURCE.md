@@ -8,4 +8,4 @@
 
 项目维护者已确认，本次 Morph Bot 头像公开分发获得授权。来源素材与上游实现的权利仍归原权利人；此说明不将上游整体或参考素材声明为本项目 MIT 原创代码。
 
-为遵守单文件 500 行限制，真源 runtime/svg-renderer.js 按现有导出函数边界等价拆为 svg-renderer.js 与 svg-effects.js；渲染器重导出效果函数，调用接口保持一致。其余 12 个来源 JavaScript 文件原样保留。更新时同步真源，再保持这处分拆。`.d.ts` 是本项目消费引擎时的最小类型边界。
+为遵守单文件 500 行限制，真源 runtime/svg-renderer.js 按现有导出函数边界等价拆为 svg-renderer.js 与 svg-effects.js；渲染器重导出效果函数，调用接口保持一致。其余 12 个来源 JavaScript 文件原样保留，仅 `grok-bot-engine.js` 有一处本地适配：构造函数查询的结构 id（head-path、head-clip-path、bot-transform、notify-badge、particles-back、particles-front）跟随 svg 实例 id 前缀（模板同步加前缀），同文档多头像挂载时不产生重复 id，无 id 的 svg 退回来源静态命名。更新时同步真源，再保持这处分拆与该处前缀适配。`.d.ts` 是本项目消费引擎时的最小类型边界。

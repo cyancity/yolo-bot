@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (packages/client/modules/src/client/manifest.ts); sync on dsh pin bump.
 // ./entries.ts and ./system.ts are type-only stubs.
 /**

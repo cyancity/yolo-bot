@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (scripts/client-build-environment.ts); sync on dsh pin bump.
 import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -20,9 +20,8 @@ export const CLIENT_BUILD_PROFILE_SELECTOR = 'DSH_BUILD_CLIENT_PROFILE'
 
 /** Public client environment required by official DSH artifacts. */
 const OFFICIAL_CLIENT_BUILD_ENVIRONMENT = {
-  // Distro builds override both values so their artifacts and build record agree.
-  DSH_CLIENT_BUILD_PROFILE: process.env.DSH_DISTRO_CLIENT_PROFILE ?? 'official',
-  DSH_CLIENT_TITLE: process.env.DSH_DISTRO_CLIENT_TITLE ?? 'DeepSeek Harness',
+  DSH_CLIENT_BUILD_PROFILE: 'official',
+  DSH_CLIENT_TITLE: 'DeepSeek Harness',
 } as const
 
 /** Public variable carrying the source commit embedded in client artifacts. */

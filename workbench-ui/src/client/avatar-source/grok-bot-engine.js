@@ -21,9 +21,12 @@ export class GrokBotEngine {
   constructor(svg, getConfig) {
     this.svg = svg;
     this.getConfig = getConfig;
-    this.head = svg.querySelector("#head-path");
-    this.clipHead = svg.querySelector("#head-clip-path");
-    this.transformGroup = svg.querySelector("#bot-transform");
+    // 本地适配：结构 id 跟随 svg 实例 id 前缀（见 avatar-source/SOURCE.md），
+    // 同文档多头像挂载时不产生重复 id；无 id 的 svg 退回来源静态命名。
+    const structuralPrefix = svg.id ? `${svg.id}-` : "";
+    this.head = svg.querySelector(`#${structuralPrefix}head-path`);
+    this.clipHead = svg.querySelector(`#${structuralPrefix}head-clip-path`);
+    this.transformGroup = svg.querySelector(`#${structuralPrefix}bot-transform`);
     this.eyes = [...svg.querySelectorAll(".eye-path")];
     this.morphHeads = [...svg.querySelectorAll(".morph-head")];
     this.rings = [...svg.querySelectorAll(".morph-ring")];
@@ -42,10 +45,10 @@ export class GrokBotEngine {
       transformGroup: this.transformGroup,
       idPrefix: svg.id || "grok-bot",
     });
-    this.badge = svg.querySelector("#notify-badge");
+    this.badge = svg.querySelector(`#${structuralPrefix}notify-badge`);
     this.currentBeltRadius = SHAPES.blob.beltRadius;
     this.particleSpinAngle = 0;
-    this.particles = new ParticleSystem(svg.querySelector("#particles-back"), svg.querySelector("#particles-front"), {
+    this.particles = new ParticleSystem(svg.querySelector(`#${structuralPrefix}particles-back`), svg.querySelector(`#${structuralPrefix}particles-front`), {
       idPrefix: `${svg.id || "grok-bot"}-`,
       reduceMotion: () => REDUCE_MOTION.matches,
       radius: () => this.currentBeltRadius,
