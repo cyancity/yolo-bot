@@ -76,7 +76,7 @@
 
 .blocked { color: var(--wb-warning); font-size: var(--wb-type-compact-size); }
 .error { color: var(--wb-danger); font-size: var(--wb-type-compact-size); }
-.hint { color: var(--wb-fg-placeholder); font-size: var(--wb-type-caption-size); }
+.hint { color: var(--wb-fg-muted); font-size: var(--wb-type-caption-size); }
 
 @container composer (max-width: 560px) {
   .hint { display: none; }

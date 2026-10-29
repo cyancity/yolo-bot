@@ -19,6 +19,7 @@
   --wb-focus-offset: 2px;
   --wb-radius-dot: 50%;
   --wb-radius-avatar: 50%;
+  --wb-radius-composer: 20px;
   --wb-control-pad-x: 12px;
   --wb-card-pad: 16px;
   --wb-bubble-pad-x: 14px;
@@ -34,6 +35,7 @@
   --wb-message-pad-x: 20px;
   --wb-bubble-pad-y: 10px;
   --wb-composer-min-height: 104px;
+  --wb-message-clamp-height: 320px;
   --wb-zoom: 1;
   --wb-layer-base: 0;
   --wb-layer-sticky: 10;

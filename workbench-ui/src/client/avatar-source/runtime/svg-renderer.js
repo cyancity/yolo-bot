@@ -185,8 +185,8 @@ export function renderEyes(now, config, shape, shapeRing, turnAngle, morphAmount
     let driftX = 1.4 * Math.sin(0.00042 * now + index) + 0.5 * Math.sin(0.001 * now + 2 * index);
     let driftY = 0.9 * Math.sin(0.00058 * now + index);
     const autonomousGazeWeight = config.pointer && this.pointer.active ? 0.2 : 1;
-    driftX += this.pointer.x + this.aimX.x * autonomousGazeWeight + this.directGazeX;
-    driftY += this.pointer.y + this.aimY.x * autonomousGazeWeight + this.directGazeY;
+    driftX += this.pointer.x * (config.pointerGain ?? 1) + this.aimX.x * autonomousGazeWeight + this.directGazeX;
+    driftY += this.pointer.y * (config.pointerGain ?? 1) + this.aimY.x * autonomousGazeWeight + this.directGazeY;
     const notification = clamp(this.notify.x, 0, 1);
     driftX -= 10 * notification;
     driftY += 7 * notification;

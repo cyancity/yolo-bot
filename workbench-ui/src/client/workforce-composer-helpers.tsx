@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { WF } from './workforce-strings.ts'
 import type { Task } from './workforce-types.ts'
 import css from './workforce.module.css'
@@ -15,29 +15,57 @@ export interface TriggerItem {
   readonly icon?: ReactNode
 }
 
-/** 10 分钟内完成的任务仍默认延续 */
-export const CONTINUATION_RECENT_WINDOW_MS = 10 * 60 * 1000
+/** 任务闲置超过 2 小时，任务大厅默认另起新上下文 */
+export const CONTINUATION_IDLE_MS = 2 * 60 * 60 * 1000
+
+export type ContinuationMode = 'continue' | 'new'
 
 /**
- * 任务大厅默认延续策略：
- * 1. 吸附的任务处于 running 或等待用户回复/提问时，默认延续；
- * 2. 任务 done 且完成在 10 分钟内，默认延续；
- * 3. 其他（done 超过 10 分钟、cancelled、failed 等）默认「新任务」，吸附条仍显示，用户可一键切回延续。
+ * 任务大厅默认延续最近的任务；运行中或有待答提问时始终延续。
+ * 只有任务闲置超过 CONTINUATION_IDLE_MS，才默认另起新上下文。
  */
 export function resolveDefaultContinuationMode(
   task: Task | undefined,
   hasPendingQuestion = false,
   now = Date.now(),
-): 'continue' | 'new' {
+): ContinuationMode {
   if (!task) return 'new'
   if (task.status === 'running' || hasPendingQuestion) return 'continue'
-  if (task.status === 'done' && task.updatedAt) {
-    const elapsed = now - Date.parse(task.updatedAt)
-    if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= CONTINUATION_RECENT_WINDOW_MS) {
-      return 'continue'
-    }
+  const elapsed = now - Date.parse(task.updatedAt ?? '')
+  return Number.isFinite(elapsed) && elapsed > CONTINUATION_IDLE_MS ? 'new' : 'continue'
+}
+
+/**
+ * 延续模式状态。换任务时重算默认值；用户点「接着这个任务」选中的任务固定为延续。
+ * 运行中 updatedAt 频繁变化，所以只按任务 id 和待答提问重算，不覆盖用户的手动切换。
+ */
+export function useContinuationMode(task: Task | undefined, hasPendingQuestion: boolean) {
+  const pinnedRef = useRef<string | undefined>(undefined)
+  // 新出现待答提问时也重算，让回答回到原任务。
+  const key = `${task?.id ?? ''}:${hasPendingQuestion}`
+  const [state, setState] = useState(() => ({ key, mode: resolveDefaultContinuationMode(task, hasPendingQuestion) }))
+  let mode = state.mode
+  if (state.key !== key) {
+    mode = task !== undefined && pinnedRef.current === task.id ? 'continue' : resolveDefaultContinuationMode(task, hasPendingQuestion)
+    setState({ key, mode })
   }
-  return 'new'
+  const idleAt = task !== undefined && task.status !== 'running' && !hasPendingQuestion && pinnedRef.current !== task.id
+    ? Date.parse(task.updatedAt ?? '') + CONTINUATION_IDLE_MS
+    : NaN
+  useEffect(() => {
+    if (!Number.isFinite(idleAt)) return
+    const remaining = idleAt - Date.now()
+    if (remaining <= 0) return
+    const timer = setTimeout(() => setState(prev => ({ ...prev, mode: 'new' })), remaining)
+    return () => clearTimeout(timer)
+  }, [idleAt])
+  const setMode = useCallback((next: ContinuationMode) => setState(prev => ({ ...prev, mode: next })), [])
+  /** 用户手动选中一个任务继续：固定为延续，不受闲置时长影响。 */
+  const pin = useCallback((taskId: string) => {
+    pinnedRef.current = taskId
+    setState(prev => ({ ...prev, mode: 'continue' }))
+  }, [])
+  return { mode, setMode, pin }
 }
 
 /** @ 与 / 共用的候选浮层；loading/empty 也在同一壳内呈现。 */

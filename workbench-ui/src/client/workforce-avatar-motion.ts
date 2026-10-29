@@ -73,6 +73,7 @@ export function attachAvatarMotion(root: HTMLElement, initial: AvatarMotionOptio
       size: options.size,
       flipX: false,
       pointer: !reducedMotion.matches && (hovered || (options.live && distance < bounds.width * 3)),
+      pointerGain: 2.4,
       badgeColor: '#1d9bf0', badgeScale: 1,
       particlesEnabled: options.size >= 64,
       expressionPool: ORIGINAL_STATE_DATA.EXPRESSION_POOLS[state] ?? [0],

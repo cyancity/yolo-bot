@@ -17,6 +17,8 @@ import type { AvatarMotionState } from './workforce-avatar-motion.ts'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import { WorkforceBackupDialog } from './workforce-backup.tsx'
 import { WorkforceComposer, type ComposerPrefillRequest } from './workforce-composer.tsx'
+import { useContinuationMode } from './workforce-composer-helpers.tsx'
+import { ContextDivider } from './workforce-context-divider.tsx'
 import { AnchoredDeliverablesContext, DeliverableChips, anchoredDeliverables, messageDeliverableNames } from './workforce-deliverables.tsx'
 import { WorkforceDiagnosticsDialog } from './workforce-diagnostics.tsx'
 import { workforceContextFiles, WorkforceFilesDrawer, WorkforceFilesTimeline } from './workforce-files.tsx'
@@ -140,6 +142,12 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
     try { await source.cancelTask(task.id) } catch (error) { setError(error instanceof Error ? error.message : String(error)) } finally { setBusy(false) }
   }
   const stopped = task.status === 'cancelled' || task.status === 'interrupted'
+  // 输入框顶部的模式切换已经说明当前接着哪个任务，这里只给其他任务一个「接着」入口。
+  const continueButton = onSelectContinuation && !isCurrentContinuation ? (
+    <LobeButton type="text" className={css.taskContinue ?? ''} onClick={() => onSelectContinuation(task)} title={WF.taskStatus.continueTitle}>
+      {WF.taskStatus.continueTask}
+    </LobeButton>
+  ) : null
   return <div className={css.msgFooter} data-message-footer data-task-id={task.id}>
     {task.deliverables.length > 0 && <DeliverableChips task={task} employees={employees} source={source} />}
     {task.status === 'running' && <div className={css.taskActions}>
@@ -148,41 +156,14 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
     </div>}
     {stopped && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state={task.status}>{WF.taskStatus.stopped(quiet)}</span>
-      {onSelectContinuation && (
-        <LobeButton
-          type="text"
-          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
-          onClick={() => onSelectContinuation(task)}
-          title={WF.taskStatus.continueTitle}
-        >
-          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </LobeButton>
-      )}
+      {continueButton}
     </div>}
     {task.status === 'failed' && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state="failed">✕ {WF.employee.failed}</span>
-      {onSelectContinuation && (
-        <LobeButton
-          type="text"
-          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
-          onClick={() => onSelectContinuation(task)}
-          title={WF.taskStatus.continueTitle}
-        >
-          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </LobeButton>
-      )}
+      {continueButton}
     </div>}
-    {task.status !== 'running' && !stopped && task.status !== 'failed' && onSelectContinuation && (
-      <div className={css.taskActions}>
-        <LobeButton
-          type="text"
-          className={(isCurrentContinuation ? css.taskContinueActive : css.taskContinue) ?? ''}
-          onClick={() => onSelectContinuation(task)}
-          title={WF.taskStatus.continueTitle}
-        >
-          {isCurrentContinuation ? WF.taskStatus.continuingTask : WF.taskStatus.continueTask}
-        </LobeButton>
-      </div>
+    {task.status !== 'running' && !stopped && task.status !== 'failed' && continueButton && (
+      <div className={css.taskActions}>{continueButton}</div>
     )}
     {error && <span className={css.msgFailed} role="alert">{formatErrorReason(error)}</span>}
   </div>
@@ -255,7 +236,7 @@ function StepsRow({ steps, onToggle }: { readonly steps: readonly WorkforceMessa
   )
 }
 
-/** 接收方的回复骨架气泡（占位，含打字点与当前活动状态）。 */
+/** 接收方的回复状态占位（思考时不渲染卡片与正在思考文字，仅保留头像动画与名字）。 */
 function SkeletonBubble({
   employee,
   employees,
@@ -278,25 +259,31 @@ function SkeletonBubble({
 
   let avatarMotionState: AvatarMotionState = 'listening'
   let statusText: string = WF.skeleton.processing
+  let showStatusText = false
   if (activity?.state === 'tool') {
     avatarMotionState = 'searching'
     statusText = activity.tool ? humanizeToolActivity(activity.tool) : WF.skeleton.processing
+    showStatusText = true
   } else if (activity?.state === 'thinking') {
     avatarMotionState = 'thinking'
     statusText = WF.skeleton.thinking
+    showStatusText = false
   } else if (activity?.state === 'typing') {
     avatarMotionState = 'working'
     statusText = WF.skeleton.typing
+    showStatusText = false
   } else if (!woken) {
     avatarMotionState = 'waking'
     statusText = WF.taskStatus.wakingEmployee
+    showStatusText = true
   } else {
     avatarMotionState = 'listening'
     statusText = WF.taskStatus.taskReceivedWaiting
+    showStatusText = true
   }
 
   return (
-    <div className={css.msg} data-msg-role="agent" data-skeleton="true">
+    <div className={css.msg} data-msg-role="agent" data-skeleton="true" aria-live="polite" aria-label={statusText}>
       <WorkforceAvatar
         name={name}
         isUser={false}
@@ -310,16 +297,7 @@ function SkeletonBubble({
       <div className={css.msgBody}>
         <div className={css.msgHead}>
           <span className={css.msgName}>{name}</span>
-        </div>
-        <div className={css.msgBubble}>
-          <div className={css.skeletonContent}>
-            <span className={css.liveRadarDot} data-state={activity?.state ?? 'typing'} aria-hidden="true">
-              <span className={css.liveRadarCore} />
-              <span className={css.liveRadarRipple} />
-              <span className={`${css.liveRadarRipple} ${css.liveRadarRippleDelay}`} />
-            </span>
-            <span className={css.skeletonStatus}>{statusText}</span>
-          </div>
+          {showStatusText && <span className={css.skeletonStatusInline}>{statusText}</span>}
         </div>
         {task && <TaskFooter task={task} employees={employees} source={source} />}
       </div>
@@ -1092,8 +1070,15 @@ const MessageRow = memo(function MessageRow({
     const node = clampRef.current
     if (node === null) return
     const measure = () => {
-      const limit = Number.parseFloat(getComputedStyle(node).getPropertyValue('--wb-message-clamp-height')) || 0
-      if (limit <= 0) { setOverflowing(false); return }
+      const rawLimit = getComputedStyle(node).getPropertyValue('--wb-message-clamp-height').trim()
+      let limit = 0
+      if (rawLimit.endsWith('rem')) {
+        const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+        limit = Number.parseFloat(rawLimit) * rootFontSize
+      } else {
+        limit = Number.parseFloat(rawLimit) || 0
+      }
+      if (limit <= 0) limit = 320
       setOverflowing(node.scrollHeight > limit + 1)
     }
     measure()
@@ -1173,7 +1158,7 @@ const MessageRow = memo(function MessageRow({
         />
       )}
       <div className={css.msgBody}>
-        {!isConsecutive && (
+        {!isConsecutive && !isUser && (
           <div className={css.msgHead}>
             <span className={css.msgName}>{name}</span>
           </div>
@@ -1985,6 +1970,15 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
     }
     return recentTask
   }, [surface, selectedContinuationTaskId, snapshot.tasks, recentTask])
+  const continuationHasPendingQuestion = activeContinuationTask !== undefined && (snapshot.messages[activeContinuationTask.threadId]?.list ?? messages).some(m => m.threadId === activeContinuationTask.threadId && (
+    (m.question !== undefined && m.question.answered === undefined && m.question.status !== 'answered' && m.question.status !== 'inactive') ||
+    (m.approval !== undefined && m.approval.answered === undefined && m.approval.status !== 'answered' && m.approval.status !== 'inactive')))
+  const continuation = useContinuationMode(activeContinuationTask, continuationHasPendingQuestion)
+  const selectContinuation = useCallback((task: Task) => {
+    setSelectedContinuationTaskId(task.id)
+    continuation.pin(task.id)
+  }, [continuation.pin])
+  const pendingNewContext = surface.kind === 'channel' && activeContinuationTask !== undefined && continuation.mode === 'new'
   const activities = useMemo(() => visibleThreads.flatMap(thread => snapshot.messages[thread.id]?.activity ?? []), [visibleThreads, snapshot.messages])
 
   const activeEmployeeIds = useMemo(() => new Set(activities.map(a => a.employeeId)), [activities])
@@ -2144,6 +2138,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
   }, [groups])
   // 渲染窗口只切尾部最新一段；窗口外条目不挂载但分页数据仍在。
   const visibleItems = useMemo(() => hidden > 0 ? displayItems.slice(hidden) : displayItems, [displayItems, hidden])
+  const firstRootIndex = surface.kind === 'channel' ? visibleItems.findIndex(item => item.kind === 'message' && taskRoots.get(item.message.threadId) === item.message.id) : -1
   // 行级稳定 props：快照轮询每次都换数组/函数引用，memo 全靠这一层保住。
   const employeesStable = useJsonStable(employees)
   const tasksStable = useJsonStable(snapshot.tasks)
@@ -2398,6 +2393,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
               const working = !isUser && activeEmployeeIds.has(message.senderId)
               const messageRow = (
                 <div key={message.clientId ?? message.streamKey ?? message.id} className={isRoot ? css.taskStart : undefined}>
+                  {isRoot && index > firstRootIndex && <ContextDivider />}
                   <MessageRow
                     message={message}
                     employees={employeesStable}
@@ -2415,7 +2411,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                     task={task}
                     taskQuiet={task !== undefined && quietTaskIds.has(task.id)}
                     tasks={tasksStable}
-                    onSelectContinuation={surface.kind === 'channel' ? (t => setSelectedContinuationTaskId(t.id)) : undefined}
+                    onSelectContinuation={surface.kind === 'channel' ? selectContinuation : undefined}
                     isCurrentContinuation={surface.kind === 'channel' && task !== undefined && activeContinuationTask?.id === task.id}
                     remembered={item.remembered}
                     notices={item.notices}
@@ -2445,7 +2441,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                           employees={employeesStable}
                           source={source}
                           quiet={quietTaskIds.has(groupTask.id)}
-                          onSelectContinuation={surface.kind === 'channel' ? (t => setSelectedContinuationTaskId(t.id)) : undefined}
+                          onSelectContinuation={surface.kind === 'channel' ? selectContinuation : undefined}
                           isCurrentContinuation={surface.kind === 'channel' && activeContinuationTask?.id === groupTask.id}
                         />
                       )}
@@ -2464,7 +2460,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                           task={footers.get(member.id)}
                           taskQuiet={footers.get(member.id) !== undefined && quietTaskIds.has(footers.get(member.id)!.id)}
                           tasks={tasksStable}
-                          onSelectContinuation={surface.kind === 'channel' ? (t => setSelectedContinuationTaskId(t.id)) : undefined}
+                          onSelectContinuation={surface.kind === 'channel' ? selectContinuation : undefined}
                           isCurrentContinuation={surface.kind === 'channel' && footers.get(member.id) !== undefined && activeContinuationTask?.id === footers.get(member.id)!.id}
                           notices={[]}
                           onJumpToReply={replyJump.jumpTo}
@@ -2490,6 +2486,12 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
               task={footers.get(skeletonKey(sk))}
             />
           ))}
+          {pendingNewContext && (
+            <ContextDivider
+              resumeTitle={activeContinuationTask.title || activeContinuationTask.prompt?.slice(0, 30) || WF.taskStatus.currentTask}
+              onResume={() => continuation.setMode('continue')}
+            />
+          )}
           </div>
         </div>
           {hasNewMessages && <LobeButton className={css.newMessages ?? ''} onClick={jumpToBottom}>{WF.message.newMessages}</LobeButton>}
@@ -2507,20 +2509,17 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
             mentionable={mentionable}
             allowMentionAll={surface.kind === 'channel'}
             allowedSkills={surface.kind === 'dm' ? employees.find(e => e.id === surface.employeeId)?.skills : undefined}
-            onSend={(text, employeeIds) => source.send(activeThreadId, text, employeeIds)}
+            onSend={async (text, employeeIds) => {
+              await source.send(activeThreadId, text, employeeIds)
+              // 新任务发出后，最近的任务就是它；不再停在之前手动选中的旧任务。
+              setSelectedContinuationTaskId(null)
+            }}
             continuationTask={surface.kind === 'channel' ? activeContinuationTask : undefined}
-            continuationHasPendingQuestion={surface.kind === 'channel' && activeContinuationTask !== undefined && (
-              (snapshot.messages[activeContinuationTask.threadId]?.list ?? messages).some(m =>
-                m.threadId === activeContinuationTask.threadId && (
-                  (m.question !== undefined && m.question.answered === undefined && m.question.status !== 'answered' && m.question.status !== 'inactive') ||
-                  (m.approval !== undefined && m.approval.answered === undefined && m.approval.status !== 'answered' && m.approval.status !== 'inactive')
-                )
-              )
-            )}
+            continuationMode={continuation.mode}
+            onContinuationModeChange={continuation.setMode}
             onContinueThread={surface.kind === 'channel' && activeContinuationTask ? async (text, employeeIds) => {
               await source.send(activeContinuationTask.threadId, text, employeeIds)
             } : undefined}
-            onResetContinuation={() => setSelectedContinuationTaskId(null)}
             listSkills={() => source.listSkills()}
             onUploadMaterial={(name, content) => source.uploadMaterial(name, content)}
             onUploadFile={file => source.uploadFile(file)}

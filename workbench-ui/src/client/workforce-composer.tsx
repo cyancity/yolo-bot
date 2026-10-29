@@ -11,7 +11,7 @@ import { Icon } from './ui/icons.tsx'
 import css from './workforce.module.css'
 import attachmentCss from './workforce-composer-attachments.module.css'
 import { WF } from './workforce-strings.ts'
-import { CONTINUATION_RECENT_WINDOW_MS, TriggerMenu, resolveDefaultContinuationMode, type ComposerTrigger, type TriggerItem } from './workforce-composer-helpers.tsx'
+import { TriggerMenu, type ComposerTrigger, type ContinuationMode, type TriggerItem } from './workforce-composer-helpers.tsx'
 import type { Employee, SkillSummary, Task } from './workforce-types.ts'
 import { attachmentMessage, MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
 
@@ -49,9 +49,9 @@ export interface ComposerProps {
   readonly hint?: string | undefined
   readonly continuationTask?: Task | undefined
   readonly onContinueThread?: ((text: string, employeeIds: readonly string[]) => Promise<void>) | undefined
-  readonly onResetContinuation?: (() => void) | undefined
-  /** 吸附的任务当前是否存在未应答的提问/审批 */
-  readonly continuationHasPendingQuestion?: boolean | undefined
+  /** 任务大厅的延续模式由页面持有，消息流的上下文分隔线与它同步。 */
+  readonly continuationMode?: ContinuationMode | undefined
+  readonly onContinuationModeChange?: ((mode: ContinuationMode) => void) | undefined
 }
 
 export interface ComposerPrefillRequest {
@@ -66,29 +66,8 @@ export interface ComposerPrefillRequest {
  */
 export function WorkforceComposer(props: ComposerProps) {
   const isContinuationActive = props.continuationTask !== undefined && props.onContinueThread !== undefined
-  const [continuationMode, setContinuationMode] = useState<'continue' | 'new'>(() =>
-    resolveDefaultContinuationMode(props.continuationTask, props.continuationHasPendingQuestion)
-  )
-  // 只在任务、状态或待答提问变化时重算默认值；运行中 updatedAt 频繁变化，不能覆盖用户手动切换。
-  const continuationFingerprint = props.continuationTask
-    ? `${props.continuationTask.id}:${props.continuationTask.status}:${props.continuationHasPendingQuestion ?? false}`
-    : ''
-  const prevFingerprintRef = useRef(continuationFingerprint)
-  useEffect(() => {
-    if (continuationFingerprint !== prevFingerprintRef.current) {
-      prevFingerprintRef.current = continuationFingerprint
-      setContinuationMode(resolveDefaultContinuationMode(props.continuationTask, props.continuationHasPendingQuestion))
-    }
-  }, [continuationFingerprint])
-  // done 任务的 10 分钟延续窗口到期时切到新任务；用户期间手动切过也以到期为准，吸附条可一键切回。
-  const continuationDoneAt = props.continuationTask?.status === 'done' && !props.continuationHasPendingQuestion ? Date.parse(props.continuationTask.updatedAt ?? '') : NaN
-  useEffect(() => {
-    if (!Number.isFinite(continuationDoneAt)) return
-    const remaining = continuationDoneAt + CONTINUATION_RECENT_WINDOW_MS - Date.now()
-    if (remaining <= 0) return
-    const timer = setTimeout(() => setContinuationMode('new'), remaining)
-    return () => clearTimeout(timer)
-  }, [continuationDoneAt])
+  const continuationMode = props.continuationMode ?? 'new'
+  const setContinuationMode = (mode: ContinuationMode) => props.onContinuationModeChange?.(mode)
   const [draft, setDraft] = useState(() => {
     try { return localStorage.getItem(`workforce.draft.${props.draftKey}`) ?? props.initialDraft ?? '' } catch { return props.initialDraft ?? '' }
   })
@@ -338,47 +317,6 @@ export function WorkforceComposer(props: ComposerProps) {
         addFiles(event.clipboardData.files)
       }}
     >
-      {isContinuationActive && (
-        continuationMode === 'continue' ? (
-          <div className={css.contextRibbon}>
-            <div className={css.contextRibbonPill}>
-              <span className={css.contextRibbonIcon}>↩</span>
-              <span className={css.contextRibbonLabel}>{WF.taskStatus.continueLabel}</span>
-              <span className={css.contextRibbonTitle} title={props.continuationTask?.title}>
-                {props.continuationTask?.title || props.continuationTask?.prompt?.slice(0, 30) || WF.taskStatus.currentTask}
-              </span>
-            </div>
-            <LobeButton
-              type="text"
-              size="small"
-              className={css.contextRibbonBtn ?? ''}
-              onClick={() => {
-                setContinuationMode('new')
-                props.onResetContinuation?.()
-              }}
-              title={WF.taskStatus.startNewTaskTitle}
-            >
-              {WF.taskStatus.startNewTask}
-            </LobeButton>
-          </div>
-        ) : (
-          <div className={css.contextRibbonNew}>
-            <div className={css.contextRibbonPillNew}>
-              <span className={css.contextRibbonIcon}>✨</span>
-              <span className={css.contextRibbonLabel}>{WF.taskStatus.newTaskLabel}</span>
-            </div>
-            <LobeButton
-              type="text"
-              size="small"
-              className={css.contextRibbonBtn ?? ''}
-              onClick={() => setContinuationMode('continue')}
-              title={WF.taskStatus.switchBackContinuationTitle}
-            >
-              {WF.taskStatus.switchBackContinuation}
-            </LobeButton>
-          </div>
-        )
-      )}
       {trigger !== undefined && (
         <TriggerMenu
           items={candidates}
@@ -423,7 +361,7 @@ export function WorkforceComposer(props: ComposerProps) {
           ref={inputRef}
           className={css.composerInput}
           aria-label={WF.composer.placeholder}
-          placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.taskStatus.replyTaskPlaceholder(props.continuationTask?.title || WF.taskStatus.currentTask) : WF.taskStatus.startNewTaskPlaceholder) : WF.composer.placeholder)}
+          placeholder={props.hint ?? (isContinuationActive ? (continuationMode === 'continue' ? WF.taskStatus.replyTaskPlaceholder : WF.taskStatus.startNewTaskPlaceholder) : WF.composer.placeholder)}
           value={draft}
           rows={2}
           autoFocus={props.autoFocus === true}
@@ -443,34 +381,54 @@ export function WorkforceComposer(props: ComposerProps) {
               if (event.key === 'ArrowUp') { event.preventDefault(); setTriggerIndex(i => (i - 1 + candidates.length) % candidates.length); return }
               if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); applyTrigger(candidates[Math.min(triggerIndex, candidates.length - 1)]!); return }
               if (event.key === 'Escape') {
-                if (draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
-                  event.preventDefault()
-                  setContinuationMode('new')
-                  props.onResetContinuation?.()
-                  return
-                }
                 event.preventDefault()
                 setTrigger(undefined)
                 return
               }
             }
-            if (event.key === 'Escape' && draft.trim() === '' && continuationMode === 'continue' && isContinuationActive) {
+            if (event.key === 'Escape' && continuationMode === 'new' && isContinuationActive) {
               event.preventDefault()
-              setContinuationMode('new')
-              props.onResetContinuation?.()
+              setContinuationMode('continue')
               return
             }
             if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void doSend(continuationMode === 'continue' && isContinuationActive) }
           }}
         />
         <div className={css.composerTools}>
+          {isContinuationActive && (
+            <button
+              type="button"
+              className={css.newTaskToggle}
+              aria-pressed={continuationMode === 'new'}
+              onClick={() => setContinuationMode(continuationMode === 'new' ? 'continue' : 'new')}
+              title={continuationMode === 'new' ? WF.taskStatus.cancelNewTaskTitle : WF.taskStatus.newModeTitle}
+            >
+              <Icon name={continuationMode === 'new' ? 'close' : 'plus'} width={14} height={14} />
+              {WF.taskStatus.newModeLabel}
+            </button>
+          )}
           <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
           {props.onUploadFile !== undefined && (
-            <LobeButton type="text" className={css.composerAttach ?? ''} onClick={() => fileInputRef.current?.click()}>{WF.ui.attachmentsAria}</LobeButton>
+            <button
+              type="button"
+              className={css.composerAttach}
+              onClick={() => fileInputRef.current?.click()}
+              aria-label={WF.ui.attachmentsAria}
+              title={WF.ui.attachmentsAria}
+            >
+              <Icon name="paperclip" />
+            </button>
           )}
-          <LobeButton type="primary" className={css.composerSend ?? ''} disabled={sendDisabled} loading={sending || uploading} onClick={() => void doSend(continuationMode === 'continue' && isContinuationActive)}>
-            {sending ? WF.composer.sending : uploading ? `${WF.ui.uploadingState}…` : WF.composer.send}
-          </LobeButton>
+          <button
+            type="button"
+            className={css.composerSend}
+            disabled={sendDisabled}
+            onClick={() => void doSend(continuationMode === 'continue' && isContinuationActive)}
+            aria-label={sending ? WF.composer.sending : uploading ? `${WF.ui.uploadingState}…` : WF.composer.send}
+            title={sending ? WF.composer.sending : uploading ? `${WF.ui.uploadingState}…` : WF.composer.send}
+          >
+            <Icon name="send" />
+          </button>
         </div>
       </div>
       {error !== undefined && (

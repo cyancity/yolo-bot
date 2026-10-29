@@ -171,6 +171,9 @@ const delta = (attemptId: string, turn: number, step: number, text: string, inde
   live(attemptId, turn, step, { type: 'text-delta', index, text }, time)
 const reasoning = (attemptId: string, turn: number, step: number, text: string, index = 0) =>
   live(attemptId, turn, step, { type: 'reasoning-delta', index, text })
+/** 本步正常结束且无工具调用：短正文从这里开始放行为 running 草稿（此前先攒着，防止工具前的过程说明漏出）。 */
+const stop = (attemptId: string, turn: number, step: number, time?: number) =>
+  live(attemptId, turn, step, { type: 'finish', reason: { kind: 'stop' } }, time)
 const assistantMessageAt = (seq: number, turn: number, step: number, texts: string[], time = 2000, extra?: Record<string, unknown>) =>
   evAt(seq, 'assistant/message', {
     turn, step,
@@ -202,6 +205,7 @@ describe('原生回复增量桥', () => {
       ev('turn/start', { turn: 1 }, 900),
       assistantMessage(1, 0, ['已完成的历史回复'], 950),
       live('att-1', 2, 0, { type: 'text-delta', index: 0, text: '正在输出' }, 990),
+      stop('att-1', 2, 0, 991),
     ], false)
 
     await vi.waitFor(() => {
@@ -234,6 +238,7 @@ describe('原生回复增量桥', () => {
     es.append(delta('att-1', 1, 0, '第一段', 0, 1001))
     es.append(delta('att-1', 1, 0, '第二段', 0, 1002))
     es.append(reasoning('att-1', 1, 0, '继续思考'))
+    es.append(stop('att-1', 1, 0, 1003))
     await vi.waitFor(() => {
       const rows = agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:'))
       expect(rows).toHaveLength(1)
@@ -262,6 +267,7 @@ describe('原生回复增量桥', () => {
     es.replace([ev('turn/start', { turn: 1 }, 900)], false)
     es.append(delta('att-1', 1, 0, '第一段', 0, 1001))
     es.append(delta('att-1', 1, 0, '第二段', 0, 1002))
+    es.append(stop('att-1', 1, 0, 1002))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:'))).toHaveLength(1))
 
     // 原生正常成功顺序：先 append durable assistant/message，再 step/end，
@@ -316,6 +322,7 @@ describe('原生回复增量桥', () => {
     const es = bindings.get(SESSION_A)!.eventSource
     es.replace([ev('turn/start', { turn: 1 }, 900)], false)
     es.append(delta('att-fail', 1, 0, '半截回复', 0, 1001))
+    es.append(stop('att-fail', 1, 0, 1001))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:'))).toHaveLength(1))
 
     listener.mockClear()
@@ -328,6 +335,7 @@ describe('原生回复增量桥', () => {
 
     // llm/retry 后新 attempt 重计时旧草稿清空；assistant/attempt durable 同样撤行。
     es.append(delta('att-r1', 1, 1, '旧半截', 0, 1003))
+    es.append(stop('att-r1', 1, 1, 1003))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:')).length).toBe(1))
     es.append(ev('assistant/attempt', { turn: 1, step: 1, stream: [] }, 1004))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:'))).toHaveLength(0))
@@ -344,6 +352,7 @@ describe('原生回复增量桥', () => {
     const es = bindings.get(SESSION_A)!.eventSource
     es.replace([ev('turn/start', { turn: 3 }, 900)], false)
     es.append(delta('att-stop', 3, 0, '被打断的正文', 0, 1001))
+    es.append(stop('att-stop', 3, 0, 1001))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:'))).toHaveLength(1))
 
     es.append(ev('turn/end', { turn: 3, reason: { kind: 'aborted' } }, 1002))
@@ -393,6 +402,7 @@ describe('原生回复增量桥', () => {
     bindings.get(SESSION_A)!.eventSource.replace([
       ev('turn/start', { turn: 1 }, 900),
       delta('att-a', 1, 0, 'A 的草稿', 0, 1001),
+      stop('att-a', 1, 0, 1001),
     ], false)
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).filter(m => m.id.startsWith('live:')).length).toBe(1))
     expect(retained).toContain(SESSION_A)
@@ -465,6 +475,7 @@ describe('原生回复增量桥', () => {
     const secondSource = bindings.get(SESSION_A)!.eventSource
     expect(secondSource).not.toBe(undefined)
     secondSource.append(delta('att-back', 1, 0, '重订后的增量', 0, 1200))
+    secondSource.append(stop('att-back', 1, 0, 1200))
     await vi.waitFor(() => {
       const row = agentRows(source, dmThread.id).find(m => m.id.startsWith('live:'))
       expect(row?.text).toBe('重订后的增量')
@@ -592,6 +603,7 @@ describe('原生回复增量桥', () => {
     suppressed = true
     es.append(assistantMessageAt(41, 1, 1, ['漏帧期间的正文'], 2100))
     es.append(delta('att-g2', 2, 0, '漏帧后草稿', 0, 2200))
+    es.append(stop('att-g2', 2, 0, 2200))
 
     // 恢复：先放行被扣的通知，桥立即看到完整窗口（revision 跳变 +2）。
     suppressed = false
@@ -674,6 +686,7 @@ describe('原生回复增量桥', () => {
     // 第一轮 running 出现草稿，随后 metadata 变 idle：publish 的 syncLive 退订，
     // 但 threadSessions 缓存保留。
     bindings.get(SESSION_A)!.eventSource.append(delta('att-c', 1, 0, '第一段', 0, 1100))
+    bindings.get(SESSION_A)!.eventSource.append(stop('att-c', 1, 0, 1100))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).some(m => m.text === '第一段')).toBe(true))
     current = { ...dmThread, status: 'idle', updatedAt: '2026-10-11T00:03:00Z' }
     source.refresh()
@@ -689,6 +702,7 @@ describe('原生回复增量桥', () => {
     await settled()
     // 重订后是新 eventSource/新窗口：草稿从这条流的增量重建（不残留旧态）。
     bindings.get(SESSION_A)!.eventSource.append(delta('att-c2', 2, 0, '第二段', 0, 1101))
+    bindings.get(SESSION_A)!.eventSource.append(stop('att-c2', 2, 0, 1101))
     await vi.waitFor(() => expect(agentRows(source, dmThread.id).some(m => m.text === '第二段')).toBe(true))
     expect(source.getSnapshot()).toBe(source.getSnapshot())
   })
@@ -740,6 +754,7 @@ describe('原生回复增量桥', () => {
     bindings.get(SESSION_A)!.eventSource.replace([
       ev('turn/start', { turn: 1 }, 900),
       delta('att-m', 1, 0, '恢复后的增量', 0, 1001),
+      stop('att-m', 1, 0, 1001),
     ], false)
     await vi.waitFor(() => {
       const row = agentRows(source, dmThread.id).find(m => m.id.startsWith('live:'))
@@ -775,6 +790,7 @@ describe('原生回复增量桥', () => {
     bindings.get(SESSION_B)!.eventSource.replace([
       ev('turn/start', { turn: 1 }, 900),
       delta('att-c', 1, 0, '子会话正文', 0, 1001),
+      stop('att-c', 1, 0, 1001),
     ], false)
     await vi.waitFor(() => {
       const row = agentRows(source, taskThread.id).find(m => m.id.startsWith('live:'))

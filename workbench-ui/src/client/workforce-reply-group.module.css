@@ -146,7 +146,7 @@
   align-items: center;
   gap: var(--wb-space-3);
   font-size: var(--wb-type-micro-size);
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
   white-space: nowrap;
 }
 
@@ -162,14 +162,14 @@
 }
 
 .memberExcerpt[data-running='true'] {
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
   font-style: italic;
 }
 
 .memberArrow {
   flex: none;
   align-self: center;
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
 }
 
 .member:hover .memberArrow {
