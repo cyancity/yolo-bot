@@ -193,6 +193,8 @@ async function prepareProfile() {
       base: pathToFileURL(`${repo}${path.sep}`).href,
       root: ['workbench-host/lib'], debounce: 500,
     } },
+    // 签名密钥随开发 home 持久保存；浏览器用登录入口换到 cookie 后，长期直接访问端口即可。
+    { id: 'connection', config: { cookieMaxAgeDays: 3650 } },
   ]
   const overlayPath = path.join(state, 'development.patch.yml')
   await writeFile(overlayPath, `${JSON.stringify(overlay, null, 2)}\n`)
