@@ -56,7 +56,8 @@ describe('数字员工消息展示', () => {
     const { container, rerender } = renderMain(dmSnapshot([msg({ id: 'a1', text: '先一句' })], [{ employeeId: 'analyst', state: 'typing' }]))
     const skeleton = container.querySelector('[data-skeleton="true"]')!
     expect(skeleton.textContent).toContain('分析员')
-    expect(skeleton.textContent).toContain('正在输入…')
+    // 输入中只用头像动效占位，状态文案改由无障碍名称播报。
+    expect(skeleton.getAttribute('aria-label')).toBe('正在输入…')
     expect(skeleton.querySelector('[data-state="working"]')).toBeTruthy()
     rerender(<WorkforceMain source={{ getPendingReplies: () => [], setFocusedThread: () => {}, skillDrafts: async () => [] } as unknown as WorkforceSource} snapshot={dmSnapshot([msg({ id: 'a1', text: '先一句' })], [{ employeeId: 'analyst', state: 'tool', tool: 'read' }])}
       surface={{ kind: 'dm', threadId: 'dm-1', employeeId: 'analyst' }}

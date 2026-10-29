@@ -88,7 +88,7 @@
 .time {
   flex-shrink: 0;
   font-size: var(--wb-type-caption-size);
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
 }
 
 .preview {

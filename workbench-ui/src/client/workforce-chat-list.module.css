@@ -55,7 +55,7 @@
 .chatEmpty {
   padding: 10px 12px;
   font-size: var(--wb-type-caption-size);
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
   line-height: 1.5;
 }
 
@@ -254,7 +254,7 @@
   flex: none;
   font-size: 10px;
   font-weight: 400;
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
   line-height: 1;
   white-space: nowrap;
 }
@@ -290,7 +290,7 @@
 
 .chatHint {
   font-size: 11px;
-  color: var(--wb-fg-placeholder);
+  color: var(--wb-fg-muted);
 }
 /* 发起群聊的成员勾选列表：长名单内部滚动，弹窗不撑爆 */
 .memberList {
