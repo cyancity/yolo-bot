@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import css from './workforce-question-card.module.css'
 import { Input, Tag } from '@lobehub/ui'
 import { Button } from 'antd'
-import { Card, CardContent, CardHeader, CardTitle, IconButton, Menu } from './ui/index.tsx'
+import { IconButton, Menu } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
 
@@ -131,14 +131,11 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
     const isApprovalAnswered = done !== undefined || approval.status === 'answered'
     const disabled = submitting || inactive || isApprovalAnswered
     return (
-      <Card className={css.card} data-ask-card="approval">
-        <CardHeader className={css.cardHeader}>
-          <CardTitle className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</CardTitle>
-        </CardHeader>
-        <CardContent className={css.cardContent}>
-          <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
-          {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
-          {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
+      <div className={css.card} data-ask-card="approval">
+        <div className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</div>
+        <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
+        {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
+        {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
         {approval.reason && !approval.displayReason ? <div className={css.detail}>{approval.reason}</div> : null}
         {approval.detail ? (
           <details className={css.detailDisclosure}>
@@ -149,7 +146,9 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
           <div className={css.detailMissing}>{WF.questions.detailUnavailable}</div>
         )}
         {done !== undefined ? (
-          <Tag color={done === 'allowed-once' ? 'success' : 'default'} className={css.answeredTag ?? ''}>{approvalLabel(done)}</Tag>
+          <div className={css.answeredWrap}>
+            <Tag color={done === 'allowed-once' ? 'success' : 'default'} className={css.answeredTag ?? ''}>{approvalLabel(done)}</Tag>
+          </div>
         ) : (
           <div className={css.approvalActions}>
             {/* 单主按钮：本卡唯一实底动作是「允许一次」，拒绝收进更多菜单（danger）。 */}
@@ -169,9 +168,8 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
             />
           </div>
         )}
-          {error ? <div className={css.error}>{error}</div> : null}
-        </CardContent>
-      </Card>
+        {error ? <div className={css.error}>{error}</div> : null}
+      </div>
     )
   }
   if (!question) return null
@@ -198,13 +196,11 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
   }))
 
   return (
-    <Card className={css.card} data-ask-card="question">
-      <CardHeader className={css.cardHeader}>
-        <CardTitle className={css.title}>{inactive ? WF.questions.questionEnded : isContinued ? WF.questions.additionalQuestion : WF.questions.askQuestion}</CardTitle>
-      </CardHeader>
-      <CardContent className={css.cardContent}>
-        {question.items.map(item => {
+    <div className={css.card} data-ask-card="question">
+      <div className={css.title}>{inactive ? WF.questions.questionEnded : isContinued ? WF.questions.additionalQuestion : WF.questions.askQuestion}</div>
+      {question.items.map(item => {
         const answeredItem = done?.find(answer => answer.id === item.id)
+        const itemSelected = selected[item.id] ?? []
         return (
           <div className={css.item} key={item.id}>
             {item.header ? <div className={css.header}>{item.header}</div> : null}
@@ -219,18 +215,33 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
             ) : (
               <>
                 {item.options?.length ? (
-                  <div className={css.options}>
-                    {item.options.map(option => (
-                      <Button type="text"
-                        key={option.label}
-                        className={`${css.option}${(selected[item.id] ?? []).includes(option.label) ? ` ${css.optionSelected}` : ''}`}
-                        disabled={disabled}
-                        onClick={() => toggle(item, option.label)}
-                      >
-                        <span className={css.optionLabel}>{item.multiSelect ? '☐ ' : ''}{option.label}</span>
-                        {option.description ? <span className={css.optionDesc}>{option.description}</span> : null}
-                      </Button>
-                    ))}
+                  <div className={css.options} role={item.multiSelect ? 'group' : 'radiogroup'} aria-label={item.question}>
+                    {item.options.map(option => {
+                      const isSelected = itemSelected.includes(option.label)
+                      return (
+                        <button
+                          type="button"
+                          key={option.label}
+                          role={item.multiSelect ? 'checkbox' : 'radio'}
+                          aria-checked={isSelected}
+                          className={`${css.option}${isSelected ? ` ${css.optionSelected}` : ''}`}
+                          disabled={disabled}
+                          onClick={() => toggle(item, option.label)}
+                        >
+                          <span className={`${css.optionIndicator} ${item.multiSelect ? css.optionCheckbox : css.optionRadio}`} aria-hidden="true">
+                            {item.multiSelect ? (
+                              isSelected ? <Icon name="check" className={css.checkIcon} width={11} height={11} strokeWidth={2.5} /> : null
+                            ) : (
+                              isSelected ? <span className={css.radioDot} /> : null
+                            )}
+                          </span>
+                          <span className={css.optionContent}>
+                            <span className={css.optionLabel}>{option.label}</span>
+                            {option.description ? <span className={css.optionDesc}>{option.description}</span> : null}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 ) : null}
                 <Input
@@ -262,8 +273,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
           </Button>
         </div>
       ) : null}
-        {error ? <div className={css.error}>{error}</div> : null}
-      </CardContent>
-    </Card>
+      {error ? <div className={css.error}>{error}</div> : null}
+    </div>
   )
 }
