@@ -19,6 +19,7 @@ yolo-bot 是 DeepSeek Harness 的 bot 协作插件。核心包含频道、私信
 - UI 的 `@deepseek-ai/dsh-llm-retry` 与 `workforce-live.ts` 顶部 type-only import 合并 retry 事件到 SessionEvent union，不删除。
 - `workbench-ui/tests/vendor/session-events.ts` 是上游 events.ts 的单文件副本；上游 npm 不发布源码，升级钉版时同步。
 - `pnpm install` 后执行 `pnpm -r typecheck`、`pnpm -r test`、`pnpm -r build`。host 测试限制两文件 worker，避免文件持久化测试抢占 CPU/磁盘；不增加全局测试超时，不放宽断言。
+- 发版：两包同版本；`pnpm market` 把当前版本和 `engines.dsh` 写入 `market/index.json`（DSH 插件市场索引，main 上的 raw 地址即对外索引 URL），并用官方校验器检查；同一 tgz 上传 GitHub Release 并 `npm publish --access public`。索引只列 npm 上已存在的版本，先发 npm 再合并索引改动。
 - 发布包只使用预构建 `lib/` 与 package.json 的 files 白名单。host 输出 `lib/index.mjs`，UI 输出 `lib/index.js`、`lib/client.js`；公开声明分别为 `lib/extension.d.mts` / `lib/extension.d.ts`。用 `pnpm -r exec npm pack --dry-run --json` 核对实际文件清单。
 - UI 统一使用兼容 React 18 的 `@lobehub/ui@1.171.0` 和 Ant Design 5。颜色、字体、圆角和控件外观直接继承原生 Lobe ThemeProvider；`--wb-*` 外观变量只作原生 token 的兼容别名，不维护第二套配色。布局取值留在共享布局样式，图标使用 lucide。
 - 页面和私有扩展复用 `src/client/ui/` 的公共组件接口；官方组件已有的行为直接复用。宿主仍持有会话和持久化真源，UI 库迁移不删除多人回复分组、成果锚点、中英切换或公开扩展能力。

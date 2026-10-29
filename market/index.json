@@ -1,0 +1,85 @@
+{
+  "format": 1,
+  "title": {
+    "en": "YOLO Bot",
+    "zh": "YOLO Bot"
+  },
+  "description": {
+    "en": "Official index of YOLO Bot plugins.",
+    "zh": "YOLO Bot 官方插件索引。"
+  },
+  "plugins": [
+    {
+      "name": "@cyancity/yolo-bot",
+      "versions": [
+        {
+          "version": "0.2.0-rc.6",
+          "publishTimestamp": 1793298660,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": "0.2.1-rc.5"
+          }
+        }
+      ],
+      "title": {
+        "en": "YOLO Bot",
+        "zh": "YOLO Bot"
+      },
+      "description": {
+        "en": "Bot collaboration backend: channels, employees, lead dispatch, deliverables, memory and skills. Install together with YOLO Bot UI of the same version.",
+        "zh": "Bot 协作后端：频道、员工、负责人派工、成果、记忆与技能。需与同版本的 YOLO Bot UI 一起安装。"
+      },
+      "author": "cyancity",
+      "homepage": "https://github.com/cyancity/yolo-bot",
+      "repository": {
+        "url": "https://github.com/cyancity/yolo-bot",
+        "directory": "workbench-host"
+      },
+      "metadata": {
+        "keywords": [
+          "bot",
+          "agents",
+          "workbench"
+        ]
+      }
+    },
+    {
+      "name": "@cyancity/yolo-bot-ui",
+      "versions": [
+        {
+          "version": "0.2.0-rc.6",
+          "publishTimestamp": 1793298660,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": "0.2.1-rc.5"
+          }
+        }
+      ],
+      "title": {
+        "en": "YOLO Bot UI",
+        "zh": "YOLO Bot 界面"
+      },
+      "description": {
+        "en": "Web UI for YOLO Bot: channels, direct messages, employees and the task hall. Install together with YOLO Bot of the same version.",
+        "zh": "YOLO Bot 的网页界面：频道、私信、员工与任务大厅。需与同版本的 YOLO Bot 一起安装。"
+      },
+      "author": "cyancity",
+      "homepage": "https://github.com/cyancity/yolo-bot",
+      "repository": {
+        "url": "https://github.com/cyancity/yolo-bot",
+        "directory": "workbench-ui"
+      },
+      "metadata": {
+        "keywords": [
+          "bot",
+          "agents",
+          "workbench"
+        ]
+      }
+    }
+  ]
+}
