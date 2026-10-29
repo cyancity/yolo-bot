@@ -9,13 +9,15 @@
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
     "pack": "pnpm -r exec npm pack --dry-run",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "market": "node scripts/market-index.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "~4.0.5",
     "@deepseek-ai/cordis-plugin-group": "~1.0.5",
     "@deepseek-ai/cordis-plugin-include": "~1.0.10",
     "@deepseek-ai/dsh-package-manifest": "0.2.1-rc.5",
+    "@deepseek-ai/dsh-plugin-market-index": "0.2.1-rc.5",
     "lightningcss": "^1.32.0",
     "tsdown": "^0.22.2",
     "typescript": "^6.0.3"

@@ -57,9 +57,24 @@ npx @deepseek-ai/dsh@0.2.1-rc.5 web
 
 命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
 
-升级 DSH 或拉取新源码都不会更新已装的插件。更新时把后端包和界面包换成同一版本一起装。
+升级 DSH 或拉取新源码都不会更新已装的插件。用插件市场或 tgz 把后端包和界面包换成同一版本一起更新。
 
-### 更新已安装的插件
+### 用插件市场安装和更新（推荐）
+
+两个包发布在 npm，本仓库提供 DSH 插件市场索引。添加一次索引后，DSH 会按当前版本列出能用的插件版本，有新版时提示更新。
+
+1. 在 DSH 的 **插件** 页打开 **实验性插件** → **更多**，启用「自定义插件市场」。
+2. 切到 **发现** 标签，点 **添加索引源**，填入：
+
+   ```text
+   https://raw.githubusercontent.com/cyancity/yolo-bot/main/market/index.json
+   ```
+
+3. 在列表里安装或更新 **YOLO Bot** 和 **YOLO Bot 界面**。两个包必须是同一版本，更新时两个都要更新。
+
+DSH 升级后，旧版插件如果不兼容新 DSH，市场会把它标为不兼容，并推荐支持新 DSH 的版本。
+
+### 用 tgz 手动更新
 
 本次版本为 `0.2.0-rc.6`，兼容 DSH `0.2.1-rc.5`。从 [v0.2.0-rc.6 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.6) 下载以下两个文件：
 
@@ -72,7 +87,7 @@ npx @deepseek-ai/dsh@0.2.1-rc.5 web
 dsh plugin --profile web add <新版后端tgz绝对路径> <新版界面tgz绝对路径>
 ```
 
-将 `web` 换成原来使用的 profile，再按原方式启动 DSH。无需先卸载插件；保留原来的 `DSH_HOME`、profile 和数据目录，员工、频道、会话与材料继续沿用。插件尚未发布到 npm，`pnpm update` 或更新 DSH 本身不会取得这个 Release 的 tgz。
+将 `web` 换成原来使用的 profile，再按原方式启动 DSH。无需先卸载插件；保留原来的 `DSH_HOME`、profile 和数据目录，员工、频道、会话与材料继续沿用。
 
 本仓库维护通用 Bot 核心与公开扩展 API。私有工作台通过扩展 API 接入自己的页面和预览卡片，按需更新；白标发行壳暂时冻结。
 
