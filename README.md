@@ -34,18 +34,24 @@ DSH 默认是一个人对一个会话。任务一复杂，你就得自己拆步�
 
 ## 快速开始
 
-先安装 DSH 并至少配置一个模型。yolo-bot 直接使用 DSH 里注册的模型和凭据，不另建账户。插件要求 DSH `0.2.1-rc.5`。
+先安装 DSH（需 `0.2.1-rc.5` 版本），并配置至少一个可用模型。yolo-bot 直接复用 DSH 里注册的模型与凭据，不需要另建账户。
 
-**1. 下载。** 从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载两个包，两个都要装：
+**1. 添加插件市场。** 两个包均已发布在 npm，通过本仓库提供的索引源安装。在 DSH 的 **插件** 页打开 **实验性插件** → **更多**，启用「自定义插件市场」，切到 **发现** 标签，点击 **添加索引源**，填入：
+
+```text
+https://raw.githubusercontent.com/cyancity/yolo-bot/main/market/index.json
+```
+
+**2. 安装。** 在列表里安装 **YOLO Bot** 和 **YOLO Bot 界面**，两个包必须保持同一版本。看到下次启动生效的提示后，完全退出 DSH 再重新打开。
+
+若不方便使用市场，也可以从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载两个 `.tgz` 手动安装，注意先装后端、再装界面：
 
 | 文件 | 作用 |
 |---|---|
 | `cyancity-yolo-bot-<版本>.tgz` | 后端：频道、员工、派工、记忆、技能 |
 | `cyancity-yolo-bot-ui-<版本>.tgz` | 界面：工作台页面 |
 
-**2. 安装。**
-
-DSH 桌面版：侧栏 **插件** → **添加插件**，在地址栏填 `.tgz` 的绝对路径，先装后端再装界面，然后启用。提示下次启动生效时，完全退出 DSH 再打开。
+DSH 桌面版：在侧栏进入 **插件** → **添加插件**，在地址栏填入 `.tgz` 的绝对路径并启用。
 
 DSH Web 版（需要 Node.js 22.19 以上）：
 
@@ -55,41 +61,21 @@ npx @deepseek-ai/dsh@0.2.1-rc.5 plugin --profile web add <yolo-bot-ui.tgz 绝对
 npx @deepseek-ai/dsh@0.2.1-rc.5 web
 ```
 
-命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
+命令行安装到其他 profile 时，把 `web` 换成目标 profile 即可。桌面版的 `desktop` profile 只能由其自身修改：先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行相同命令。
 
-升级 DSH 或拉取新源码都不会更新已装的插件。用插件市场或 tgz 把后端包和界面包换成同一版本一起更新。
+### 更新
 
-### 用插件市场安装和更新（推荐）
+升级 DSH 或拉取新源码都不会自动更新插件，两个包需要同时更新到同一版本。通过市场更新时，有新版会自动提示，更新后完全退出并重新打开 DSH 即可；DSH 升级后若旧版插件不再兼容，市场会将其标为不兼容，并推荐适配新版 DSH 的版本。
 
-两个包发布在 npm，本仓库提供 DSH 插件市场索引。添加一次索引后，DSH 会按当前版本列出能用的插件版本，有新版时提示更新。
-
-1. 在 DSH 的 **插件** 页打开 **实验性插件** → **更多**，启用「自定义插件市场」。
-2. 切到 **发现** 标签，点 **添加索引源**，填入：
-
-   ```text
-   https://raw.githubusercontent.com/cyancity/yolo-bot/main/market/index.json
-   ```
-
-3. 在列表里安装或更新 **YOLO Bot** 和 **YOLO Bot 界面**。两个包必须是同一版本，更新时两个都要更新。
-
-DSH 升级后，旧版插件如果不兼容新 DSH，市场会把它标为不兼容，并推荐支持新 DSH 的版本。
-
-### 用 tgz 手动更新
-
-本次版本为 `0.2.0-rc.6`，兼容 DSH `0.2.1-rc.5`。从 [v0.2.0-rc.6 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.6) 下载以下两个文件：
-
-- `cyancity-yolo-bot-0.2.0-rc.6.tgz`
-- `cyancity-yolo-bot-ui-0.2.0-rc.6.tgz`
-
-桌面用户在「插件」页用新版 tgz 更新同名插件，两个包都更新后完全退出并重开 DSH。Web / CLI 用户停止原实例后，在原 profile 重新安装两个包：
+若不方便使用市场，可以从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载最新版的两个 tgz 手动更新。桌面版用户在「插件」页用新版 tgz 更新同名插件，两个包都更新完后完全退出并重开 DSH；Web / CLI 用户先停止运行中的实例，再在原 profile 重新安装两个包：
 
 ```sh
 dsh plugin --profile web add <新版后端tgz绝对路径> <新版界面tgz绝对路径>
 ```
 
-将 `web` 换成原来使用的 profile，再按原方式启动 DSH。无需先卸载插件；保留原来的 `DSH_HOME`、profile 和数据目录，员工、频道、会话与材料继续沿用。
+把命令里的 `web` 换成原来使用的 profile，再按原方式启动 DSH。更新时无需先卸载插件；只要保留原来的 `DSH_HOME`、profile 和数据目录，员工、频道、会话与材料都会继续沿用。
 
-本仓库维护通用 Bot 核心与公开扩展 API。私有工作台通过扩展 API 接入自己的页面和预览卡片，按需更新；白标发行壳暂时冻结。
+本仓库维护通用 Bot 核心与公开扩展 API。私有工作台通过扩展 API 接入专属页面和预览卡片，按需独立更新；白标发行壳暂时冻结。
 
 **3. 开工。** 打开工作台，首次启动已经有一个「任务大厅」频道和三名员工：负责人、分析、执行。直接在任务大厅里描述任务即可；要调整分工，在员工管理里改职责、模型和 skill，或者添加新员工。
 
