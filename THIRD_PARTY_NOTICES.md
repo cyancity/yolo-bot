@@ -8,7 +8,7 @@ See `workbench-ui/src/client/avatar-source/SOURCE.md` for source revisions and l
 
 ## DeepSeek Harness
 
-`build-support/` is vendored from [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (tag `dsh-v0.2.1-rc.2`); each file header names its upstream source.
+`build-support/` is vendored from [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (tag `dsh-v0.2.1-rc.4`); each file header names its upstream source.
 
 MIT License, Copyright (c) 2026 DeepSeek.
 

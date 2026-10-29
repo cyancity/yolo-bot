@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (scripts/experimental-package-policy.ts); sync on dsh pin bump.
 /** Experimental package identities, publication policy, and retained npm names. */
 

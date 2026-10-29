@@ -1,4 +1,5 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { testTmpRoot } from './test-tmp.ts'
 import { createServer, type Server } from 'node:http'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -12,7 +13,7 @@ import { WorkforceError } from '../src/workforce/types.ts'
 let root: string, store: WorkforceStore, runtime: WorkforceRuntime, server: Server, base: string
 let reject: 401 | 403 | undefined
 beforeEach(async () => {
-  root = await mkdtemp(join(process.env.CLAUDE_JOB_DIR ? join(process.env.CLAUDE_JOB_DIR, 'tmp') : process.env.TEMP!, 'wf-routes-'))
+  root = await testTmpRoot('wf-routes-')
   store = new WorkforceStore(root)
   runtime = new WorkforceRuntime(store, () => undefined)
   reject = undefined

@@ -1,4 +1,4 @@
-// Vendored from deepseek-harness @ dsh-v0.2.1-rc.2
+// Vendored from deepseek-harness @ dsh-v0.2.1-rc.4
 // (packages/client/tsdown.client.ts); sync on dsh pin bump.
 // Paths adjusted: sibling imports flattened into build-support/; repository root is this plugin repo.
 /**
