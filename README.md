@@ -61,10 +61,10 @@ npx @deepseek-ai/dsh@0.2.1-rc.5 web
 
 ### 更新已安装的插件
 
-本次版本为 `0.2.0-rc.5`，兼容 DSH `0.2.1-rc.2`。从 [v0.2.0-rc.5 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.5) 下载以下两个文件：
+本次版本为 `0.2.0-rc.6`，兼容 DSH `0.2.1-rc.5`。从 [v0.2.0-rc.6 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.6) 下载以下两个文件：
 
-- `cyancity-yolo-bot-0.2.0-rc.5.tgz`
-- `cyancity-yolo-bot-ui-0.2.0-rc.5.tgz`
+- `cyancity-yolo-bot-0.2.0-rc.6.tgz`
+- `cyancity-yolo-bot-ui-0.2.0-rc.6.tgz`
 
 桌面用户在「插件」页用新版 tgz 更新同名插件，两个包都更新后完全退出并重开 DSH。Web / CLI 用户停止原实例后，在原 profile 重新安装两个包：
 
