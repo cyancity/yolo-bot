@@ -23,6 +23,7 @@ interface LiveAttempt {
   readonly step: number
   readonly parts: Map<number, string>
   toolSeen: boolean
+  released: boolean
   seq: number
   time: number
 }
@@ -50,7 +51,12 @@ interface LiveSession {
 const MAX_LIVE_ROWS = 24
 /** detached settled 行兜底：正常 HTTP 下一轮就接手；页面丢失时不无限累积。 */
 const MAX_DETACHED_ROWS = 48
-
+/**
+ * 过程说明缓冲字符上限：模型在工具调用前常在正文输出一段英文规划/思考
+ * 独白（120-420 字）。未超阈值且未确认 step 结束前先攒着不暴露；
+ * 超过 600 字基本是长回复正文，放行流式避免长回答一直无响应。
+ */
+const LIVE_TEXT_BUFFER_LIMIT = 600
 const joinParts = (parts: ReadonlyMap<number, string>): string =>
   [...parts.entries()].sort(([a], [b]) => a - b).map(([, text]) => text).join('\n')
 
@@ -222,11 +228,25 @@ export class WorkforceLiveReplies {
       if (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta') {
         let attempt = live.attempts.get(slot)
         if (attempt === undefined || attempt.attemptId !== attemptId) {
-          attempt = { key, attemptId, turn, step, parts: new Map(), toolSeen: false, seq: entry.event.seq, time: entry.event.time }
+          attempt = {
+            key,
+            attemptId,
+            turn,
+            step,
+            parts: new Map(),
+            toolSeen: false,
+            released: false,
+            seq: entry.event.seq,
+            time: entry.event.time,
+          }
           live.attempts.set(slot, attempt)
+          live.rows.delete(key)
         }
         // reasoning-delta 只证明 attempt 活着、不进正文（持久投影也只取 text 块）；
         // 没有 text 增量前不生成 running 行，避免空白气泡顶替「正在输入」骨架。
+        // 模型会在发起工具调用前在正文输出英文过程说明（Let me analyze...）；
+        // 文本先攒在 attempt.parts 中，直到累计超 600 字（长回答）或 step 结束无工具调用时放行。
+        // 若在放行前收到工具调用，则整段作为 intermediate 处理，绝不作为普通气泡漏出。
         if (chunk.type === 'text-delta') {
           attempt.parts.set(chunk.index, (attempt.parts.get(chunk.index) ?? '') + chunk.text)
           attempt.seq = entry.event.seq
@@ -234,19 +254,83 @@ export class WorkforceLiveReplies {
           const text = joinParts(attempt.parts)
           if (text !== '') {
             const previous = live.rows.get(key)
+            if (attempt.toolSeen) {
+              live.rows.set(key, this.row(live, key, attempt.time, turn, {
+                ...(previous === undefined ? {} : previous),
+                running: true,
+                text,
+                intermediate: true,
+              }))
+            } else if (attempt.released || text.length > LIVE_TEXT_BUFFER_LIMIT) {
+              attempt.released = true
+              live.rows.set(key, this.row(live, key, attempt.time, turn, {
+                ...(previous === undefined ? {} : previous),
+                running: true,
+                text,
+              }))
+            }
+          }
+        }
+      } else if (chunk.type === 'tool-call-delta' || (chunk.type === 'block-start' && chunk.blockType === 'tool-call')) {
+        let attempt = live.attempts.get(slot)
+        if (attempt === undefined || attempt.attemptId !== attemptId) {
+          attempt = {
+            key,
+            attemptId,
+            turn,
+            step,
+            parts: new Map(),
+            toolSeen: true,
+            released: false,
+            seq: entry.event.seq,
+            time: entry.event.time,
+          }
+          live.attempts.set(slot, attempt)
+          live.rows.delete(key)
+        } else {
+          attempt.toolSeen = true
+        }
+        const text = joinParts(attempt.parts)
+        if (text !== '') {
+          const previous = live.rows.get(key)
+          if (previous === undefined || previous.intermediate !== true || previous.text !== text) {
             live.rows.set(key, this.row(live, key, attempt.time, turn, {
               ...(previous === undefined ? {} : previous),
               running: true,
               text,
-              ...(attempt.toolSeen ? { intermediate: true } : {}),
+              intermediate: true,
             }))
           }
         }
-      } else if (chunk.type === 'tool-call-delta' || (chunk.type === 'block-start' && chunk.blockType === 'tool-call')) {
+      } else if (chunk.type === 'finish') {
         const attempt = live.attempts.get(slot)
-        if (attempt !== undefined) attempt.toolSeen = true
-        const row = live.rows.get(key)
-        if (row) live.rows.set(key, { ...row, intermediate: true })
+        if (attempt !== undefined && attempt.attemptId === attemptId) {
+          if (chunk.reason.kind === 'tool-calls') {
+            attempt.toolSeen = true
+          }
+          const text = joinParts(attempt.parts)
+          if (text !== '') {
+            const previous = live.rows.get(key)
+            if (attempt.toolSeen) {
+              if (previous === undefined || previous.intermediate !== true || previous.text !== text) {
+                live.rows.set(key, this.row(live, key, attempt.time, turn, {
+                  ...(previous === undefined ? {} : previous),
+                  running: true,
+                  text,
+                  intermediate: true,
+                }))
+              }
+            } else if (chunk.reason.kind === 'stop' || chunk.reason.kind === 'max-tokens') {
+              // 这一步正常输出结束且无工具调用：放行此前攒着的短文本回复
+              attempt.released = true
+              live.rows.set(key, this.row(live, key, attempt.time, turn, {
+                ...(previous === undefined ? {} : previous),
+                running: true,
+                text,
+              }))
+            }
+          }
+        }
       }
       this.trim(live)
       return
