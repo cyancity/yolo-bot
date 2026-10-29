@@ -36,16 +36,22 @@ DSH 默认是一个人对一个会话。任务一复杂，你就得自己拆步�
 
 先安装 DSH 并至少配置一个模型。yolo-bot 直接使用 DSH 里注册的模型和凭据，不另建账户。插件要求 DSH `0.2.1-rc.5`。
 
-**1. 下载。** 从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载两个包，两个都要装：
+**1. 添加插件市场。** 两个包发布在 npm，本仓库提供 DSH 插件市场索引。在 DSH 的 **插件** 页打开 **实验性插件** → **更多**，启用「自定义插件市场」，切到 **发现** 标签，点 **添加索引源**，填入：
+
+```text
+https://raw.githubusercontent.com/cyancity/yolo-bot/main/market/index.json
+```
+
+**2. 安装。** 在列表里安装 **YOLO Bot** 和 **YOLO Bot 界面**，两个包必须是同一版本。提示下次启动生效时，完全退出 DSH 再打开。
+
+不方便用市场时，从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载两个 `.tgz` 手动安装，先装后端再装界面：
 
 | 文件 | 作用 |
 |---|---|
 | `cyancity-yolo-bot-<版本>.tgz` | 后端：频道、员工、派工、记忆、技能 |
 | `cyancity-yolo-bot-ui-<版本>.tgz` | 界面：工作台页面 |
 
-**2. 安装。**
-
-DSH 桌面版：侧栏 **插件** → **添加插件**，在地址栏填 `.tgz` 的绝对路径，先装后端再装界面，然后启用。提示下次启动生效时，完全退出 DSH 再打开。
+DSH 桌面版：侧栏 **插件** → **添加插件**，在地址栏填 `.tgz` 的绝对路径，然后启用。
 
 DSH Web 版（需要 Node.js 22.19 以上）：
 
@@ -57,31 +63,11 @@ npx @deepseek-ai/dsh@0.2.1-rc.5 web
 
 命令行装到其他 profile 时把 `web` 换成目标 profile。桌面版的 `desktop` profile 只能由桌面版自己修改，先完全退出桌面版，再用安装目录下的 `resources/runtime/cli/bin/dsh` 执行同样的命令。
 
-升级 DSH 或拉取新源码都不会更新已装的插件。用插件市场或 tgz 把后端包和界面包换成同一版本一起更新。
+### 更新
 
-### 用插件市场安装和更新（推荐）
+升级 DSH 或拉取新源码都不会更新已装的插件。两个包一起更新到同一版本：有新版时市场会提示更新，更新后完全退出并重开 DSH；DSH 升级后，旧版插件如果不兼容新 DSH，市场会把它标为不兼容，并推荐支持新 DSH 的版本。
 
-两个包发布在 npm，本仓库提供 DSH 插件市场索引。添加一次索引后，DSH 会按当前版本列出能用的插件版本，有新版时提示更新。
-
-1. 在 DSH 的 **插件** 页打开 **实验性插件** → **更多**，启用「自定义插件市场」。
-2. 切到 **发现** 标签，点 **添加索引源**，填入：
-
-   ```text
-   https://raw.githubusercontent.com/cyancity/yolo-bot/main/market/index.json
-   ```
-
-3. 在列表里安装或更新 **YOLO Bot** 和 **YOLO Bot 界面**。两个包必须是同一版本，更新时两个都要更新。
-
-DSH 升级后，旧版插件如果不兼容新 DSH，市场会把它标为不兼容，并推荐支持新 DSH 的版本。
-
-### 用 tgz 手动更新
-
-本次版本为 `0.2.0-rc.6`，兼容 DSH `0.2.1-rc.5`。从 [v0.2.0-rc.6 Release](https://github.com/cyancity/yolo-bot/releases/tag/v0.2.0-rc.6) 下载以下两个文件：
-
-- `cyancity-yolo-bot-0.2.0-rc.6.tgz`
-- `cyancity-yolo-bot-ui-0.2.0-rc.6.tgz`
-
-桌面用户在「插件」页用新版 tgz 更新同名插件，两个包都更新后完全退出并重开 DSH。Web / CLI 用户停止原实例后，在原 profile 重新安装两个包：
+不方便用市场时，从 [Releases](https://github.com/cyancity/yolo-bot/releases) 下载最新版的两个 tgz 手动更新。桌面用户在「插件」页用新版 tgz 更新同名插件，两个包都更新后完全退出并重开 DSH；Web / CLI 用户停止原实例后，在原 profile 重新安装两个包：
 
 ```sh
 dsh plugin --profile web add <新版后端tgz绝对路径> <新版界面tgz绝对路径>
