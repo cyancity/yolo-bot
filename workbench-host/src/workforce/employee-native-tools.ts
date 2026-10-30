@@ -18,7 +18,7 @@ const moduleTools = [
   ['tool-str-replace-editor', ['str_replace_editor']],
   ['tool-present', ['present']],
 ] as const
-const workforceNames: Record<string, true | undefined> = Object.fromEntries(['wb_remember', 'wb_forget', 'wb_recall', 'wb_delegate_employee', 'wb_read_material', 'wb_read_deliverable', 'wb_save_deliverable', 'wb_publish_deliverable', 'wb_save_skill_draft', 'wb_install_skill_draft', 'wb_check_arithmetic', 'wb_generate_image'].map(name => [name, true]))
+const workforceNames: Record<string, true | undefined> = Object.fromEntries(['wb_remember', 'wb_forget', 'wb_recall', 'wb_delegate_employee', 'wb_read_material', 'wb_read_deliverable', 'wb_save_deliverable', 'wb_publish_deliverable', 'wb_save_skill_draft', 'wb_install_skill_draft', 'wb_check_arithmetic', 'wb_generate_image', 'wb_office_read', 'wb_office_write'].map(name => [name, true]))
 
 async function officialModule(loader: Record<string, unknown>, name: string): Promise<NativeModule> {
   const imported: unknown = await invoke(loader, 'import', `@deepseek-ai/dsh-${name}`)
@@ -30,7 +30,7 @@ async function officialModule(loader: Record<string, unknown>, name: string): Pr
 }
 
 /** Accepts the real agent object, not a replacement carrying a fabricated cwd. */
-export async function installEmployeeNativeTools(agentValue: unknown, workspace: EmployeeWorkspace, policy: EmployeeToolPolicy, options: { deniedTools?: readonly string[] } = {}): Promise<EmployeeToolInstallation> {
+export async function installEmployeeNativeTools(agentValue: unknown, workspace: EmployeeWorkspace, policy: EmployeeToolPolicy, options: { deniedTools?: readonly string[]; webSearch?: boolean } = {}): Promise<EmployeeToolInstallation> {
   const candidate = capability(agentValue, 'employee agent')
   const context = capability(candidate.ctx, 'scoped agent context')
   const loader = capability(invoke(context, 'get', 'loader'), 'public native host loader')
@@ -180,7 +180,7 @@ export async function installEmployeeNativeTools(agentValue: unknown, workspace:
         owner.tools.restrict({ allow: [] })
         owner.tools.presentAs('native')
         for (const [name, definition] of captured) {
-          if ((name === 'skill' || name === 'job_output' || name === 'job_list' || name === 'job_kill' || Object.hasOwn(workforceNames, name)) && !denied.has(name)) {
+          if ((name === 'skill' || name === 'job_output' || name === 'job_list' || name === 'job_kill' || Object.hasOwn(workforceNames, name) || (options.webSearch === true && (name === 'web_search' || name === 'web_fetch'))) && !denied.has(name)) {
             const visible = owner.tools.get(name, agent)
             if (visible !== definition) owner.tools.register(definition)
             definitions.set(name, definition)

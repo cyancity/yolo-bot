@@ -17,6 +17,8 @@ export interface WorkforceEmployee {
   toolAccess?: import('./employee-access.ts').EmployeeAccess
   /** Grants wb_generate_image through the shared image provider. */
   imageGeneration?: boolean
+  /** Grants native web_search and web_fetch to office employees. */
+  webSearch?: boolean
   /** Enabled MCP server ids; undefined means every enabled server, [] means none. */
   mcpServers?: string[]
   isLeader: boolean
