@@ -1,3 +1,4 @@
+import { detectAgentClis } from './agent-config.ts'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -130,6 +131,7 @@ export function createWorkforceHandler(runtime: WorkforceRuntime, admit: AdmitFn
         if (seg.length === 2 && method === 'PATCH') return ok(res, { memory: await store.saveMemory(input, seg[1]) })
         if (seg.length === 2 && method === 'DELETE') { await store.deleteMemory(seg[1]!); return ok(res, { deleted: true }) }
       }
+      if (seg[0] === 'agent-clis' && seg.length === 1 && method === 'GET') return ok(res, await detectAgentClis(deps.subprocess?.(), new AbortController().signal, url.searchParams.get('refresh') === '1'))
       if (seg[0] === 'employees') {
         if (seg.length === 1 && method === 'GET') return ok(res, { employees: (await store.read()).employees })
         if (seg.length === 1 && method === 'POST') return ok(res, { employee: await store.saveEmployee(input) })

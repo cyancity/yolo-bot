@@ -18,7 +18,7 @@ const moduleTools = [
   ['tool-str-replace-editor', ['str_replace_editor']],
   ['tool-present', ['present']],
 ] as const
-const workforceNames: Record<string, true | undefined> = Object.fromEntries(['wb_remember', 'wb_forget', 'wb_recall', 'wb_delegate_employee', 'wb_read_material', 'wb_read_deliverable', 'wb_save_deliverable', 'wb_publish_deliverable', 'wb_save_skill_draft', 'wb_install_skill_draft', 'wb_check_arithmetic', 'wb_generate_image', 'wb_office_read', 'wb_office_write'].map(name => [name, true]))
+const workforceNames: Record<string, true | undefined> = Object.fromEntries(['wb_remember', 'wb_forget', 'wb_recall', 'wb_delegate_employee', 'wb_read_material', 'wb_read_deliverable', 'wb_save_deliverable', 'wb_publish_deliverable', 'wb_save_skill_draft', 'wb_install_skill_draft', 'wb_check_arithmetic', 'wb_generate_image', 'wb_office_read', 'wb_office_write', 'wb_run_agent'].map(name => [name, true]))
 
 async function officialModule(loader: Record<string, unknown>, name: string): Promise<NativeModule> {
   const imported: unknown = await invoke(loader, 'import', `@deepseek-ai/dsh-${name}`)

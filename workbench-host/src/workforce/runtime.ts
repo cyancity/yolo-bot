@@ -17,10 +17,11 @@ import type { WorkbenchLifecycle } from '../info.ts'
 import type { AssembleContext, PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createEmployeePolicy } from './employee-tool-policy.ts'
-import { installEmployeeNativeTools } from './employee-native-tools.ts'; import { projectWorkspace, verifyProjectDirectory } from './project-directory.ts'; import { kimiProgress } from './kimi-runner.ts'
-import { withImageDenied } from './image-generation.ts'
+import { installEmployeeNativeTools } from './employee-native-tools.ts'; import { projectWorkspace, verifyProjectDirectory } from './project-directory.ts'; import { agentProgress } from './agent-runner.ts'
+import { withImageDenied } from './image-generation.ts'; import { withAgentDenied, agentInstruction } from './agent-config.ts'
 import type { EmployeeToolInstallation, EmployeeToolPolicy, EmployeeToolProvider, EmployeeWorkspace } from './employee-tool-contract.ts'
 import { createChannelsAsLeader } from './leader-channels.ts'
+import { requestWorkforceAgentApproval, type AgentApprovalRequest } from './agent-approval.ts'
 
 interface EmployeeScopeContext {
   get(name: 'tools'): Pick<ToolRuntime, 'guard'> | undefined
@@ -641,7 +642,7 @@ export class WorkforceRuntime {
       if (root && employee.isLeader) { this.trackOwnedAgent(child); this.hookAgent(child); continue }
       const dm = state.threads.find(item => item.id === threadId)?.channelId === undefined
       const kind: EmployeeScopeView['kind'] = childEmployee ? 'child' : root ? 'leader' : dm ? 'dm' : 'direct'
-      const denied = withImageDenied(childEmployee ? CHILD_DENIED_TOOLS : dm ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee)
+      const denied = withAgentDenied(withImageDenied(childEmployee ? CHILD_DENIED_TOOLS : dm ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee), employee)
       const release = this.operation()
       try {
         if (childEmployee) {
@@ -830,6 +831,7 @@ export class WorkforceRuntime {
       + (!direct && employee.isLeader ? '\n长期记忆里的员工交代只约束对应员工；派工传递其要求，验收逐项核对，不能当成其他员工或负责人的写作要求。' : '')
       + '\n长期记忆只保存用户明确确认的偏好或事实，不自动保存推断或普通工作流步骤；密钥/口令不可存。子员工不能写或删除记忆，交负责人处理；没有记忆工具成功回执不能说已记住。操作步骤与跨任务指代定位按工具技能。'
       + '\n技能沉淀：整理实际做法后用 wb_save_skill_draft 提交草稿；负责人用 wb_install_skill_draft 安装并绑定员工（非负责人提交后交负责人安装）；不得用 shell 或写文件直接改技能目录。'
+      + agentInstruction(employee)
   }
   /** 项目上下文：全局/频道 AGENT.md 与本频道任务进度板；任务会话注入，无线程归属的会话为空。 */
   private async projectContext(channelId: string | undefined): Promise<string> {
@@ -1047,7 +1049,7 @@ export class WorkforceRuntime {
     await this.migrateSharedWorkspace(threadId, binding)
     const workspace = await this.prepareWorkspace(threadId, binding.rootId, binding); if (binding.projectDirectory) await verifyProjectDirectory(binding.projectDirectory)
     const retained = this.handles.get(binding.rootId)
-    const composition = JSON.stringify([employee.name, employee.title, employee.persona, employee.skills, employee.model ?? '', employee.isLeader, mcpSignature(state, employee), employee.imageGeneration === true, employee.webSearch === true])
+    const composition = JSON.stringify([employee.name, employee.title, employee.persona, employee.skills, employee.model ?? '', employee.isLeader, mcpSignature(state, employee), employee.imageGeneration === true, employee.webSearch === true, employee.agent ?? null])
     if (retained) {
       const childrenActive = Object.values(binding.children).some(id => this.get('agents')?.get(id))
       if (this.compositions.get(binding.rootId) === composition || retained.agent.status !== 'idle' || childrenActive) return retained.agent
@@ -1067,10 +1069,10 @@ export class WorkforceRuntime {
       this.installScopeContributions(scope, agent, { kind: 'leader', employeeId: employee.id })
       prompt.section({ name: 'deployment:persona-prefix', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), text: this.persona({ ...employee, toolAccess: await this.employeeToolsRestricted(agent.session.id) ? 'office' : 'development' }, threadId, state.employees, false, false, agent.session.header?.createdAt) })
       prompt.section({ name: 'deployment:workspace-memory', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 1, text: memory })
-      if (project) prompt.section({ name: 'deployment:project-context', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 2, text: project }); if (binding.projectDirectory && employee.isLeader) prompt.section({ name: 'deployment:kimi-development', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 3, text: '本任务已绑定项目目录。用户要求开发、修改代码或修复项目时，必须用 wb_run_kimi 将完整需求、限制和验收要求交给 Kimi CLI 自主执行；等待工具返回真实结果，再核对并回复。进程退出不代表任务成功，须如实报告 Kimi 的未完成项。Kimi 遇到权限或沙箱拒绝时不要重试或绕过，报告限制。普通办公和对话任务仍按原流程处理。' })
-      const tools = scope.get('tools'), deny = this.deniedTools(tools, agent, withImageDenied([], employee))
+      if (project) prompt.section({ name: 'deployment:project-context', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 2, text: project })
+      const tools = scope.get('tools'), deny = this.deniedTools(tools, agent, withAgentDenied(withImageDenied([], employee), employee))
       if (deny.length) tools.restrict({ deny })
-      if (!employee.isLeader) await this.installEmployeeTools(agent, threadId, employee.id, binding, withImageDenied(state.threads.find(item => item.id === threadId)?.channelId === undefined ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee))
+      if (!employee.isLeader) await this.installEmployeeTools(agent, threadId, employee.id, binding, withAgentDenied(withImageDenied(state.threads.find(item => item.id === threadId)?.channelId === undefined ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee), employee))
     }
     const { cwd, existing } = workspace
     const handle = existing
@@ -1612,6 +1614,7 @@ export class WorkforceRuntime {
       if (!service) throw new WorkforceError('unavailable', '原生子员工服务不可用')
       this.assertCurrent(address.threadId, generation)
       let childId: string | undefined = binding.children[employeeId], messageId: string
+      const agentSignature = JSON.stringify(employee.agent ?? null)
       const activeChild = childId && this.get('agents')?.get(childId)
       if (childId && (!activeChild || activeChild.status === 'idle')) {
         const events = await this.sessionEvents(childId)
@@ -1623,7 +1626,8 @@ export class WorkforceRuntime {
         // under a different signature is archived like a model change.
         const mountedSig = activeChild ? this.mcpSignatureOf?.(activeChild) : undefined
         const mcpStale = mountedSig !== undefined && mountedSig !== mcpSignature(state, employee)
-        if ((mcpStale || (lastEnd && (!lastStart || lastEnd.seq > lastStart.seq) && ['error', 'blocked', 'interrupted', 'max-tokens', 'aborted'].includes(lastEnd.data.reason.kind)
+        const agentStale = (binding.childAgentMeta?.[employeeId] ?? 'null') !== agentSignature
+        if ((agentStale || mcpStale || (lastEnd && (!lastStart || lastEnd.seq > lastStart.seq) && ['error', 'blocked', 'interrupted', 'max-tokens', 'aborted'].includes(lastEnd.data.reason.kind)
           && descriptor && (descriptor.agentProvider !== model.provider || descriptor.agentModel !== model.model)))) {
           const previous = childId
           if (activeChild) await service.drainChildren(parent, [previous])
@@ -1632,6 +1636,7 @@ export class WorkforceRuntime {
             const target = state.bindings[address.threadId]!
             ;(target.archivedChildren ??= []).push({ employeeId, sessionId: previous })
             delete target.children[employeeId]
+            if (target.childAgentMeta) delete target.childAgentMeta[employeeId]
           })
           childId = undefined
         }
@@ -1652,6 +1657,7 @@ export class WorkforceRuntime {
           this.assertCurrent(address.threadId, generation)
           const target = state.bindings[address.threadId]!
           target.children[employeeId] = childId!
+          ;(target.childAgentMeta ??= {})[employeeId] = agentSignature
           ;(target.workspaceSessions ??= {})[childId!] = childWorkspace
         })
         try {
@@ -1687,7 +1693,7 @@ export class WorkforceRuntime {
     const employee = state.employees.find(item => item.id === employeeId)
     if (!employee) throw new WorkforceError('not_found', '员工不存在')
     const agentOptions = this.model(employee); if (state.bindings[threadId]?.projectDirectory) await verifyProjectDirectory(state.bindings[threadId]!.projectDirectory!)
-    const composition = JSON.stringify([employee.name, employee.title, employee.persona, employee.skills, employee.model ?? '', employee.isLeader, mcpSignature(state, employee), employee.imageGeneration === true, employee.webSearch === true])
+    const composition = JSON.stringify([employee.name, employee.title, employee.persona, employee.skills, employee.model ?? '', employee.isLeader, mcpSignature(state, employee), employee.imageGeneration === true, employee.webSearch === true, employee.agent ?? null])
     const setup = async (scope: any, agent: any) => {
       await scope.get('agentPresets')?.mount(scope, agent.session.header.agentPreset)
       const prompt = scope.get('systemPrompt')
@@ -1702,7 +1708,7 @@ export class WorkforceRuntime {
       const project = await this.projectContext(threadRow?.channelId)
       if (project) prompt.section({ name: 'deployment:project-context', order: prompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 2, text: project })
       // 直达会话无相邻员工对象，授权只影响本员工 scope。
-      const denied = withImageDenied(dm ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee)
+      const denied = withAgentDenied(withImageDenied(dm ? DM_DENIED_TOOLS : DIRECT_DENIED_TOOLS, employee), employee)
       const tools = scope.get('tools'), deny = this.deniedTools(tools, agent, denied)
       if (deny.length) tools.restrict({ deny })
       await this.installEmployeeTools(agent, threadId, employee.id, state.bindings[threadId]!, denied)
@@ -2337,6 +2343,10 @@ export class WorkforceRuntime {
     const name = basename(verified.path)
     return { path: verified.path, name, mime: materialMime(name), installer: isInstallerName(name) }
   }
+  async requestAgentApproval(request: AgentApprovalRequest): Promise<string> {
+    return requestWorkforceAgentApproval(request, this.store, id => this.sessionEvents(id),
+      async req => await this.claimApproval(req.agent.session.id, req, async () => 'unavailable') as string)
+  }
   private claimApproval(sessionId: string, request: any, next: () => Promise<unknown>): Promise<unknown> {
     return this.claimAsk(sessionId, {
       kind: 'approval',
@@ -2699,7 +2709,7 @@ export class WorkforceRuntime {
             : undefined
           if (result === undefined && searchEvent !== undefined) result = searchEvent.data?.message
           const search = event.data.name === 'web_search' ? webSearchDisclosure(event, searchEvent) : undefined
-          messages.push({ ...row, role: 'agent', text: result ? contentText(result.content) : event.data.name === 'wb_run_kimi' ? kimiProgress(this.get('jobs'), events, event.data.callId, sessionId) : '', tool: { name: event.data.name, status: result ? result.isError ? 'error' : 'done' : 'running', ...search } })
+          messages.push({ ...row, role: 'agent', text: result ? contentText(result.content) : event.data.name === 'wb_run_agent' ? agentProgress(sessionId, event.data.callId) : '', tool: { name: event.data.name, status: result ? result.isError ? 'error' : 'done' : 'running', ...search } })
         } else if (event.type === 'turn/end' && event.data.reason.kind === 'interrupted') {
           messages.push({ ...row, role: 'system', tip: true, text: '已中断 · 回复可继续' })
         } else if (event.type === 'turn/end' && ['error', 'blocked', 'max-tokens', 'aborted'].includes(event.data.reason.kind)) {

@@ -1,6 +1,8 @@
 /** Public type-only extension contract. Runtime services are installed by the core implementation. */
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type {} from '@deepseek-ai/cordis'
+import type { AgentCli } from './workforce/types.ts'
+export type { AgentCli } from './workforce/types.ts'
 
 /** Idempotent, synchronous removal of a registration; does not delete persisted data. */
 export type ExtensionDisposer = () => void
@@ -62,6 +64,7 @@ export interface EmployeeSeed {
   readonly avatarColor?: string
   readonly imageGeneration?: boolean
   readonly webSearch?: boolean
+  readonly agent?: { readonly cli: AgentCli; readonly model?: string }
 }
 
 export type McpValue =
