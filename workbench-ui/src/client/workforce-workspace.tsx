@@ -17,6 +17,7 @@ import { WorkforceAvatar, AVATAR_PALETTES, resolveAvatarPalette } from './workfo
 import { useWorkforcePrefs } from './workforce-prefs.ts'
 import { classifyModelError, useWorkforceModels } from './workforce-models.tsx'
 import { WorkforceMemoryEditor, type MemorySourceNavigation } from './workforce-memory.tsx'; import { EmployeeAccess } from './workforce-employee-access.tsx'
+import { ImageGenerationField, ImageProviderSection, RolePresets, useImageProvider } from './workforce-image-provider.tsx'
 
 /** 员工管理页：列表 + 新建/编辑表单（名字/头衔/职责/模型/skill/负责人）。 */
 export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
@@ -30,6 +31,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [persona, setPersona] = useState('')
   const [model, setModel] = useState(''); const [toolAccess, setToolAccess] = useState<'office' | 'development'>('office')
   const [skills, setSkills] = useState<string[]>([])
+  const [imageGeneration, setImageGeneration] = useState(false)
   const [skillQuery, setSkillQuery] = useState('')
   const [lead, setLead] = useState(false)
   const [avatarColor, setAvatarColor] = useState('')
@@ -45,6 +47,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [resourcesVersion, setResourcesVersion] = useState(0)
   const [notice, setNotice] = useState<string | undefined>()
   const { state: modelsState, selectableModels } = useWorkforceModels(source.models)
+  const [imageStatus, setImageStatus] = useImageProvider(source, resourcesVersion)
 
   const currentEmployee = selectedId === 'new'
     ? 'new'
@@ -55,12 +58,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     if (!employee || employee === 'new') {
       setSelectedId('new')
       setName(''); setTitle(''); setPersona(''); setModel(''); setSkills([]); setLead(false); setAvatarColor('')
-      setMcpLimited(false); setMcpIds([]); setToolAccess('office')
+      setMcpLimited(false); setMcpIds([]); setToolAccess('office'); setImageGeneration(false)
     } else {
       setSelectedId(employee.id)
       setName(employee.name); setTitle(employee.title); setPersona(employee.persona)
       setModel(employee.model ?? ''); setSkills(employee.skills ? [...employee.skills] : []); setLead(employee.isLeader)
-      setAvatarColor(employee.avatarColor ?? ''); setToolAccess(employee.toolAccess ?? 'office')
+      setAvatarColor(employee.avatarColor ?? ''); setToolAccess(employee.toolAccess ?? 'office'); setImageGeneration(employee.imageGeneration === true)
       setMcpLimited(employee.mcpServers !== undefined); setMcpIds(employee.mcpServers ?? [])
     }
   }
@@ -108,7 +111,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
       title: title.trim(),
       persona: persona.trim(),
       skills,
-      model: model.trim(), toolAccess,
+      model: model.trim(), toolAccess, imageGeneration,
       mcpServers: mcpLimited ? [...mcpIds] : null,
       isLeader: lead,
       avatarColor: avatarColor.trim() || undefined,
@@ -218,6 +221,8 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             source={source}
           />
 
+          <ImageProviderSection source={source} status={imageStatus} onSaved={setImageStatus} />
+
           {templates !== undefined && templates.length > 0 && (
             <TemplatesSection
               templates={templates}
@@ -255,6 +260,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             {/* Card 1: 基础档案与头像 */}
             <div className={css.empCardSection}>
               <h4 className={css.empCardSectionTitle}>{WF.workspace.profileSectionTitle}</h4>
+              {selectedId === 'new' && (
+                <RolePresets onPick={preset => {
+                  setName(current => current.trim() ? current : preset.name)
+                  setTitle(preset.title); setPersona(preset.persona); setImageGeneration(preset.imageGeneration)
+                }} />
+              )}
               <div className={css.empField}>
                 <label>{WF.employeesPage.avatarColor}</label>
                 <div className={css.avatarColorPicker}>
@@ -363,6 +374,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               </div>
 
               {!lead && <EmployeeAccess value={toolAccess} onChange={setToolAccess} />}
+              <ImageGenerationField value={imageGeneration} onChange={setImageGeneration} configured={imageStatus?.provider != null} />
               <div className={css.empField}>
                 <label>{WF.workspace.skillsConfigLabel(skills.length)}</label>
                 <div className={css.skillChipsContainer}>

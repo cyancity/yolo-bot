@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
 import { copyFile, link, lstat, mkdir, open, readFile, realpath, rename, stat, unlink, writeFile } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { WorkforceError, type WorkforceEmployee, type WorkforceChannel, type WorkforceChannelGroup, type WorkforceProfile, type WorkforceThread, type WorkforceTask, type WorkforceMaterial, type WorkforceQuestionAnswerItem, type WorkforceQuestionItem, type WorkforceMcpServer, type WorkforceMcpValue, type WorkforceDeliverable, type WorkforceDeliverableVersion } from './types.ts'
+import { WorkforceError, type WorkforceEmployee, type WorkforceChannel, type WorkforceChannelGroup, type WorkforceProfile, type WorkforceThread, type WorkforceTask, type WorkforceMaterial, type WorkforceQuestionAnswerItem, type WorkforceQuestionItem, type WorkforceMcpServer, type WorkforceMcpValue, type WorkforceImageProvider, type WorkforceDeliverable, type WorkforceDeliverableVersion } from './types.ts'
 import type { WorkforceInstalledSkill, WorkforceMemory, WorkforceMemoryScope, WorkforceMessage, WorkforceSkillDraft } from './types.ts'
 import { MAX_MATERIAL_BYTES, MATERIAL_SIZE_ERROR, isTextMaterial, materialMime } from './material-files.ts'
 import { writeJsonAtomic } from '../atomic-file.ts'
@@ -89,6 +89,7 @@ export interface State {
   bindings: Record<string, Binding>
   profile: WorkforceProfile
   mcpServers: WorkforceMcpServer[]
+  imageProvider?: WorkforceImageProvider
   enabledTemplates: string[]
   memories: WorkforceMemory[]
   sendReceipts: Record<string, SendReceipt>
@@ -425,6 +426,7 @@ export class WorkforceStore {
       if (typeof model === 'string' && model.trim()) item.model = model.trim()
       const avatarColor = input.avatarColor === undefined ? previous?.avatarColor : input.avatarColor
       if (typeof avatarColor === 'string' && avatarColor.trim()) item.avatarColor = avatarColor.trim()
+      if (input.imageGeneration === undefined ? previous?.imageGeneration : input.imageGeneration === true) item.imageGeneration = true
       const mcpServers = input.mcpServers === undefined ? previous?.mcpServers : input.mcpServers
       if (mcpServers === null) delete item.mcpServers
       else if (mcpServers !== undefined) {
@@ -446,6 +448,13 @@ export class WorkforceStore {
       if (state.tasks.some(task => task.status === 'running' && (task.assigneeId === id || state.bindings[task.threadId]?.children[id] || state.bindings[task.threadId]?.directChildren?.[id]))
         || state.threads.some(thread => thread.kind === 'dm' && thread.employeeId === id && thread.status === 'running')) throw new WorkforceError('conflict', '员工正在执行任务或私信')
       state.employees = state.employees.filter(item => item.id !== id)
+    })
+  }
+
+  async saveImageProvider(provider: WorkforceImageProvider | undefined): Promise<void> {
+    await this.change(state => {
+      if (provider) state.imageProvider = provider
+      else delete state.imageProvider
     })
   }
 
@@ -532,6 +541,7 @@ export class WorkforceStore {
         }
         if (seed.model) item.model = seed.model
         if (seed.avatarColor) item.avatarColor = seed.avatarColor
+        if (seed.imageGeneration) item.imageGeneration = true
         state.employees.push(item)
         created.push(options?.ids ? item.id : seed.name)
       }

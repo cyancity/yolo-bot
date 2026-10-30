@@ -1178,15 +1178,26 @@ export function AttachmentBar({
     const filename = item.name ?? (item.url ? attachmentName(item.url) : (item.locationUrl ? attachmentName(item.locationUrl) : WF.attachments.attachmentDefaultName))
     return gateAttachment(filename, item.mime).visible
   })
+  // 图片直接显示缩略图，其余文件收进可展开的一行。
+  const isImage = (item: AttachmentBarItem) => item.url !== undefined && attachmentKind(item.name ?? item.url, item.mime) === 'image'
+  const images = visible.filter(isImage)
+  const files = visible.filter(item => !isImage(item))
   if (visible.length === 0) return null
-  const summary = visible.length === 1
-    ? (visible[0]!.name ?? (visible[0]!.url ? attachmentName(visible[0]!.url) : WF.attachments.filesCount(1)))
-    : WF.attachments.filesCount(visible.length)
-  const colCount = Math.min(visible.length, 3)
+  const summary = files.length === 1
+    ? (files[0]!.name ?? (files[0]!.url ? attachmentName(files[0]!.url) : WF.attachments.filesCount(1)))
+    : WF.attachments.filesCount(files.length)
+  const colCount = Math.min(files.length, 3)
 
   return (
     <div className={css.attachmentBarWrapper}>
-      <Button variant="plain"
+      {images.length > 0 && (
+        <div className={css.attachmentImages}>
+          {images.map((item, index) => (
+            <WorkforceAttachment key={item.url ?? `${item.name}-${index}`} url={item.url} locationUrl={item.locationUrl} name={item.name} sizeBytes={item.sizeBytes} mime={item.mime} />
+          ))}
+        </div>
+      )}
+      {files.length > 0 && <Button variant="plain"
         type="button"
         className={css.attachmentBarToggle}
         aria-expanded={open}
@@ -1220,16 +1231,16 @@ export function AttachmentBar({
           )}
         </span>
         <span className={css.attachmentBarAction}>{open ? WF.deliverables.toggleVersions(true) : WF.deliverables.toggleVersions(false)}</span>
-      </Button>
+      </Button>}
 
-      {open && (
+      {open && files.length > 0 && (
         <div
           className={css.attachmentGrid}
           data-count={colCount}
           role="region"
           aria-label={label ?? WF.attachments.currentRoundFiles}
         >
-          {visible.map((item, index) => (
+          {files.map((item, index) => (
             <WorkforceAttachment
               key={item.url || item.locationUrl || `${item.name}-${index}`}
               url={item.url}

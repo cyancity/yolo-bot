@@ -12,6 +12,7 @@ import type { SkillsService } from '../skills.ts'
 import { MAX_MATERIAL_BYTES, MATERIAL_SIZE_ERROR, attachmentDisposition, isActiveMaterial, isInstallerName, isPreviewableMime, materialMime } from './material-files.ts'
 import { collectWorkforceDiagnostics } from './diagnostics.ts'
 import { createWorkforceBackup } from './backup.ts'
+import { parseImageProvider } from './image-generation.ts'
 
 /** Explicit core handler dependencies; optional native surfaces retain standalone test seams. */
 export interface WorkforceHandlerDeps {
@@ -25,6 +26,7 @@ export interface WorkforceHandlerDeps {
   sessionPersistence?: () => unknown
   /** $DSH_HOME/skills：安装根与备份复制的来源目录。 */
   userSkillsRoot?: string
+  credentials?: () => { describe(ref: string): Promise<unknown>; set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> } | undefined
 }
 
 interface SkillListLike extends SkillsService {
@@ -286,6 +288,24 @@ export function createWorkforceHandler(runtime: WorkforceRuntime, admit: AdmitFn
         if (seg.length === 1 && method === 'POST') return ok(res, { server: await store.saveMcpServer(input) })
         if (seg.length === 2 && method === 'PATCH') return ok(res, { server: await store.saveMcpServer(input, seg[1]) })
         if (seg.length === 2 && method === 'DELETE') { await store.deleteMcpServer(seg[1]!); return ok(res, { deleted: true }) }
+      }
+      if (seg[0] === 'image-provider') {
+        const credentials = deps.credentials?.()
+        const status = async () => {
+          const provider = (await store.read()).imageProvider
+          const info = provider?.kind === 'openai' && credentials ? await credentials.describe(provider.keyRef).catch(() => undefined) : undefined
+          return { provider: provider ?? null, keyConfigured: (info as { configured?: boolean } | undefined)?.configured === true }
+        }
+        if (seg.length === 1 && method === 'GET') return ok(res, await status())
+        if (seg.length === 1 && method === 'PUT') { await store.saveImageProvider(parseImageProvider(input.provider)); return ok(res, await status()) }
+        if (seg.length === 2 && seg[1] === 'key' && (method === 'PUT' || method === 'DELETE')) {
+          const provider = (await store.read()).imageProvider
+          if (provider?.kind !== 'openai') throw new WorkforceError('bad_request', '请先保存接口类型的生图服务')
+          if (!credentials) throw new WorkforceError('unavailable', '凭据服务不可用')
+          if (method === 'PUT') await credentials.set(provider.keyRef, requiredText(input.value, 4000))
+          else await credentials.unset(provider.keyRef)
+          return ok(res, await status())
+        }
       }
       if (seg[0] === 'templates') {
         const templates = deps.templates ?? new WorkbenchTemplateService(store)
