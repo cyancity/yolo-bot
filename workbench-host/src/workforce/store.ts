@@ -6,7 +6,7 @@ import { WorkforceError, type WorkforceEmployee, type WorkforceChannel, type Wor
 import type { WorkforceInstalledSkill, WorkforceMemory, WorkforceMemoryScope, WorkforceMessage, WorkforceSkillDraft } from './types.ts'
 import { MAX_MATERIAL_BYTES, MATERIAL_SIZE_ERROR, isTextMaterial, materialMime } from './material-files.ts'
 import { writeJsonAtomic } from '../atomic-file.ts'
-import type { EmployeeSeed } from '../extension.ts'
+import type { EmployeeSeed } from '../extension.ts'; import { employeeAccess } from './employee-access.ts'; import { resolveProjectDirectory } from './project-directory.ts'
 
 export interface MaterialMetadata extends WorkforceMaterial {
   mime: string
@@ -22,12 +22,12 @@ export interface Binding {
   ownerId: string
   children: Record<string, string>
   /** Independent business roots; older session-v1 roots retain their persisted native cwd. */
-  workspaceLayout?: 'session-v1' | 'scoped-v2'
+  workspaceLayout?: 'session-v1' | 'scoped-v2'; projectDirectory?: string
   workspaceSessions?: Record<string, {
     nativeCwd: string
     logicalRoot: string
     layout: 'session-v1' | 'scoped-v2'
-    toolRoots?: { fromSeq: number; base: 'native' | 'logical' }[]
+    toolRoots?: { fromSeq: number; base: 'native' | 'logical' }[]; toolAccess?: import('./employee-access.ts').EmployeeAccess
   }>
   /** One shared-layout cutover; pending survives projection until a human continues. */
   workspaceMigration?: { at: string; pending: boolean }
@@ -421,7 +421,7 @@ export class WorkforceStore {
       const isLeader = input.isLeader === undefined ? previous?.isLeader ?? false : input.isLeader === true
       if (previous?.isLeader && !isLeader && !state.employees.some(item => item.id !== id && item.isLeader)) throw new WorkforceError('bad_request', '至少保留一名负责人')
       const item: WorkforceEmployee = { id: id ?? randomUUID(), name, title: String(input.title ?? previous?.title ?? '').slice(0, 120), persona: String(input.persona ?? previous?.persona ?? '').slice(0, 16000), skills: [...new Set(skills)], isLeader, role: isLeader ? 'leader' : previous?.role ?? 'custom', createdAt: previous?.createdAt ?? now(), updatedAt: now() }
-      const model = input.model === undefined ? previous?.model : input.model
+      item.toolAccess = employeeAccess(input.toolAccess, previous?.toolAccess); const model = input.model === undefined ? previous?.model : input.model
       if (typeof model === 'string' && model.trim()) item.model = model.trim()
       const avatarColor = input.avatarColor === undefined ? previous?.avatarColor : input.avatarColor
       if (typeof avatarColor === 'string' && avatarColor.trim()) item.avatarColor = avatarColor.trim()
@@ -544,7 +544,7 @@ export class WorkforceStore {
   private nextChannelSort(state: State, groupId: string | undefined): number {
     return state.channels.filter(item => item.groupId === groupId).reduce((max, item) => Math.max(max, item.sort), -1) + 1
   }
-  async saveChannel(input: Record<string, unknown>, id?: string): Promise<WorkforceChannel> {
+  async saveChannel(input: Record<string, unknown>, id?: string): Promise<WorkforceChannel> { const projectDirectory = await resolveProjectDirectory(input.projectDirectory)
     return this.change(state => {
       const previous = id ? state.channels.find(item => item.id === id) : undefined
       if (id && !previous) throw new WorkforceError('not_found', '频道不存在')
@@ -569,7 +569,7 @@ export class WorkforceStore {
       const sort = input.sort === undefined ? previous?.sort ?? this.nextChannelSort(state, groupId) : input.sort
       if (typeof sort !== 'number' || !Number.isFinite(sort)) throw new WorkforceError('bad_request', '排序值无效')
       const pinned = id !== 'general' && (input.pinned === undefined ? previous?.pinned : input.pinned === true)
-      const item: WorkforceChannel = { id: id ?? randomUUID(), name, ...(groupName ? { groupName } : {}), ...(groupChatName ? { groupChatName } : {}), ...(memberIds ? { memberIds } : {}), ...(groupId ? { groupId } : {}), sort, ...(pinned ? { pinned } : {}), ...(previous?.readAt ? { readAt: previous.readAt } : {}), createdAt: previous?.createdAt ?? now() }
+      const directory = projectDirectory === undefined ? previous?.projectDirectory : projectDirectory; const item: WorkforceChannel = { id: id ?? randomUUID(), name, ...(directory ? { projectDirectory: directory } : {}), ...(groupName ? { groupName } : {}), ...(groupChatName ? { groupChatName } : {}), ...(memberIds ? { memberIds } : {}), ...(groupId ? { groupId } : {}), sort, ...(pinned ? { pinned } : {}), ...(previous?.readAt ? { readAt: previous.readAt } : {}), createdAt: previous?.createdAt ?? now() }
       if (previous) state.channels[state.channels.indexOf(previous)] = item
       else {
         state.channels.push(item)

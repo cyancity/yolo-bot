@@ -16,7 +16,7 @@ import css from './workforce.module.css'
 import { WorkforceAvatar, AVATAR_PALETTES, resolveAvatarPalette } from './workforce-avatar.tsx'
 import { useWorkforcePrefs } from './workforce-prefs.ts'
 import { classifyModelError, useWorkforceModels } from './workforce-models.tsx'
-import { WorkforceMemoryEditor, type MemorySourceNavigation } from './workforce-memory.tsx'
+import { WorkforceMemoryEditor, type MemorySourceNavigation } from './workforce-memory.tsx'; import { EmployeeAccess } from './workforce-employee-access.tsx'
 
 /** 员工管理页：列表 + 新建/编辑表单（名字/头衔/职责/模型/skill/负责人）。 */
 export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
@@ -28,7 +28,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [name, setName] = useState('')
   const [title, setTitle] = useState('')
   const [persona, setPersona] = useState('')
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState(''); const [toolAccess, setToolAccess] = useState<'office' | 'development'>('office')
   const [skills, setSkills] = useState<string[]>([])
   const [customSkillInput, setCustomSkillInput] = useState('')
   const [lead, setLead] = useState(false)
@@ -55,12 +55,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     if (!employee || employee === 'new') {
       setSelectedId('new')
       setName(''); setTitle(''); setPersona(''); setModel(''); setSkills([]); setLead(false); setAvatarColor('')
-      setMcpLimited(false); setMcpIds([])
+      setMcpLimited(false); setMcpIds([]); setToolAccess('office')
     } else {
       setSelectedId(employee.id)
       setName(employee.name); setTitle(employee.title); setPersona(employee.persona)
       setModel(employee.model ?? ''); setSkills(employee.skills ? [...employee.skills] : []); setLead(employee.isLeader)
-      setAvatarColor(employee.avatarColor ?? '')
+      setAvatarColor(employee.avatarColor ?? ''); setToolAccess(employee.toolAccess ?? 'office')
       setMcpLimited(employee.mcpServers !== undefined); setMcpIds(employee.mcpServers ?? [])
     }
   }
@@ -105,7 +105,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
       title: title.trim(),
       persona: persona.trim(),
       skills,
-      model: model.trim(),
+      model: model.trim(), toolAccess,
       mcpServers: mcpLimited ? [...mcpIds] : null,
       isLeader: lead,
       avatarColor: avatarColor.trim() || undefined,
@@ -359,7 +359,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                 <span className={css.empModelHint}>{WF.employeesPage.modelHint}</span>
               </div>
 
-              {/* 技能配置：Chip 标签墙与自定义添加，绝不截断 */}
+              {!lead && <EmployeeAccess value={toolAccess} onChange={setToolAccess} />}
               <div className={css.empField}>
                 <label>{WF.workspace.skillsConfigLabel(skills.length)}</label>
                 <div className={css.skillChipsContainer}>

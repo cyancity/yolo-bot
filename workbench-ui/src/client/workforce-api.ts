@@ -14,7 +14,7 @@ import { MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-uploa
 
 
 export interface HostChannel extends Channel {
-  readonly groupId?: string | undefined
+  readonly groupId?: string | undefined; readonly projectDirectory?: string | undefined
   readonly sort?: number | undefined
   readonly pinned?: boolean | undefined
   readonly readAt?: string | undefined
@@ -449,7 +449,7 @@ export class WorkforceApi {
   }
 
   /** PATCH /workforce/channels/:id {name?, groupId?, sort?, pinned?, groupName?, groupChatName?, memberIds?}（可空字段传 null 清除） */
-  patchChannel(id: string, patch: { name?: string | undefined; groupId?: string | null | undefined; sort?: number | undefined; pinned?: boolean | undefined; groupName?: string | null | undefined; groupChatName?: string | null | undefined; memberIds?: readonly string[] | null | undefined }): Promise<{ channel: HostChannel }> {
+  patchChannel(id: string, patch: { projectDirectory?: string | null | undefined; name?: string | undefined; groupId?: string | null | undefined; sort?: number | undefined; pinned?: boolean | undefined; groupName?: string | null | undefined; groupChatName?: string | null | undefined; memberIds?: readonly string[] | null | undefined }): Promise<{ channel: HostChannel }> {
     return this.call(`/workforce/channels/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),

@@ -832,7 +832,7 @@ export class WorkforceSource {
     return res.channel
   }
 
-  async patchChannel(id: string, patch: { name?: string | undefined; groupId?: string | null | undefined; sort?: number | undefined; pinned?: boolean | undefined; groupName?: string | null | undefined; groupChatName?: string | null | undefined; memberIds?: readonly string[] | null | undefined }): Promise<HostChannel> {
+  async patchChannel(id: string, patch: { projectDirectory?: string | null | undefined; name?: string | undefined; groupId?: string | null | undefined; sort?: number | undefined; pinned?: boolean | undefined; groupName?: string | null | undefined; groupChatName?: string | null | undefined; memberIds?: readonly string[] | null | undefined }): Promise<HostChannel> {
     const res = await this.api.patchChannel(id, patch)
     // 以返回的完整 channel 为准：清空字段在响应里是缺省而非保留，unread 是列表投影字段本地补回。
     this.current = {

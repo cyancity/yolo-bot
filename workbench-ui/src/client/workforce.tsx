@@ -26,7 +26,7 @@ import { readRememberedMemory, RememberedMemoryCard, WorkforceMemoryDialog, type
 import { WorkforceMessageText } from './workforce-message-text.tsx'
 import { classifyModelError, parseModelErrorAction } from './workforce-models.tsx'
 import { useWorkforcePrefs, type ReplyGrouping } from './workforce-prefs.ts'
-import { useUserProfile } from './workforce-profile.tsx'
+import { useUserProfile } from './workforce-profile.tsx'; import { ProjectDirectory } from './workforce-project-directory.tsx'; import { kimiMessage } from './workforce-kimi.ts'
 import { WorkforceQuestionCard } from './workforce-question-card.tsx'
 import { ReplyGroupCard } from './workforce-reply-group.tsx'
 import { ReplyPreviewDialog } from './workforce-reply-preview.tsx'
@@ -151,8 +151,8 @@ function TaskFooter({ task, employees, source, quiet = false, onSelectContinuati
   return <div className={css.msgFooter} data-message-footer data-task-id={task.id}>
     {task.deliverables.length > 0 && <DeliverableChips task={task} employees={employees} source={source} />}
     {task.status === 'running' && <div className={css.taskActions}>
-      <LobeButton type="text" danger className={css.taskCancel ?? ''} disabled={busy} loading={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</LobeButton>
       <span className={css.taskStatus} data-state={task.status}>{WF.employee.running}</span>
+      <LobeButton className={css.taskCancel ?? ''} disabled={busy} loading={busy} onClick={() => void cancel()}>{busy ? WF.employee.cancelling : WF.employee.cancel}</LobeButton>
     </div>}
     {stopped && <div className={css.taskActions}>
       <span className={css.taskStatus} data-state={task.status}>{WF.taskStatus.stopped(quiet)}</span>
@@ -501,7 +501,7 @@ function processMessagesForDisplay(
         attach(message)
       continue
     }
-    const remembered = readRememberedMemory(message)
+    if (message.tool?.name === 'wb_run_kimi') { flush(); items.push({ kind: 'message', message: kimiMessage(message), notices: [] }); continue }; const remembered = readRememberedMemory(message)
     if (remembered !== undefined) {
       flush()
       items.push({ kind: 'message', message, notices: [], remembered })
@@ -2192,7 +2192,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
             <h2 className={css.streamTitle}>{surface.kind === 'channel' ? `# ${title}` : title}</h2>
             <span className={css.streamHeadDivider} aria-hidden="true" />
             <span className={css.streamDesc}>{desc}</span>
-            <div className={css.streamSettingsWrap} ref={settingsRef}>
+            <div className={css.streamSettingsWrap} ref={settingsRef}>{surface.kind === 'channel' && <LobeButton type="text" title={WF.settings.projectDirectory} aria-label={WF.settings.projectDirectory} onClick={() => { setSettingsOpen(open => !open); setActionMenuOpen(false) }}><Icon name="folder" width={15} height={15} /> {(snapshot.channels.find(channel => channel.id === surface.id) as HostChannel | undefined)?.projectDirectory?.split(/[\\/]/).at(-1) || WF.settings.projectDirectory}</LobeButton>}
               <LobeButton
                 type="text"
                 className={css.streamHeadActionBtn ?? ''}
@@ -2262,7 +2262,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
                 </div>
               )}
               {settingsOpen && (
-                <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>
+                <div className={css.settingsMenu} role="group" aria-label={WF.settings.menuLabel}>{surface.kind === 'channel' && <ProjectDirectory source={source} channelId={surface.id} value={(snapshot.channels.find(channel => channel.id === surface.id) as HostChannel | undefined)?.projectDirectory} />}
                   <div className={css.settingsSection}>
                     <div className={css.settingsSectionTitle}>{WF.settings.monitoringTitle}</div>
                     <Checkbox className={css.settingsCheckbox ?? ''} checked={prefs.showTokenStats !== false} onChange={e => setPrefs({ showTokenStats: e.target.checked })}>{WF.settings.showTokens}</Checkbox>
