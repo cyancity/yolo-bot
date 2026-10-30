@@ -4,8 +4,7 @@ import { requiredText } from './store.ts'
 import type { WorkforceRuntime } from './runtime.ts'
 import { WorkforceError } from './types.ts'
 import { verifyProjectDirectory } from './project-directory.ts'
-import { createKimiHome, privateTemp, removeKimiHome } from './kimi-home.ts'
-import { currentKimiProgress, KimiStillRunning, runKimiAcp } from './kimi-acp.ts'
+import { currentKimiProgress, runKimiAcp } from './kimi-acp.ts'
 
 export function kimiProgress(_jobs: unknown, _events: readonly any[], callId: string, owner: string): string { return currentKimiProgress(owner, callId) }
 
@@ -26,16 +25,13 @@ export function registerKimiTool(runtime: WorkforceRuntime, ctx: { tools: { regi
       if (!cwd) throw new WorkforceError('bad_request', '请先在频道设置中选择项目目录，再开始新任务')
       await verifyProjectDirectory(cwd)
       const task = requiredText(args.task, 16000)
-      const home = await createKimiHome(await privateTemp(agent, exec, cwd))
-      let safeToRemove = true
       try {
-        const output = await runKimiAcp(agent, exec.callId, cwd, home, task, exec.signal)
+        const output = await runKimiAcp(agent, exec.callId, cwd, task, exec.signal)
         return toolValue({ processExited: true, projectDirectory: cwd, output: output || 'Kimi 未返回文本结果；不要假设任务成功' })
       } catch (error) {
-        if (error instanceof KimiStillRunning) safeToRemove = false
         if (exec.signal.aborted) throw error
         return toolValue({ processExited: false, projectDirectory: cwd, output: error instanceof Error ? error.message : String(error) })
-      } finally { if (safeToRemove) await removeKimiHome(home) }
+      }
     },
   }))
 }
