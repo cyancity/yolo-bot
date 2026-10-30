@@ -61,6 +61,7 @@ export interface EmployeeSeed {
   readonly isLeader?: boolean
   readonly avatarColor?: string
   readonly imageGeneration?: boolean
+  readonly webSearch?: boolean
 }
 
 export type McpValue =

@@ -426,7 +426,7 @@ export class WorkforceStore {
       if (typeof model === 'string' && model.trim()) item.model = model.trim()
       const avatarColor = input.avatarColor === undefined ? previous?.avatarColor : input.avatarColor
       if (typeof avatarColor === 'string' && avatarColor.trim()) item.avatarColor = avatarColor.trim()
-      if (input.imageGeneration === undefined ? previous?.imageGeneration : input.imageGeneration === true) item.imageGeneration = true
+      if (input.imageGeneration === undefined ? previous?.imageGeneration : input.imageGeneration === true) item.imageGeneration = true; if (input.webSearch === undefined ? previous?.webSearch : input.webSearch === true) item.webSearch = true
       const mcpServers = input.mcpServers === undefined ? previous?.mcpServers : input.mcpServers
       if (mcpServers === null) delete item.mcpServers
       else if (mcpServers !== undefined) {
@@ -541,7 +541,7 @@ export class WorkforceStore {
         }
         if (seed.model) item.model = seed.model
         if (seed.avatarColor) item.avatarColor = seed.avatarColor
-        if (seed.imageGeneration) item.imageGeneration = true
+        if (seed.imageGeneration) item.imageGeneration = true; if (seed.webSearch) item.webSearch = true
         state.employees.push(item)
         created.push(options?.ids ? item.id : seed.name)
       }

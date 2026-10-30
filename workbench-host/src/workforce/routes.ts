@@ -13,6 +13,7 @@ import { MAX_MATERIAL_BYTES, MATERIAL_SIZE_ERROR, attachmentDisposition, isActiv
 import { collectWorkforceDiagnostics } from './diagnostics.ts'
 import { createWorkforceBackup } from './backup.ts'
 import { DEFAULT_IMAGE_PROVIDER, detectCodex, parseImageProvider, type Subprocess } from './image-generation.ts'
+import { webSearchStatus, type SearchLaunchEnvironment } from './web-search.ts'
 
 /** Explicit core handler dependencies; optional native surfaces retain standalone test seams. */
 export interface WorkforceHandlerDeps {
@@ -28,6 +29,7 @@ export interface WorkforceHandlerDeps {
   userSkillsRoot?: string
   credentials?: () => { describe(ref: string): Promise<unknown>; set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> } | undefined
   subprocess?: () => Subprocess | undefined
+  launchEnvironment?: () => SearchLaunchEnvironment | undefined
 }
 
 interface SkillListLike extends SkillsService {
@@ -290,6 +292,7 @@ export function createWorkforceHandler(runtime: WorkforceRuntime, admit: AdmitFn
         if (seg.length === 2 && method === 'PATCH') return ok(res, { server: await store.saveMcpServer(input, seg[1]) })
         if (seg.length === 2 && method === 'DELETE') { await store.deleteMcpServer(seg[1]!); return ok(res, { deleted: true }) }
       }
+      if (seg[0] === 'web-search' && seg.length === 1 && method === 'GET') return ok(res, await webSearchStatus(deps.credentials?.(), deps.launchEnvironment?.()))
       if (seg[0] === 'image-provider') {
         const credentials = deps.credentials?.()
         const status = async (refresh = false) => {
