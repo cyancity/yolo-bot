@@ -1,17 +1,18 @@
-import { Select } from 'antd'
+import { Segmented } from 'antd'
 import { WF } from './workforce-strings.ts'
 import css from './workforce.module.css'
 
+/** Two options, so a segmented switch instead of a dropdown; the hint states what the choice allows. */
 export function EmployeeAccess({ value, onChange }: {
   readonly value: 'office' | 'development'
   readonly onChange: (value: 'office' | 'development') => void
 }) {
   return (
     <div className={css.empField}>
-      <label htmlFor="wf-employee-access">{WF.employeesPage.toolAccess}</label>
-      <Select
-        id="wf-employee-access"
-        className={css.empInput ?? ''}
+      <label id="wf-employee-access">{WF.employeesPage.toolAccess}</label>
+      <Segmented<'office' | 'development'>
+        aria-labelledby="wf-employee-access"
+        className={css.empSegmented ?? ''}
         value={value}
         onChange={onChange}
         options={[

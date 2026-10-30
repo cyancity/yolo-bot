@@ -407,7 +407,6 @@ export function WorkforceComposer(props: ComposerProps) {
               {WF.taskStatus.newModeLabel}
             </button>
           )}
-          <span className={css.composerHint}>{WF.composer.placeholderTask}</span>
           {props.onUploadFile !== undefined && (
             <button
               type="button"

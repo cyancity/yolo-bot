@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Input as LobeInput } from '@lobehub/ui'
 import { Select as LobeSelect, Switch as LobeSwitch } from 'antd'
+import { Bot, Code2, FileText, Megaphone, Palette } from 'lucide-react'
 import { cx } from './ui/index.tsx'
 import { WF } from './workforce-strings.ts'
 import type { AgentCli, AgentCliStatus, EmployeeAgent, WebSearchStatus } from './workforce-types.ts'
 import type { WorkforceSource } from './workforce-source.ts'
 import css from './workforce.module.css'
 
+export type RolePresetId = 'clerk' | 'marketer' | 'designer' | 'developer' | 'agent'
+
 /** Defaults a role preset writes into the new-employee form. */
 export interface RolePreset {
+  readonly id: RolePresetId
   readonly name: string
   readonly title: string
   readonly persona: string
@@ -27,23 +31,51 @@ export function rolePresets(clis: readonly AgentCliStatus[] | undefined): RolePr
   const agentLabel = cli?.label ?? 'Codex'
   const base = { skills: [], imageGeneration: false, webSearch: false, agent: null }
   return [
-    { ...base, name: WF.roles.clerk, title: WF.roles.clerkTitle, persona: WF.roles.clerkPersona, toolAccess: 'office', skills: ['office-documents', 'document-to-action-items'] },
-    { ...base, name: WF.roles.marketer, title: WF.roles.marketerTitle, persona: WF.roles.marketerPersona, toolAccess: 'office', skills: ['marketing-research', 'marketing-copywriting'], webSearch: true },
-    { ...base, name: WF.image.designer, title: WF.image.designerTitle, persona: WF.image.designerPersona, toolAccess: 'office', imageGeneration: true },
-    { ...base, name: WF.roles.developer, title: WF.roles.developerTitle, persona: WF.roles.developerPersona, toolAccess: 'development' },
-    { ...base, name: WF.roles.agentDeveloper(agentLabel), title: WF.roles.agentDeveloperTitle, persona: WF.roles.agentDeveloperPersona, toolAccess: 'development', agent: { cli: cli?.id ?? FALLBACK_AGENT } },
+    { ...base, id: 'clerk', name: WF.roles.clerk, title: WF.roles.clerkTitle, persona: WF.roles.clerkPersona, toolAccess: 'office', skills: ['office-documents', 'document-to-action-items'] },
+    { ...base, id: 'marketer', name: WF.roles.marketer, title: WF.roles.marketerTitle, persona: WF.roles.marketerPersona, toolAccess: 'office', skills: ['marketing-research', 'marketing-copywriting'], webSearch: true },
+    { ...base, id: 'designer', name: WF.image.designer, title: WF.image.designerTitle, persona: WF.image.designerPersona, toolAccess: 'office', imageGeneration: true },
+    { ...base, id: 'developer', name: WF.roles.developer, title: WF.roles.developerTitle, persona: WF.roles.developerPersona, toolAccess: 'development' },
+    { ...base, id: 'agent', name: WF.roles.agentDeveloper(agentLabel), title: WF.roles.agentDeveloperTitle, persona: WF.roles.agentDeveloperPersona, toolAccess: 'development', agent: { cli: cli?.id ?? FALLBACK_AGENT } },
   ]
 }
 
-export function RolePresets({ presets, onPick }: { readonly presets: readonly RolePreset[]; readonly onPick: (preset: RolePreset) => void }) {
+const PRESET_ICONS = { clerk: FileText, marketer: Megaphone, designer: Palette, developer: Code2, agent: Bot } as const
+
+function presetSummary(preset: RolePreset): string {
+  const parts: string[] = [preset.toolAccess === 'development' ? WF.employeesPage.developmentAccess : WF.employeesPage.officeAccess]
+  if (preset.agent) parts.push(WF.roles.externalAgent)
+  if (preset.webSearch) parts.push(WF.roles.presetWebSearch)
+  if (preset.imageGeneration) parts.push(WF.roles.presetImage)
+  if (preset.skills.length > 0) parts.push(WF.roles.skillCount(preset.skills.length))
+  return parts.join(' · ')
+}
+
+/** `base` itself when free, otherwise `base 2`, `base 3`… so a preset never collides with an existing employee. */
+export function uniqueEmployeeName(base: string, taken: readonly string[]): string {
+  const names = new Set(taken.map(name => name.trim()))
+  if (!names.has(base)) return base
+  let index = 2
+  while (names.has(`${base} ${index}`)) index += 1
+  return `${base} ${index}`
+}
+
+export function RolePresets({ presets, selected, onPick }: {
+  readonly presets: readonly RolePreset[]
+  readonly selected: RolePresetId | undefined
+  readonly onPick: (preset: RolePreset) => void
+}) {
   return (
-    <div className={css.empField}>
-      <label>{WF.roles.presets}</label>
-      <div className={css.skillPickList}>
-        {presets.map(preset => (
-          <button key={preset.title} type="button" className={css.skillPick} onClick={() => onPick(preset)}>＋ {preset.name}</button>
-        ))}
-      </div>
+    <div className={css.presetGrid} role="group" aria-label={WF.roles.presets}>
+      {presets.map(preset => {
+        const PresetIcon = PRESET_ICONS[preset.id]
+        return (
+          <button key={preset.id} type="button" className={css.presetCard} aria-pressed={selected === preset.id} onClick={() => onPick(preset)}>
+            <PresetIcon size={18} strokeWidth={1.75} aria-hidden="true" />
+            <span className={css.presetName}>{preset.name}</span>
+            <span className={css.presetMeta}>{presetSummary(preset)}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

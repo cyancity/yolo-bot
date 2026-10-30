@@ -76,7 +76,7 @@ export function WorkforceMemoryEditor({ scope, scopeId, employees = [], onOpenSo
   const usage = data?.usage[`${scope}:${scopeId ?? ''}`] ?? 0
   return <section className={css.editor} aria-label={WF.memory.editorAria(getScopeLabels()[scope])}>
     <p className={css.hint}>{WF.memory.hint}</p>
-    {data && <div className={css.usage} role="status">{WF.memory.usage(usage, data.limits[scope])}</div>}
+    {data && usage > 0 && <div className={css.usage} role="status">{WF.memory.usage(usage, data.limits[scope])}</div>}
     {loading && !data && <div className={css.loading} role="status" aria-label={WF.memory.loading}><span /><span /><span /></div>}
     {error && !deleting && <Alert className={css.errorAlert ?? ''} type="error" showIcon message={error} action={<button type="button" disabled={busy} onClick={() => void reload()}>{WF.memory.reload}</button>} />}
     {data && <>

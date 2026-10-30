@@ -39,6 +39,7 @@ import type { Employee, Task, WorkforceActivity, WorkforceMessage, WorkforceSkil
 import { threadHasWebSearch, WebSearchBatch, WorkforceWebSearch } from './workforce-websearch.tsx'
 import { WorkforceWelcome } from './workforce-welcome.tsx'
 import css from './workforce.module.css'
+import { useEscapeClose } from './use-escape-close.ts'
 /** 联网搜索披露：插件平台 web loader 只有单 chunk 模块表（多文件 require 会让插件整体拒载），
  *  因此不做网络分包；「按需」落在渲染层——hasWebSearch 为假时零挂载零渲染。 */
 /** web_search 工具消息渲染成披露行；同 turn 多条紧凑成一行批量块，独立成行不进 MessageRow（保其 memo）。 */
@@ -1136,12 +1137,6 @@ const MessageRow = memo(function MessageRow({
       <LobeButton type="text" title={regenerating ? WF.message.regenerating : WF.message.regenerate} aria-label={regenerating ? WF.message.regenerating : WF.message.regenerate} disabled={regenerating || message.running === true} onClick={() => void regenerate()}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 7a6 6 0 1 0 0 6M16 3v4h-4" /></svg>
       </LobeButton>
-      <LobeButton type="text" disabled title={WF.message.deleteReserved} aria-label={WF.message.deleteReserved}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M7 5V3h6v2M5 5l1 12h8l1-12M8 8v6M12 8v6" /></svg>
-      </LobeButton>
-      <LobeButton type="text" disabled title={WF.message.collapseReserved} aria-label={WF.message.collapseReserved}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5-5 5 5M5 12l5 5 5-5" /></svg>
-      </LobeButton>
     </div>
   ) : undefined
   return (
@@ -1237,7 +1232,7 @@ const MessageRow = memo(function MessageRow({
             {(replyCount ?? 0) > 0 ? (
               openThreadId !== undefined && onOpenThread !== undefined ? (
                 <Button variant="plain" type="button" className={css.threadLink} onClick={() => onOpenThread(openThreadId)}>
-                  {WF.thread.count(replyCount!)} →
+                  {WF.thread.count(replyCount!)}
                 </Button>
               ) : (
                 <span className={css.threadLink}>{WF.thread.count(replyCount!)}</span>
@@ -1479,6 +1474,7 @@ function ThreadPanelContent({ source, threadId, title, employees: employeesProp,
   const task = threadTask(snapshot, threadId)
   const thread = useMemo(() => snapshot.threads.find(item => item.id === threadId), [snapshot.threads, threadId])
   const resolvedTitle = title || task?.title || thread?.title || WF.thread.title
+  useEscapeClose(onClose)
   // 群聊成员名单约束 @ 候选：任务线程沿用其所属频道的 memberIds；未配置则全员。
   const mentionable = useMemo(() => {
     const memberIds = (snapshot.channels.find(channel => channel.id === thread?.channelId) as HostChannel | undefined)?.memberIds
@@ -1994,7 +1990,7 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
   const title = surface.kind === 'channel'
     ? (snapshot.channels.find(c => c.id === surface.id)?.name ?? surface.id)
     : (dmEmployee?.name ?? snapshot.threads.find(thread => thread.id === surface.threadId)?.title ?? WF.taskStatus.employeeHistory)
-  const desc = deletedDm ? WF.taskStatus.deletedEmployeeHistoryDesc : surface.kind === 'channel' ? WF.channels.generalDesc : WF.dm.empty
+  const desc = deletedDm ? WF.taskStatus.deletedEmployeeHistoryDesc : undefined
 
   // 频道发送：POST 到频道 thread（Host 语义：channel thread 发消息=建任务）。
   // 频道 thread id 由 threads 列表给出（kind==='channel'）；暂缺时 composer 不挂。
@@ -2195,8 +2191,10 @@ function WorkforceMainContent({ source, snapshot, surface, onDm, openThreadId, o
               </svg>
             </LobeButton>
             <h2 className={css.streamTitle}>{surface.kind === 'channel' ? `# ${title}` : title}</h2>
-            <span className={css.streamHeadDivider} aria-hidden="true" />
-            <span className={css.streamDesc}>{desc}</span>
+            {desc !== undefined && <>
+              <span className={css.streamHeadDivider} aria-hidden="true" />
+              <span className={css.streamDesc}>{desc}</span>
+            </>}
             <div className={css.streamSettingsWrap} ref={settingsRef}>{surface.kind === 'channel' && <LobeButton type="text" title={WF.settings.projectDirectory} aria-label={WF.settings.projectDirectory} onClick={() => { setSettingsOpen(open => !open); setActionMenuOpen(false) }}><Icon name="folder" width={15} height={15} /> {(snapshot.channels.find(channel => channel.id === surface.id) as HostChannel | undefined)?.projectDirectory?.split(/[\\/]/).at(-1) || WF.settings.projectDirectory}</LobeButton>}
               <LobeButton
                 type="text"
