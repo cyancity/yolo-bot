@@ -196,7 +196,7 @@ export function WorkbenchSurface(props: WorkbenchSurfaceProps) {
       enableGlobalStyle={false}
       style={{ display: 'contents' }}
     >
-      <ConfigProvider locale={locale === 'zh' ? zhCN : enUS}><TokenSurface {...props} /></ConfigProvider>
+      <ConfigProvider locale={locale === 'zh' ? zhCN : enUS} button={{ autoInsertSpace: false }}><TokenSurface {...props} /></ConfigProvider>
     </ThemeProvider>
   )
 }

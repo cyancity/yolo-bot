@@ -101,6 +101,7 @@ export function apply(ctx: Context, config: Config): void {
         },
         mcp: employeeMcp,
         credentials: () => get('credentials') as never,
+        launchEnvironment: () => get('launchEnvironment') as never,
         subprocess: () => get('subprocess') as never,
         templates,
         userSkills,

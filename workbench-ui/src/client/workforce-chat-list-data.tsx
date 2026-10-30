@@ -4,6 +4,7 @@ import type { HostChannel } from './workforce-api.ts'
 import type { Employee, Thread, ThreadMessages, WorkforceMessage } from './workforce-types.ts'
 import { WorkforceAvatar } from './workforce-avatar.tsx'
 import { WF } from './workforce-strings.ts'
+import { approvalToolLabel } from './workforce-agent-run.ts'
 import css from './workforce-chat-list.module.css'
 export interface RowMeta {
   readonly activityTs: string
@@ -76,7 +77,7 @@ function previewOf(message: WorkforceMessage): string {
     return `${senderPrefix}${q ? `${WF.chatList.questionPrefix}${q}` : WF.chatList.awaitingAnswer}`
   }
   if (message.approval !== undefined) {
-    const tool = message.approval.toolName?.trim() || message.approval.displayReason?.trim() || message.approval.reason?.trim()
+    const tool = (message.approval.toolName && approvalToolLabel(message.approval.toolName.trim())) || message.approval.displayReason?.trim() || message.approval.reason?.trim()
     return `${senderPrefix}${tool ? `${WF.chatList.approvalPrefix}${tool}` : WF.chatList.awaitingApproval}`
   }
   if (message.role === 'system' || message.tip === true) {

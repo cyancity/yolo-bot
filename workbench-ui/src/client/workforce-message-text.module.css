@@ -10,9 +10,9 @@
 .messageText > :last-child { margin-bottom: 0; }
 .messageText p { margin: 8px 0; white-space: pre-wrap; }
 .messageText h1, .messageText h2, .messageText h3, .messageText h4, .messageText h5, .messageText h6 { margin: var(--wb-space-6) 0 var(--wb-space-4); font-weight: var(--wb-weight-semibold); line-height: 1.4; }
-.messageText h1 { font-size: 22px; }
-.messageText h2 { font-size: 19px; }
-.messageText h3 { font-size: 17px; }
+.messageText h1 { font-size: 18px; }
+.messageText h2 { font-size: 16px; }
+.messageText h3 { font-size: 15px; }
 .messageText h4 { font-size: 15px; }
 .messageText h5, .messageText h6 { font-size: 14px; }
 .messageText ul, .messageText ol { margin: 8px 0; padding-inline-start: 24px; }

@@ -16,6 +16,10 @@ description: 数字员工执行任务时选择现有工具、读取真实输入�
 | skill/shell 已生成成果文件 | `wb_save_deliverable { name, path }`，path 相对当前工具业务工作目录（如 `output/报告.md`）：受限员工为独立 W，其他会话为原生 cwd，以宿主工作目录说明和真实回执为准；工具读取并归档完整正文。文件须位于该目录内、不是符号链接，UTF-8文本不超过32MiB；content 与 path 二选一，不传其他员工的临时路径，不存“见本地文件”的引用壳 |
 | 核对草稿 | `wb_read_deliverable` 读取实际版本；charCount 是包含标点、数字、字母、排除空白的实际字符数，不能再加估计标点或以“约”改变工具数值 |
 | 数值核算 | `wb_check_arithmetic { operation, operands }`；稿中出现比值、百分比、合计、差额、增减率必须先调用核对算式，operands 可带口径标签。返回算式与结果；只核算式，不核来源、去重、口径与因果。引用结果标「已算式核对，口径未认证」，未调用就标「未经工具核算」，不得口头声称已核对 |
+| Word/Excel/PPT 文档 | 工具列表有 `wb_office_read` 时，先 `wb_read_material { stage: true }` 取 localPath 再读；要交 Word/Excel 用 `wb_office_write { path, format, content }` 写出后回读核对，再 `present`；pptx 只读，不支持 PDF，详见 office-documents |
+| 需要图片 | 有 `wb_generate_image` 时生成，图片在工作目录 images/ 下，用 `present` 呈报；没有该工具说明本员工未开启生图，不用文字描述冒充图片 |
+| 需要最新信息 | 有 `web_search` 时检索，结论附来源链接与日期；没有该工具说明无法联网，不凭记忆编造近期事实 |
+| 开发、改代码 | 有 `wb_run_agent` 时把完整需求、约束和验收交给外部 Agent 执行，等真实结果后核对；进程退出不等于成功，如实报告未完成项 |
 | 发布最终成果 | 负责人核对后 `wb_publish_deliverable { name, version }` 发员工原版本，不再复制保存；子员工不发布，直达员工只能发布自己保存的版本 |
 | 用户明确要长期记住 | 有权限才 `wb_remember { scope, text, employeeId? }`；全局偏好用global，频道规则用channel（工具定位本频道），对某员工的交代用employee（employeeId缺省自己，负责人可指定员工）。仅 remembered: true 后才说已记入；密钥/口令不可存，子员工交负责人处理。普通工作流步骤不自动记忆，不能以任务文件代替长期记忆 |
 | 用户要新建员工/岗位 | 仅负责人 `wb_create_employee { name, title, persona, skills? }`，名称照用户原话；回执带员工 id 才算建成，之后出现在左侧员工列表并可派工。不用其他建 agent、teammate 的方式代替 |

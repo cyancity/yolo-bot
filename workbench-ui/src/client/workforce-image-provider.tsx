@@ -25,13 +25,13 @@ export function imageReadiness(status: ImageProviderStatus | undefined): ImageRe
   return 'ready'
 }
 
-function providerSummary(provider: ImageProvider): string {
+export function providerSummary(provider: ImageProvider): string {
   if (provider.kind === 'codex') return WF.image.summaryCodex(provider.model)
   if (provider.kind === 'openai') return WF.image.summaryApi(provider.model)
   return WF.image.summaryCommand([provider.command, ...provider.args].join(' '))
 }
 
-/** Shared image service, shown under the MCP servers in the employees page. `openSignal` scrolls here from an employee form. */
+/** Shared image service, opened from the employee list. `openSignal` opens the settings straight from an employee form. */
 export function ImageProviderSection({ source, status, onSaved, openSignal }: {
   readonly source: WorkforceSource
   readonly status: ImageProviderStatus | undefined
@@ -93,11 +93,12 @@ export function ImageProviderSection({ source, status, onSaved, openSignal }: {
 
   return (
     <div ref={root} className={css.empForm} data-workforce-image-provider>
-      <div className={css.empHead}>
-        <h2 className={css.empTitle}>{WF.image.title}</h2>
-        {!editing && <LobeButton autoInsertSpace={false} onClick={() => begin()}>{WF.image.edit}</LobeButton>}
-      </div>
-      {!editing && status !== undefined && <p className={css.empIntro}>{providerSummary(effective)}</p>}
+      {!editing && (
+        <div className={css.resourceHead}>
+          <p className={css.empIntro}>{status !== undefined ? providerSummary(effective) : ''}</p>
+          <LobeButton onClick={() => begin()}>{WF.image.edit}</LobeButton>
+        </div>
+      )}
       {!editing && <ImageSetupGuide readiness={readiness} busy={busy} onUseApi={() => begin('openai')} onRecheck={() => void run(() => source.imageProvider(true))} />}
       {editing && (
         <div className={cx(css.empFormGrid, css.imageFormGrid)}>
@@ -213,29 +214,6 @@ export function ImageGenerationField({ value, onChange, status, onConfigure }: {
           <button type="button" className={css.imageLink} onClick={onConfigure}>{readiness === 'ready' ? WF.image.change : WF.image.configure}</button>
         </span>
       )}
-    </div>
-  )
-}
-
-export interface RolePreset {
-  readonly name: string
-  readonly title: string
-  readonly persona: string
-  readonly imageGeneration: boolean
-}
-
-export function RolePresets({ onPick }: { readonly onPick: (preset: RolePreset) => void }) {
-  const presets: RolePreset[] = [
-    { name: WF.image.designer, title: WF.image.designerTitle, persona: WF.image.designerPersona, imageGeneration: true },
-  ]
-  return (
-    <div className={css.empField}>
-      <label>{WF.image.presets}</label>
-      <div className={css.skillPickList}>
-        {presets.map(preset => (
-          <button key={preset.name} type="button" className={css.skillPick} onClick={() => onPick(preset)}>＋ {preset.name}</button>
-        ))}
-      </div>
     </div>
   )
 }

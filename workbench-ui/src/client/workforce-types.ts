@@ -22,6 +22,8 @@ export interface Employee {
   readonly model?: string
   readonly toolAccess?: 'office' | 'development'
   readonly imageGeneration?: boolean
+  readonly webSearch?: boolean
+  readonly agent?: EmployeeAgent
   /** 启用的 MCP 服务器 id；缺省 = 全部已启用服务器，[] = 不启用。 */
   readonly mcpServers?: readonly string[]
   readonly isLeader: boolean
@@ -38,11 +40,19 @@ export type EmployeeInput = {
   readonly model?: string
   readonly toolAccess?: 'office' | 'development'
   readonly imageGeneration?: boolean
+  readonly webSearch?: boolean
+  readonly agent?: EmployeeAgent | null
   /** 服务器 id 列表限定可用集合；null 恢复「全部已启用服务器」。 */
   readonly mcpServers?: readonly string[] | null
   readonly isLeader?: boolean
   readonly avatarColor?: string | undefined
 }
+
+export type AgentCli = 'kimi' | 'codex' | 'claude' | 'opencode'
+/** 员工的外部 Agent：开发任务交给本机这个 CLI 在项目目录里执行。 */
+export interface EmployeeAgent { readonly cli: AgentCli; readonly model?: string }
+export interface AgentCliStatus { readonly id: AgentCli; readonly label: string; readonly installed: boolean }
+export interface WebSearchStatus { readonly configured: boolean }
 
 /** 生图服务；Key 只存在宿主凭据服务里，这里只有 Key 名。 */
 export type ImageProvider =

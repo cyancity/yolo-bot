@@ -5,6 +5,7 @@ import { Button } from 'antd'
 import { IconButton, Menu } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
+import { approvalToolLabel } from './workforce-agent-run.ts'
 
 /** One option of a question item (mirrors host WorkforceQuestionOption). */
 export interface QuestionCardOption {
@@ -133,7 +134,7 @@ export function WorkforceQuestionCard({ question, approval, onAnswer }: Workforc
     return (
       <div className={css.card} data-ask-card="approval">
         <div className={css.title}>{inactive ? WF.questions.requestEnded : WF.questions.requestApproval}</div>
-        <div className={css.questionText}>{WF.questions.needsApproval(approval.toolName)}</div>
+        <div className={css.questionText}>{WF.questions.needsApproval(approvalToolLabel(approval.toolName))}</div>
         {approval.displayReason ? <div className={css.detail}>{approval.displayReason}</div> : null}
         {/* 原生 reason 是英文前缀 + 同一段理由，有本地化 displayReason 时不重复显示 */}
         {approval.reason && !approval.displayReason ? <div className={css.detail}>{approval.reason}</div> : null}
