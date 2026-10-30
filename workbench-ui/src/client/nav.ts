@@ -20,10 +20,16 @@ export const CORE_CHANNELS_PAGE = 'workbench.channels'
 export const CORE_CANVAS_PAGE = 'workbench.canvas'
 export const CORE_EMPLOYEES_PAGE = 'workbench.employees'
 
+/** A page with unsaved edits holds navigation back: return true to stop the switch and ask the user first. */
+export type LeaveGuard = (next: WorkbenchView) => boolean
+let leaveGuard: LeaveGuard | undefined
+export function setLeaveGuard(guard: LeaveGuard | undefined): void { leaveGuard = guard }
+
 export function createWorkbenchNavStore(): EngineStoreHandle<WorkbenchNavState, WorkbenchNavActions> {
   return defineStore({
     init: (): WorkbenchNavState => ({ view: { kind: 'home' } }),
     actions: { setView: (draft, view: WorkbenchView) => {
+      if (leaveGuard?.(view)) return
       if (view.kind === 'home' || view.kind === 'channel' || view.kind === 'dm') draft.lastConversationView = view
       draft.view = view
     } },

@@ -22,43 +22,14 @@ import { AvatarColorField } from './workforce-avatar-color-field.tsx'
 import { EmployeeList } from './workforce-employee-list.tsx'
 import { EmployeeResourceDrawer, EmployeeResourceLinks, type EmployeeResource } from './workforce-employee-resources.tsx'
 import { EmployeeSkillsField } from './workforce-employee-skills.tsx'
-
-type EmployeeForm = {
-  readonly name: string
-  readonly title: string
-  readonly persona: string
-  readonly model: string
-  readonly toolAccess: 'office' | 'development'
-  readonly skills: readonly string[]
-  readonly imageGeneration: boolean
-  readonly webSearch: boolean
-  readonly agent: EmployeeAgent | null
-  readonly lead: boolean
-  readonly avatarColor: string
-  readonly mcpLimited: boolean
-  readonly mcpIds: readonly string[]
-}
-
-const formOf = (employee: Employee | 'new' | undefined): EmployeeForm => employee !== undefined && employee !== 'new'
-  ? {
-      name: employee.name, title: employee.title, persona: employee.persona, model: employee.model ?? '', toolAccess: employee.toolAccess ?? 'office',
-      skills: employee.skills ? [...employee.skills] : [], imageGeneration: employee.imageGeneration === true, webSearch: employee.webSearch === true,
-      agent: employee.agent ?? null, lead: employee.isLeader, avatarColor: employee.avatarColor ?? '',
-      mcpLimited: employee.mcpServers !== undefined, mcpIds: employee.mcpServers ?? [],
-    }
-  : { name: '', title: '', persona: '', model: '', toolAccess: 'office', skills: [], imageGeneration: false, webSearch: false, agent: null, lead: false, avatarColor: '', mcpLimited: false, mcpIds: [] }
-
-/** Compared against the loaded employee to tell whether the form has unsaved edits. */
-const formKey = (form: EmployeeForm): string => JSON.stringify([
-  form.name, form.title, form.persona, form.model, form.toolAccess, form.skills, form.imageGeneration, form.webSearch,
-  form.agent, form.lead, form.avatarColor, form.mcpLimited, form.mcpIds,
-])
+import { formKey, formOf, useLeaveGuard, type EmployeeForm } from './workforce-employee-form.ts'
 
 /** 员工管理页：左侧员工与共享设置，右侧新建/编辑表单；有未保存的修改时，切换前先确认。 */
-export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
+export function EmployeesPage({ source, snapshot, onOpenMemorySource, navigate }: {
   readonly source: WorkforceSource
   readonly snapshot: WorkforceSnapshot
   readonly onOpenMemorySource?: MemorySourceNavigation | undefined
+  readonly navigate: (view: WorkbenchView) => void
 }) {
   const [selectedId, setSelectedId] = useState<string | 'new'>('new')
   const [name, setName] = useState('')
@@ -75,7 +46,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [mcpIds, setMcpIds] = useState<readonly string[]>([])
   const [presetId, setPresetId] = useState<RolePresetId | undefined>()
   const [baseline, setBaseline] = useState(() => formKey(formOf('new')))
-  const [pendingSelect, setPendingSelect] = useState<Employee | 'new' | undefined>()
+  const [pending, setPending] = useState<{ readonly select: Employee | 'new' } | { readonly leave: WorkbenchView } | undefined>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [deleting, setDeleting] = useState<Employee | undefined>()
@@ -113,9 +84,11 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   }
   const requestSelect = (target: Employee | 'new'): void => {
     if (target !== 'new' && target.id === selectedId) return
-    if (dirty) setPendingSelect(target)
+    if (dirty) setPending({ select: target })
     else selectEmployee(target)
   }
+
+  const leave = useLeaveGuard(dirty, next => setPending({ leave: next }), navigate)
 
   const initializedRef = useRef(false)
   useEffect(() => {
@@ -365,12 +338,12 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
           </Dialog>
         )}
 
-        {pendingSelect !== undefined && (
-          <Dialog title={WF.workspace.discardTitle} closeLabel={WF.workspace.keepEditing} onClose={() => setPendingSelect(undefined)}>
+        {pending !== undefined && (
+          <Dialog title={WF.workspace.discardTitle} closeLabel={WF.workspace.keepEditing} onClose={() => setPending(undefined)}>
             <p className={css.empDeletePrompt}>{WF.workspace.discardBody(name.trim() || WF.workspace.newEmployee)}</p>
             <div className={css.empDialogActions}>
-              <LobeButton onClick={() => setPendingSelect(undefined)}>{WF.workspace.keepEditing}</LobeButton>
-              <LobeButton type="primary" danger onClick={() => { const target = pendingSelect; setPendingSelect(undefined); selectEmployee(target) }}>
+              <LobeButton onClick={() => setPending(undefined)}>{WF.workspace.keepEditing}</LobeButton>
+              <LobeButton type="primary" danger onClick={() => { setPending(undefined); if ('leave' in pending) leave(pending.leave); else selectEmployee(pending.select) }}>
                 {WF.workspace.discardConfirm}
               </LobeButton>
             </div>
@@ -529,7 +502,7 @@ export function WorkforceWorkspace({ source, view, setView, onNavigation }: {
             </div>
           </div>
         </div>
-        <EmployeesPage source={source} snapshot={snapshot} onOpenMemorySource={openMemorySource} />
+        <EmployeesPage source={source} snapshot={snapshot} onOpenMemorySource={openMemorySource} navigate={setView} />
       </div>
     )
   }
