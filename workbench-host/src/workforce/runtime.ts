@@ -406,6 +406,8 @@ function webSearchResultEvent(events: readonly any[], callId: string, indexed: R
   if (hit) return hit
   return events.find(candidate => candidate?.type === 'tool/result' && candidate.data?.message?.source?.callId === callId)
 }
+/** 审批文案里的工具名：工作台自有工具换成用户看得懂的叫法。 */
+const approvalToolLabel = (name: string | undefined): string => name === 'wb_run_agent' ? '外部 Agent' : name ?? '工具'
 /** Markdown 链接目标：`path`、`<path>` 或带标题的 `path "title"` / `path 'title'`；路径可含空格与中文。 */
 function parseMarkdownLinkTarget(inner: string): string | undefined {
   const trimmed = inner.trim()
@@ -2761,7 +2763,7 @@ export class WorkforceRuntime {
         if (entry.callId !== undefined) renderedAsks.add(entry.callId)
         if (entry.kind === 'approval') {
           const detail = approvalDetail(call?.data?.arguments)
-          messages.push({ ...card, role: 'agent', text: `「${entry.toolName}」请求你的批准`, approval: { requestId: entry.requestId, toolName: entry.toolName ?? '工具', ...(entry.callId ? { callId: entry.callId } : {}), ...(entry.reason ? { reason: entry.reason } : {}), ...(entry.displayReason ? { displayReason: entry.displayReason } : {}), ...(detail ? { detail } : {}), ...(entry.answered !== undefined ? { answered: entry.answered as 'allowed-once' | 'rejected' } : {}), status: entry.answered !== undefined ? 'answered' : stopped ? 'inactive' : 'active' } })
+          messages.push({ ...card, role: 'agent', text: `「${approvalToolLabel(entry.toolName)}」请求你的批准`, approval: { requestId: entry.requestId, toolName: entry.toolName ?? '工具', ...(entry.callId ? { callId: entry.callId } : {}), ...(entry.reason ? { reason: entry.reason } : {}), ...(entry.displayReason ? { displayReason: entry.displayReason } : {}), ...(detail ? { detail } : {}), ...(entry.answered !== undefined ? { answered: entry.answered as 'allowed-once' | 'rejected' } : {}), status: entry.answered !== undefined ? 'answered' : stopped ? 'inactive' : 'active' } })
         } else {
           const items = entry.questions ?? []
           messages.push({ ...card, role: 'agent', text: items.map(item => item.question).join('\n'), question: { requestId: aligned ? `cont-${entry.callId}` : entry.requestId, ...(entry.callId ? { callId: entry.callId } : {}), ...(entry.timed ? { timed: true } : {}), items, ...(entry.answered !== undefined ? { answered: entry.answered as WorkforceQuestionAnswerItem[] } : {}), status: entry.answered !== undefined ? 'answered' : stopped ? 'inactive' : 'active' } })
@@ -2819,7 +2821,7 @@ export class WorkforceRuntime {
         const card = { id, threadId, ts: call ? new Date(call.time).toISOString() : stopped.at, senderId: employeeId, senderName, ...(thread.taskId ? { taskId: thread.taskId } : {}) }
         if (stopped.kind === 'approval') {
           const detail = approvalDetail(call?.data?.arguments)
-          messages.push({ ...card, role: 'agent', text: `「${stopped.toolName ?? '工具'}」请求你的批准`, approval: { requestId, toolName: stopped.toolName ?? '工具', ...(stopped.callId ? { callId: stopped.callId } : {}), ...(stopped.reason ? { reason: stopped.reason } : {}), ...(stopped.displayReason ? { displayReason: stopped.displayReason } : {}), ...(detail ? { detail } : {}), status: 'inactive' } })
+          messages.push({ ...card, role: 'agent', text: `「${approvalToolLabel(stopped.toolName)}」请求你的批准`, approval: { requestId, toolName: stopped.toolName ?? '工具', ...(stopped.callId ? { callId: stopped.callId } : {}), ...(stopped.reason ? { reason: stopped.reason } : {}), ...(stopped.displayReason ? { displayReason: stopped.displayReason } : {}), ...(detail ? { detail } : {}), status: 'inactive' } })
         } else {
           // 无问题内容的问题记录不渲染（也不占位，避免遮蔽封存扫描对同 call 的证据渲染）。
           if (!stopped.questions?.length) continue
@@ -2908,6 +2910,7 @@ export class WorkforceRuntime {
     if (binding.workspaceMigration) messages.push({ id: `workspace-migration-${threadId}`, threadId, ts: binding.workspaceMigration.at, role: 'system', senderId: 'system', senderName: '系统', ...(thread.taskId ? { taskId: thread.taskId } : {}), text: '旧共享会话已归档；未完成工作已中断，可在线程中继续' })
     // 派工顺序：负责人派工后的第一句交代在前，被派员工这次的回复紧随其后，负责人之后的核对与汇总再往后。
     // 子会话与负责人并行，子会话正文的落盘时间可能晚于负责人引用它的汇总，不能按时间戳排。
+    // 员工的审批与提问卡（ask-*）跟着它的会话消息一起搬，否则会落在员工最终回复之后。
     const delegateCalls = messages
       .filter(item => item.senderId === binding.ownerId && item.tool?.name === 'wb_delegate_employee' && item.turnId !== undefined)
       .map(call => {
@@ -2925,7 +2928,7 @@ export class WorkforceRuntime {
       const until = delegateCalls.slice(index + 1).find(entry => entry.employeeId === employeeId)?.call.ts
       const sessions = [binding.children[employeeId], ...(binding.archivedChildren ?? []).filter(item => item.employeeId === employeeId).map(item => item.sessionId)]
       const moved = messages
-        .filter(item => item.role === 'agent' && item.senderId === employeeId && sessions.some(id => item.id.startsWith(`${id}:`)) && item.ts > call.ts && (until === undefined || item.ts < until))
+        .filter(item => item.role === 'agent' && item.senderId === employeeId && (sessions.some(id => item.id.startsWith(`${id}:`)) || item.id.startsWith('ask-')) && item.ts > call.ts && (until === undefined || item.ts < until))
         .sort((a, b) => a.ts.localeCompare(b.ts) || a.id.localeCompare(b.id))
       const after = Date.parse(anchor)
       moved.forEach((item, offset) => { item.ts = new Date(after + offset + 1).toISOString() })

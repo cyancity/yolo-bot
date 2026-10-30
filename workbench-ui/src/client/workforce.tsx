@@ -184,6 +184,11 @@ function humanizeToolActivity(toolName: string): string {
     case 'wb_recall': return WF.toolActivity.recall
     case 'wb_check_arithmetic': return WF.toolActivity.checkArithmetic
     case 'web_search': return WF.toolActivity.webSearch
+    case 'web_fetch': return WF.toolActivity.webFetch
+    case 'wb_generate_image': return WF.toolActivity.generateImage
+    case 'wb_office_read': return WF.toolActivity.officeRead
+    case 'wb_office_write': return WF.toolActivity.officeWrite
+    case 'wb_run_agent': return WF.toolActivity.runAgent
     default: return WF.skeleton.tool(toolName)
   }
 }
@@ -1095,7 +1100,7 @@ const MessageRow = memo(function MessageRow({
   const canAct = message.role === 'agent' && message.tool === undefined && message.intermediate !== true
     && message.question === undefined && message.approval === undefined && message.text.trim() !== ''
   // D2：审批/提问卡的行没有文字正文——msgBubble 画空框，正文容器整体不渲染。
-  const hasText = message.text.trim() !== ''
+  const hasText = message.text.trim() !== '' && message.question === undefined && message.approval === undefined
   // 成果卡固定在产出它的回复上，不随任务页脚移到后续消息或进行中的行。
   const deliverableNames = useMemo(() => messageDeliverableNames(message), [message])
   const deliverableTask = deliverableNames.size > 0 ? tasks.find(item => item.threadId === message.threadId) : undefined

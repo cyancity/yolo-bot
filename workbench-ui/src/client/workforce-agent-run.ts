@@ -1,6 +1,11 @@
 import type { WorkforceMessage } from './workforce-types.ts'
 import { WF } from './workforce-strings.ts'
 
+/** Approval cards name the workbench agent tool the way users know it. */
+export function approvalToolLabel(toolName: string): string {
+  return toolName === 'wb_run_agent' ? WF.roles.externalAgent : toolName
+}
+
 /** Shows an external agent run as a status line instead of raw tool output. */
 export function agentRunMessage(message: WorkforceMessage): WorkforceMessage {
   const { tool, ...rest } = message

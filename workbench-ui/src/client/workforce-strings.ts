@@ -845,6 +845,11 @@ const WF_zh = {
   },
   toolActivity: {
     delegate: '正在派工…',
+    webFetch: '正在读取网页…',
+    generateImage: '正在生成图片…',
+    officeRead: '正在读取文档…',
+    officeWrite: '正在生成文档…',
+    runAgent: '外部 Agent 正在开发…',
     createEmployee: '正在创建员工…',
     readMaterial: '正在读取材料…',
     readDeliverable: '正在读取成果…',
@@ -1762,6 +1767,11 @@ const WF_en = {
   },
   toolActivity: {
     delegate: 'Delegating task…',
+    webFetch: 'Reading web page…',
+    generateImage: 'Generating image…',
+    officeRead: 'Reading document…',
+    officeWrite: 'Writing document…',
+    runAgent: 'External agent is developing…',
     createEmployee: 'Creating employee…',
     readMaterial: 'Reading material…',
     readDeliverable: 'Reading deliverable…',
