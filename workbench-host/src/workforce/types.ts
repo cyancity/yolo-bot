@@ -14,6 +14,7 @@ export interface WorkforceEmployee {
   skills: string[]
   /** Optional model override resolved per request through the host llm config. */
   model?: string
+  toolAccess?: import('./employee-access.ts').EmployeeAccess
   /** Enabled MCP server ids; undefined means every enabled server, [] means none. */
   mcpServers?: string[]
   isLeader: boolean
@@ -57,6 +58,7 @@ export interface WorkforceChannelGroup {
 export interface WorkforceChannel {
   id: string
   name: string
+  projectDirectory?: string
   /** 分组（Discord 式）侧栏的显示名覆盖；缺省回落到 name。 */
   groupName?: string
   /** 群聊（微信式）会话列表的标题；缺省回落到成员名串再到 name。 */

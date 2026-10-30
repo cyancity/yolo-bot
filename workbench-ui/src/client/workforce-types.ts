@@ -20,6 +20,7 @@ export interface Employee {
   readonly skills: readonly string[]
   /** 可选模型覆盖。 */
   readonly model?: string
+  readonly toolAccess?: 'office' | 'development'
   /** 启用的 MCP 服务器 id；缺省 = 全部已启用服务器，[] = 不启用。 */
   readonly mcpServers?: readonly string[]
   readonly isLeader: boolean
@@ -34,6 +35,7 @@ export type EmployeeInput = {
   readonly persona: string
   readonly skills?: readonly string[]
   readonly model?: string
+  readonly toolAccess?: 'office' | 'development'
   /** 服务器 id 列表限定可用集合；null 恢复「全部已启用服务器」。 */
   readonly mcpServers?: readonly string[] | null
   readonly isLeader?: boolean
