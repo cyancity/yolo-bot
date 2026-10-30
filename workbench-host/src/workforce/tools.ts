@@ -3,7 +3,7 @@ import { toolValue, renderToolJson } from '../tool-output.ts'
 import { requiredText } from './store.ts'
 import { checkArithmetic, ARITHMETIC_OPERATIONS } from './arithmetic.ts'
 import type { WorkforceRuntime } from './runtime.ts'
-import { WorkforceError } from './types.ts'; import { registerKimiTool } from './kimi-runner.ts'
+import { WorkforceError } from './types.ts'; import { registerAgentTool } from './agent-runner.ts'
 import { registerImageTool } from './image-generation.ts'
 
 function requireAgent(exec: { agent?: unknown }): any {
@@ -12,7 +12,7 @@ function requireAgent(exec: { agent?: unknown }): any {
 }
 
 export function registerWorkforceTools(runtime: WorkforceRuntime, ctx: { tools: { register(tool: unknown): unknown } }): void {
-  registerKimiTool(runtime, ctx); registerImageTool(runtime, ctx); const output = { schema: { type: 'object' as const, additionalProperties: true }, render: renderToolJson }
+  registerAgentTool(runtime, ctx); registerImageTool(runtime, ctx); const output = { schema: { type: 'object' as const, additionalProperties: true }, render: renderToolJson }
   ctx.tools.register(defineTool({
     name: 'wb_remember',
     description: '仅在用户明确要求记住、以后都或长期遵守时，保存用户确认过的偏好与事实。scope 为 global 全局偏好、channel 本频道规则或 employee 对员工的交代；员工缺省为自己，负责人可指定 employeeId。禁止保存密钥、口令、Bearer 凭据或私钥等敏感内容；拒存后请用户删掉敏感部分再存，不得声称已记住。成功 remembered=true 才能宣称已记入记忆；不要自动保存模型推断。派工子员工不可用。',

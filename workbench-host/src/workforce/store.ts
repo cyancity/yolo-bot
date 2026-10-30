@@ -1,3 +1,4 @@
+import { parseEmployeeAgent } from './agent-config.ts'
 import { createHash, randomUUID } from 'node:crypto'
 import { constants } from 'node:fs'
 import { copyFile, link, lstat, mkdir, open, readFile, realpath, rename, stat, unlink, writeFile } from 'node:fs/promises'
@@ -21,6 +22,8 @@ export interface Binding {
   rootId: string
   ownerId: string
   children: Record<string, string>
+  /** External agent configuration mounted into each continuable employee session. */
+  childAgentMeta?: Record<string, string>
   /** Independent business roots; older session-v1 roots retain their persisted native cwd. */
   workspaceLayout?: 'session-v1' | 'scoped-v2'; projectDirectory?: string
   workspaceSessions?: Record<string, {
@@ -427,6 +430,8 @@ export class WorkforceStore {
       const avatarColor = input.avatarColor === undefined ? previous?.avatarColor : input.avatarColor
       if (typeof avatarColor === 'string' && avatarColor.trim()) item.avatarColor = avatarColor.trim()
       if (input.imageGeneration === undefined ? previous?.imageGeneration : input.imageGeneration === true) item.imageGeneration = true
+      const agent = input.agent === undefined ? previous?.agent : parseEmployeeAgent(input.agent)
+      if (agent) item.agent = { ...agent }
       const mcpServers = input.mcpServers === undefined ? previous?.mcpServers : input.mcpServers
       if (mcpServers === null) delete item.mcpServers
       else if (mcpServers !== undefined) {
@@ -542,6 +547,7 @@ export class WorkforceStore {
         if (seed.model) item.model = seed.model
         if (seed.avatarColor) item.avatarColor = seed.avatarColor
         if (seed.imageGeneration) item.imageGeneration = true
+        if (seed.agent) item.agent = { ...seed.agent }
         state.employees.push(item)
         created.push(options?.ids ? item.id : seed.name)
       }

@@ -1,6 +1,7 @@
 /** Digital workforce data model: employees, channels, threads, tasks, materials. */
 
 export type EmployeeRole = 'leader' | 'analyst' | 'writer' | 'custom'
+export type AgentCli = 'kimi' | 'codex' | 'claude' | 'opencode'
 
 /** A workforce member. `persona` is appended as a system-prompt section; `skills` is a preference list (not an isolation guarantee). */
 export interface WorkforceEmployee {
@@ -17,6 +18,7 @@ export interface WorkforceEmployee {
   toolAccess?: import('./employee-access.ts').EmployeeAccess
   /** Grants wb_generate_image through the shared image provider. */
   imageGeneration?: boolean
+  agent?: { cli: AgentCli; model?: string }
   /** Enabled MCP server ids; undefined means every enabled server, [] means none. */
   mcpServers?: string[]
   isLeader: boolean
