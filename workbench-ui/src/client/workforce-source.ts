@@ -727,8 +727,8 @@ export class WorkforceSource {
     this.refresh()
   }
 
-  imageProvider(): Promise<ImageProviderStatus> {
-    return this.api.imageProvider()
+  imageProvider(refresh = false): Promise<ImageProviderStatus> {
+    return this.api.imageProvider(refresh)
   }
 
   saveImageProvider(provider: ImageProvider | null): Promise<ImageProviderStatus> {

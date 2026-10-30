@@ -48,6 +48,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [notice, setNotice] = useState<string | undefined>()
   const { state: modelsState, selectableModels } = useWorkforceModels(source.models)
   const [imageStatus, setImageStatus] = useImageProvider(source, resourcesVersion)
+  const [imageSetupSignal, setImageSetupSignal] = useState(0)
 
   const currentEmployee = selectedId === 'new'
     ? 'new'
@@ -221,7 +222,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             source={source}
           />
 
-          <ImageProviderSection source={source} status={imageStatus} onSaved={setImageStatus} />
+          <ImageProviderSection source={source} status={imageStatus} onSaved={setImageStatus} openSignal={imageSetupSignal} />
 
           {templates !== undefined && templates.length > 0 && (
             <TemplatesSection
@@ -374,7 +375,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
               </div>
 
               {!lead && <EmployeeAccess value={toolAccess} onChange={setToolAccess} />}
-              <ImageGenerationField value={imageGeneration} onChange={setImageGeneration} configured={imageStatus?.provider != null} />
+              <ImageGenerationField value={imageGeneration} onChange={setImageGeneration} status={imageStatus} onConfigure={() => setImageSetupSignal(n => n + 1)} />
               <div className={css.empField}>
                 <label>{WF.workspace.skillsConfigLabel(skills.length)}</label>
                 <div className={css.skillChipsContainer}>

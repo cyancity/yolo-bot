@@ -12,7 +12,7 @@ import type { SkillsService } from '../skills.ts'
 import { MAX_MATERIAL_BYTES, MATERIAL_SIZE_ERROR, attachmentDisposition, isActiveMaterial, isInstallerName, isPreviewableMime, materialMime } from './material-files.ts'
 import { collectWorkforceDiagnostics } from './diagnostics.ts'
 import { createWorkforceBackup } from './backup.ts'
-import { parseImageProvider } from './image-generation.ts'
+import { DEFAULT_IMAGE_PROVIDER, detectCodex, parseImageProvider, type Subprocess } from './image-generation.ts'
 
 /** Explicit core handler dependencies; optional native surfaces retain standalone test seams. */
 export interface WorkforceHandlerDeps {
@@ -27,6 +27,7 @@ export interface WorkforceHandlerDeps {
   /** $DSH_HOME/skills：安装根与备份复制的来源目录。 */
   userSkillsRoot?: string
   credentials?: () => { describe(ref: string): Promise<unknown>; set(ref: string, value: string): Promise<void>; unset(ref: string): Promise<void> } | undefined
+  subprocess?: () => Subprocess | undefined
 }
 
 interface SkillListLike extends SkillsService {
@@ -291,12 +292,14 @@ export function createWorkforceHandler(runtime: WorkforceRuntime, admit: AdmitFn
       }
       if (seg[0] === 'image-provider') {
         const credentials = deps.credentials?.()
-        const status = async () => {
+        const status = async (refresh = false) => {
           const provider = (await store.read()).imageProvider
-          const info = provider?.kind === 'openai' && credentials ? await credentials.describe(provider.keyRef).catch(() => undefined) : undefined
-          return { provider: provider ?? null, keyConfigured: (info as { configured?: boolean } | undefined)?.configured === true }
+          const effective = provider ?? DEFAULT_IMAGE_PROVIDER
+          const info = effective.kind === 'openai' && credentials ? await credentials.describe(effective.keyRef).catch(() => undefined) : undefined
+          const codex = await detectCodex(deps.subprocess?.(), new AbortController().signal, refresh)
+          return { provider: provider ?? null, effective, keyConfigured: (info as { configured?: boolean } | undefined)?.configured === true, codex }
         }
-        if (seg.length === 1 && method === 'GET') return ok(res, await status())
+        if (seg.length === 1 && method === 'GET') return ok(res, await status(url.searchParams.get('refresh') === '1'))
         if (seg.length === 1 && method === 'PUT') { await store.saveImageProvider(parseImageProvider(input.provider)); return ok(res, await status()) }
         if (seg.length === 2 && seg[1] === 'key' && (method === 'PUT' || method === 'DELETE')) {
           const provider = (await store.read()).imageProvider

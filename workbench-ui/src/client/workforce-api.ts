@@ -424,8 +424,9 @@ export class WorkforceApi {
     return this.call(`/workforce/mcp-servers/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
-  imageProvider(): Promise<ImageProviderStatus> {
-    return this.call('/workforce/image-provider', { cache: 'no-store' })
+  /** refresh 跳过宿主对 Codex 安装与登录状态的短缓存。 */
+  imageProvider(refresh = false): Promise<ImageProviderStatus> {
+    return this.call(`/workforce/image-provider${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' })
   }
 
   saveImageProvider(provider: ImageProvider | null): Promise<ImageProviderStatus> {

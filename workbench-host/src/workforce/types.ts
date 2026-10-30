@@ -32,6 +32,7 @@ export type WorkforceMcpValue =
 
 /** Shared image provider. The API key lives in the host credentials service under keyRef. */
 export type WorkforceImageProvider =
+  | { kind: 'codex'; model: string }
   | { kind: 'openai'; baseUrl: string; model: string; keyRef: string }
   | { kind: 'command'; command: string; args: string[]; env?: Record<string, string> }
 
