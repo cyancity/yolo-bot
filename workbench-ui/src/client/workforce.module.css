@@ -1257,18 +1257,6 @@ div.msgNoticeLine { cursor: default; }
   color: var(--wb-on-accent);
 }
 
-.customSkillRow {
-  display: flex;
-  align-items: center;
-  gap: var(--wb-space-4);
-  margin-top: var(--wb-space-4);
-}
-
-.customSkillInput {
-  flex: 1;
-  min-width: 0;
-}
-
 .skillLibraryWrap {
   display: flex;
   flex-direction: column;
@@ -1276,16 +1264,10 @@ div.msgNoticeLine { cursor: default; }
   margin-top: var(--wb-space-5);
 }
 
-.skillLibraryTitle {
-  font-size: var(--wb-type-caption-size);
-  font-weight: 600;
-  color: var(--wb-fg);
-}
-
 .skillPickActive {
-  background: var(--wb-accent) !important;
-  color: var(--wb-on-accent);
-  border-color: var(--wb-accent) !important;
+  background: var(--wb-accent-soft) !important;
+  color: var(--wb-fg);
+  border-color: color-mix(in srgb, var(--wb-accent) 40%, transparent) !important;
 }
 
 .empFormError { color: var(--wb-danger); font-size: var(--wb-type-caption-size); }
