@@ -30,7 +30,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [persona, setPersona] = useState('')
   const [model, setModel] = useState(''); const [toolAccess, setToolAccess] = useState<'office' | 'development'>('office')
   const [skills, setSkills] = useState<string[]>([])
-  const [customSkillInput, setCustomSkillInput] = useState('')
+  const [skillQuery, setSkillQuery] = useState('')
   const [lead, setLead] = useState(false)
   const [avatarColor, setAvatarColor] = useState('')
   const [busy, setBusy] = useState(false)
@@ -82,12 +82,6 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     return () => { alive = false }
   }, [source, resourcesVersion])
 
-  const addSkill = (skillName: string): void => {
-    const trimmed = skillName.trim()
-    if (!trimmed) return
-    setSkills(prev => prev.includes(trimmed) ? prev : [...prev, trimmed])
-  }
-
   const removeSkill = (skillName: string): void => {
     setSkills(prev => prev.filter(s => s !== skillName))
   }
@@ -97,6 +91,15 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     if (!trimmed) return
     setSkills(prev => prev.includes(trimmed) ? prev.filter(s => s !== trimmed) : [...prev, trimmed])
   }
+
+  const librarySkills = [
+    ...(catalogSkills ?? []).map(skill => ({ ...skill, origin: 'builtin' as const })),
+    ...(userSkills ?? []).filter(skill => !(catalogSkills ?? []).some(item => item.name === skill.name)),
+  ]
+  const query = skillQuery.trim().toLowerCase()
+  const matchedSkills = query
+    ? librarySkills.filter(skill => skill.name.toLowerCase().includes(query) || skill.description.toLowerCase().includes(query))
+    : librarySkills
 
   const save = async (): Promise<void> => {
     if (name.trim() === '') { setError(WF.workspace.nameRequired); return }
@@ -383,67 +386,41 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
                     ))
                   )}
                 </div>
-                <div className={css.customSkillRow}>
-                  <LobeInput
-                    type="block"
-                    className={cx('wb-input', css.customSkillInput)}
-                    placeholder={WF.workspace.customSkillPlaceholder}
-                    value={customSkillInput}
-                    onChange={e => setCustomSkillInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        addSkill(customSkillInput)
-                        setCustomSkillInput('')
-                      }
-                    }}
-                  />
-                  <LobeButton
-                    type="primary"
-                    disabled={!customSkillInput.trim()}
-                    onClick={() => {
-                      addSkill(customSkillInput)
-                      setCustomSkillInput('')
-                    }}
-                  >
-                    {WF.workspace.addBtn}
-                  </LobeButton>
-                </div>
-                {(catalogSkills ?? []).length + (userSkills ?? []).length > 0 && (
+                {librarySkills.length > 0 && (
                   <div className={css.skillLibraryWrap}>
-                    <span className={css.skillLibraryTitle}>{WF.workspace.skillLibraryTitle}</span>
+                    <LobeInput
+                      type="block"
+                      className="wb-input"
+                      placeholder={WF.workspace.skillSearchPlaceholder}
+                      aria-label={WF.workspace.skillSearchPlaceholder}
+                      value={skillQuery}
+                      onChange={e => setSkillQuery(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key !== 'Enter') return
+                        e.preventDefault()
+                        if (matchedSkills.length === 1 && !skills.includes(matchedSkills[0]!.name)) toggleSkill(matchedSkills[0]!.name)
+                      }}
+                    />
                     <div className={css.skillPickList} aria-label={WF.employeesPage.skillPickerLabel}>
-                      {(catalogSkills ?? []).map(skill => {
+                      {matchedSkills.length === 0 && <span className={css.skillEmptyHint}>{WF.workspace.noSkillMatch}</span>}
+                      {matchedSkills.map(skill => {
                         const isAdded = skills.includes(skill.name)
+                        const origin = skill.origin === 'builtin' ? WF.employeesPage.skillOriginBuiltin
+                          : skill.origin === 'workflow' ? WF.employeesPage.skillOriginWorkflow : WF.employeesPage.skillOriginUser
                         return (
                           <button
-                            key={`catalog:${skill.name}`}
+                            key={`${skill.origin}:${skill.name}`}
                             type="button"
                             className={`${css.skillPick} ${isAdded ? css.skillPickActive : ''}`}
-                            title={`${skill.description || skill.name} · ${WF.employeesPage.skillOriginBuiltin}`}
+                            {...(skill.origin === 'builtin' ? {} : { 'data-origin': skill.origin })}
+                            aria-pressed={isAdded}
+                            title={`${skill.description || skill.name} · ${origin}`}
                             onClick={() => toggleSkill(skill.name)}
                           >
                             {isAdded ? `✓ ${skill.name}` : `＋ ${skill.name}`}
                           </button>
                         )
                       })}
-                      {(userSkills ?? [])
-                        .filter(skill => !(catalogSkills ?? []).some(item => item.name === skill.name))
-                        .map(skill => {
-                          const isAdded = skills.includes(skill.name)
-                          return (
-                            <button
-                              key={`user:${skill.name}`}
-                              type="button"
-                              className={`${css.skillPick} ${isAdded ? css.skillPickActive : ''}`}
-                              data-origin={skill.origin}
-                              title={`${skill.description || skill.name} · ${skill.origin === 'workflow' ? WF.employeesPage.skillOriginWorkflow : WF.employeesPage.skillOriginUser}`}
-                              onClick={() => toggleSkill(skill.name)}
-                            >
-                              {isAdded ? `✓ ${skill.name}` : `＋ ${skill.name}`}
-                            </button>
-                          )
-                        })}
                     </div>
                   </div>
                 )}
