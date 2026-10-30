@@ -8,7 +8,7 @@ import { cx, Dialog } from './ui/index.tsx'
 import { Icon } from './ui/icons.tsx'
 import { WF } from './workforce-strings.ts'
 import { DEFAULT_CHANNEL, type WorkbenchView } from './nav.ts'
-import type { Employee, EmployeeInput, McpServer, McpServerInput, SkillSummary, WorkforceSnapshot, WorkforceTemplate, WorkforceUserSkill } from './workforce-types.ts'
+import type { Employee, EmployeeAgent, EmployeeInput, McpServer, McpServerInput, SkillSummary, WorkforceSnapshot, WorkforceTemplate, WorkforceUserSkill } from './workforce-types.ts'
 import type { WorkforceSource } from './workforce-source.ts'
 import { WorkforceMain, type WorkforceSurface } from './workforce.tsx'
 import { WorkforceCanvasView } from './workforce-canvas-view.tsx'
@@ -17,7 +17,8 @@ import { WorkforceAvatar, AVATAR_PALETTES, resolveAvatarPalette } from './workfo
 import { useWorkforcePrefs } from './workforce-prefs.ts'
 import { classifyModelError, useWorkforceModels } from './workforce-models.tsx'
 import { WorkforceMemoryEditor, type MemorySourceNavigation } from './workforce-memory.tsx'; import { EmployeeAccess } from './workforce-employee-access.tsx'
-import { ImageGenerationField, ImageProviderSection, RolePresets, useImageProvider } from './workforce-image-provider.tsx'
+import { ImageGenerationField, ImageProviderSection, useImageProvider } from './workforce-image-provider.tsx'
+import { ExternalAgentField, RolePresets, WebSearchField, rolePresets, useAgentClis, useWebSearchStatus } from './workforce-role-presets.tsx'
 
 /** 员工管理页：列表 + 新建/编辑表单（名字/头衔/职责/模型/skill/负责人）。 */
 export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
@@ -32,6 +33,8 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const [model, setModel] = useState(''); const [toolAccess, setToolAccess] = useState<'office' | 'development'>('office')
   const [skills, setSkills] = useState<string[]>([])
   const [imageGeneration, setImageGeneration] = useState(false)
+  const [webSearch, setWebSearch] = useState(false)
+  const [agent, setAgent] = useState<EmployeeAgent | null>(null)
   const [skillQuery, setSkillQuery] = useState('')
   const [lead, setLead] = useState(false)
   const [avatarColor, setAvatarColor] = useState('')
@@ -49,6 +52,9 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
   const { state: modelsState, selectableModels } = useWorkforceModels(source.models)
   const [imageStatus, setImageStatus] = useImageProvider(source, resourcesVersion)
   const [imageSetupSignal, setImageSetupSignal] = useState(0)
+  const [agentClis, recheckAgentClis] = useAgentClis(source, resourcesVersion)
+  const webSearchStatus = useWebSearchStatus(source, resourcesVersion)
+  const presets = rolePresets(agentClis)
 
   const currentEmployee = selectedId === 'new'
     ? 'new'
@@ -59,12 +65,13 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     if (!employee || employee === 'new') {
       setSelectedId('new')
       setName(''); setTitle(''); setPersona(''); setModel(''); setSkills([]); setLead(false); setAvatarColor('')
-      setMcpLimited(false); setMcpIds([]); setToolAccess('office'); setImageGeneration(false)
+      setMcpLimited(false); setMcpIds([]); setToolAccess('office'); setImageGeneration(false); setWebSearch(false); setAgent(null)
     } else {
       setSelectedId(employee.id)
       setName(employee.name); setTitle(employee.title); setPersona(employee.persona)
       setModel(employee.model ?? ''); setSkills(employee.skills ? [...employee.skills] : []); setLead(employee.isLeader)
       setAvatarColor(employee.avatarColor ?? ''); setToolAccess(employee.toolAccess ?? 'office'); setImageGeneration(employee.imageGeneration === true)
+      setWebSearch(employee.webSearch === true); setAgent(employee.agent ?? null)
       setMcpLimited(employee.mcpServers !== undefined); setMcpIds(employee.mcpServers ?? [])
     }
   }
@@ -112,7 +119,7 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
       title: title.trim(),
       persona: persona.trim(),
       skills,
-      model: model.trim(), toolAccess, imageGeneration,
+      model: model.trim(), toolAccess, imageGeneration, webSearch, agent,
       mcpServers: mcpLimited ? [...mcpIds] : null,
       isLeader: lead,
       avatarColor: avatarColor.trim() || undefined,
@@ -262,9 +269,10 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
             <div className={css.empCardSection}>
               <h4 className={css.empCardSectionTitle}>{WF.workspace.profileSectionTitle}</h4>
               {selectedId === 'new' && (
-                <RolePresets onPick={preset => {
-                  setName(current => current.trim() ? current : preset.name)
-                  setTitle(preset.title); setPersona(preset.persona); setImageGeneration(preset.imageGeneration)
+                <RolePresets presets={presets} onPick={preset => {
+                  setName(current => !current.trim() || presets.some(item => item.name === current.trim()) ? preset.name : current)
+                  setTitle(preset.title); setPersona(preset.persona); setToolAccess(preset.toolAccess); setSkills([...preset.skills])
+                  setImageGeneration(preset.imageGeneration); setWebSearch(preset.webSearch); setAgent(preset.agent)
                 }} />
               )}
               <div className={css.empField}>
@@ -376,6 +384,8 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
 
               {!lead && <EmployeeAccess value={toolAccess} onChange={setToolAccess} />}
               <ImageGenerationField value={imageGeneration} onChange={setImageGeneration} status={imageStatus} onConfigure={() => setImageSetupSignal(n => n + 1)} />
+              {!lead && toolAccess === 'office' && <WebSearchField value={webSearch} onChange={setWebSearch} status={webSearchStatus} />}
+              <ExternalAgentField value={agent} onChange={setAgent} clis={agentClis} onRecheck={recheckAgentClis} />
               <div className={css.empField}>
                 <label>{WF.workspace.skillsConfigLabel(skills.length)}</label>
                 <div className={css.skillChipsContainer}>

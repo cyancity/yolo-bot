@@ -8,7 +8,7 @@ import {
   API_PREFIX, WorkbenchApiError, type FetchLike,
 } from './transport.ts'
 import type {
-  Channel, Employee, EmployeeInput, ImageProvider, ImageProviderStatus, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, WorkforceActivity, WorkforceFile, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceTemplate, WorkforceUserSkill,
+  AgentCliStatus, Channel, Employee, EmployeeInput, ImageProvider, ImageProviderStatus, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, WorkforceActivity, WorkforceFile, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceTemplate, WorkforceUserSkill, WebSearchStatus,
 } from './workforce-types.ts'
 import { MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
 
@@ -422,6 +422,15 @@ export class WorkforceApi {
 
   deleteMcpServer(id: string): Promise<{ deleted: boolean }> {
     return this.call(`/workforce/mcp-servers/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  /** refresh 跳过宿主的 30 秒检测缓存。 */
+  agentClis(refresh = false): Promise<AgentCliStatus[]> {
+    return this.call<{ clis: AgentCliStatus[] }>(`/workforce/agent-clis${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' }).then(data => data.clis)
+  }
+
+  webSearchStatus(): Promise<WebSearchStatus> {
+    return this.call('/workforce/web-search', { cache: 'no-store' })
   }
 
   /** refresh 跳过宿主对 Codex 安装与登录状态的短缓存。 */

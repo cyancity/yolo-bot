@@ -12,7 +12,7 @@ import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import { WorkforceModelsSource } from './workforce-models-source.ts'
 import { WorkforceLiveReplies } from './workforce-live.ts'
 import type { UploadedAttachment } from './workforce-upload.ts'
-import type { ImageProvider, ImageProviderStatus, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, ThreadMessages, ThreadStatus, WorkforceActivity, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceSnapshot, WorkforceTemplate, WorkforceUserSkill, Employee } from './workforce-types.ts'
+import type { AgentCliStatus, WebSearchStatus, ImageProvider, ImageProviderStatus, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, ThreadMessages, ThreadStatus, WorkforceActivity, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceSnapshot, WorkforceTemplate, WorkforceUserSkill, Employee } from './workforce-types.ts'
 
 const EMPTY_MESSAGES: ThreadMessages = { list: [], cursor: undefined, status: 'idle' }
 
@@ -725,6 +725,14 @@ export class WorkforceSource {
   async deleteMcpServer(id: string): Promise<void> {
     await this.api.deleteMcpServer(id)
     this.refresh()
+  }
+
+  agentClis(refresh = false): Promise<AgentCliStatus[]> {
+    return this.api.agentClis(refresh)
+  }
+
+  webSearchStatus(): Promise<WebSearchStatus> {
+    return this.api.webSearchStatus()
   }
 
   imageProvider(refresh = false): Promise<ImageProviderStatus> {

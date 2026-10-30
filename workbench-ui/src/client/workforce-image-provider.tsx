@@ -217,29 +217,6 @@ export function ImageGenerationField({ value, onChange, status, onConfigure }: {
   )
 }
 
-export interface RolePreset {
-  readonly name: string
-  readonly title: string
-  readonly persona: string
-  readonly imageGeneration: boolean
-}
-
-export function RolePresets({ onPick }: { readonly onPick: (preset: RolePreset) => void }) {
-  const presets: RolePreset[] = [
-    { name: WF.image.designer, title: WF.image.designerTitle, persona: WF.image.designerPersona, imageGeneration: true },
-  ]
-  return (
-    <div className={css.empField}>
-      <label>{WF.image.presets}</label>
-      <div className={css.skillPickList}>
-        {presets.map(preset => (
-          <button key={preset.name} type="button" className={css.skillPick} onClick={() => onPick(preset)}>＋ {preset.name}</button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function useImageProvider(source: WorkforceSource, version: number) {
   const [status, setStatus] = useState<ImageProviderStatus | undefined>()
   useEffect(() => {

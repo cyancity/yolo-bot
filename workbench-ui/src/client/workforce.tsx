@@ -26,7 +26,7 @@ import { readRememberedMemory, RememberedMemoryCard, WorkforceMemoryDialog, type
 import { WorkforceMessageText } from './workforce-message-text.tsx'
 import { classifyModelError, parseModelErrorAction } from './workforce-models.tsx'
 import { useWorkforcePrefs, type ReplyGrouping } from './workforce-prefs.ts'
-import { useUserProfile } from './workforce-profile.tsx'; import { ProjectDirectory } from './workforce-project-directory.tsx'; import { kimiMessage } from './workforce-kimi.ts'
+import { useUserProfile } from './workforce-profile.tsx'; import { ProjectDirectory } from './workforce-project-directory.tsx'; import { agentRunMessage } from './workforce-agent-run.ts'
 import { WorkforceQuestionCard } from './workforce-question-card.tsx'
 import { ReplyGroupCard } from './workforce-reply-group.tsx'
 import { ReplyPreviewDialog } from './workforce-reply-preview.tsx'
@@ -501,7 +501,7 @@ function processMessagesForDisplay(
         attach(message)
       continue
     }
-    if (message.tool?.name === 'wb_run_kimi') { flush(); items.push({ kind: 'message', message: kimiMessage(message), notices: [] }); continue }; const remembered = readRememberedMemory(message)
+    if (message.tool?.name === 'wb_run_agent') { flush(); items.push({ kind: 'message', message: agentRunMessage(message), notices: [] }); continue }; const remembered = readRememberedMemory(message)
     if (remembered !== undefined) {
       flush()
       items.push({ kind: 'message', message, notices: [], remembered })
