@@ -60,6 +60,7 @@ export interface EmployeeSeed {
   readonly model?: string
   readonly isLeader?: boolean
   readonly avatarColor?: string
+  readonly imageGeneration?: boolean
 }
 
 export type McpValue =

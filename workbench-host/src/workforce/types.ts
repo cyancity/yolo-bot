@@ -15,6 +15,8 @@ export interface WorkforceEmployee {
   /** Optional model override resolved per request through the host llm config. */
   model?: string
   toolAccess?: import('./employee-access.ts').EmployeeAccess
+  /** Grants wb_generate_image through the shared image provider. */
+  imageGeneration?: boolean
   /** Enabled MCP server ids; undefined means every enabled server, [] means none. */
   mcpServers?: string[]
   isLeader: boolean
@@ -27,6 +29,12 @@ export interface WorkforceEmployee {
 export type WorkforceMcpValue =
   | { kind: 'literal'; value: string }
   | { kind: 'credential'; ref: string }
+
+/** Shared image provider. The API key lives in the host credentials service under keyRef. */
+export type WorkforceImageProvider =
+  | { kind: 'codex'; model: string }
+  | { kind: 'openai'; baseUrl: string; model: string; keyRef: string }
+  | { kind: 'command'; command: string; args: string[]; env?: Record<string, string> }
 
 /** A user-configured MCP server definition; only references to credentials are persisted, never secret values. */
 export interface WorkforceMcpServer {

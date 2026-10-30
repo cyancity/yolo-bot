@@ -21,6 +21,7 @@ export interface Employee {
   /** 可选模型覆盖。 */
   readonly model?: string
   readonly toolAccess?: 'office' | 'development'
+  readonly imageGeneration?: boolean
   /** 启用的 MCP 服务器 id；缺省 = 全部已启用服务器，[] = 不启用。 */
   readonly mcpServers?: readonly string[]
   readonly isLeader: boolean
@@ -36,10 +37,25 @@ export type EmployeeInput = {
   readonly skills?: readonly string[]
   readonly model?: string
   readonly toolAccess?: 'office' | 'development'
+  readonly imageGeneration?: boolean
   /** 服务器 id 列表限定可用集合；null 恢复「全部已启用服务器」。 */
   readonly mcpServers?: readonly string[] | null
   readonly isLeader?: boolean
   readonly avatarColor?: string | undefined
+}
+
+/** 生图服务；Key 只存在宿主凭据服务里，这里只有 Key 名。 */
+export type ImageProvider =
+  | { readonly kind: 'codex'; readonly model: string }
+  | { readonly kind: 'openai'; readonly baseUrl: string; readonly model: string; readonly keyRef: string }
+  | { readonly kind: 'command'; readonly command: string; readonly args: readonly string[]; readonly env?: Readonly<Record<string, string>> }
+
+export interface ImageProviderStatus {
+  /** 已保存的服务；未保存时为 null，生效的是默认的本机 Codex。 */
+  readonly provider: ImageProvider | null
+  readonly effective: ImageProvider
+  readonly keyConfigured: boolean
+  readonly codex: { readonly installed: boolean; readonly loggedIn: boolean }
 }
 
 /** GET /workforce/skills 返回的可调用 skill 摘要（对齐 dsh SkillSummary）。 */

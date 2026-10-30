@@ -100,6 +100,8 @@ export function apply(ctx: Context, config: Config): void {
           return await presets?.acquireScope()
         },
         mcp: employeeMcp,
+        credentials: () => get('credentials') as never,
+        subprocess: () => get('subprocess') as never,
         templates,
         userSkills,
         info: lifecycle,

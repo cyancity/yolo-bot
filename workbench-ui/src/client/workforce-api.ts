@@ -8,7 +8,7 @@ import {
   API_PREFIX, WorkbenchApiError, type FetchLike,
 } from './transport.ts'
 import type {
-  Channel, Employee, EmployeeInput, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, WorkforceActivity, WorkforceFile, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceTemplate, WorkforceUserSkill,
+  Channel, Employee, EmployeeInput, ImageProvider, ImageProviderStatus, McpServer, McpServerInput, SendResult, SkillSummary, Task, Thread, WorkforceActivity, WorkforceFile, WorkforceMessage, WorkforceSession, WorkforceSkillDraft, WorkforceTemplate, WorkforceUserSkill,
 } from './workforce-types.ts'
 import { MAX_ATTACHMENT_BYTES, type UploadedAttachment } from './workforce-upload.ts'
 
@@ -422,6 +422,19 @@ export class WorkforceApi {
 
   deleteMcpServer(id: string): Promise<{ deleted: boolean }> {
     return this.call(`/workforce/mcp-servers/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  }
+
+  /** refresh 跳过宿主对 Codex 安装与登录状态的短缓存。 */
+  imageProvider(refresh = false): Promise<ImageProviderStatus> {
+    return this.call(`/workforce/image-provider${refresh ? '?refresh=1' : ''}`, { cache: 'no-store' })
+  }
+
+  saveImageProvider(provider: ImageProvider | null): Promise<ImageProviderStatus> {
+    return this.call('/workforce/image-provider', { method: 'PUT', body: JSON.stringify({ provider }) })
+  }
+
+  saveImageKey(value: string): Promise<ImageProviderStatus> {
+    return this.call('/workforce/image-provider/key', { method: 'PUT', body: JSON.stringify({ value }) })
   }
 
   /** GET /workforce/templates → {templates}（注册模板提供者的目录与 enabled 标记）。 */
