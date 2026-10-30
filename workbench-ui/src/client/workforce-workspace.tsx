@@ -128,10 +128,11 @@ export function EmployeesPage({ source, snapshot, onOpenMemorySource }: {
     setError(undefined)
     try {
       if (selectedId === 'new') {
-        await source.createEmployee(input)
+        // 建好后切到这名员工，再点保存是修改它，不会重复新建。
+        selectEmployee(await source.createEmployee(input))
         setNotice(WF.workspace.createdSuccess(input.name))
-      } else if (currentEmployee !== 'new' && currentEmployee !== undefined) {
-        await source.updateEmployee(currentEmployee.id, input)
+      } else {
+        await source.updateEmployee(selectedId, input)
         setNotice(WF.workspace.savedSuccess(input.name))
       }
     } catch (e) {

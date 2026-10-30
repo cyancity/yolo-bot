@@ -680,9 +680,10 @@ export class WorkforceSource {
     return thread
   }
 
-  async createEmployee(input: Parameters<WorkforceApi['createEmployee']>[0]): Promise<void> {
-    await this.api.createEmployee(input)
+  async createEmployee(input: Parameters<WorkforceApi['createEmployee']>[0]): Promise<Employee> {
+    const { employee } = await this.api.createEmployee(input)
     this.refresh()
+    return employee
   }
 
   async updateEmployee(id: string, patch: Parameters<WorkforceApi['updateEmployee']>[1]): Promise<void> {
